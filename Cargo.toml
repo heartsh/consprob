@@ -1,8 +1,8 @@
 [package]
-name = "io-algo-4-rna-stap-matrix-pair"
+name = "io-algo-4-rna-stap-mp"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "\"io-algo-4-rna-stap-matrix-pair\", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair"
+description = "\"io-algo-4-rna-stap-mp\", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair"
 
 [dependencies]
 bio-seq-algos = "0.1"
@@ -12,4 +12,4 @@ lazy_static = "0.1"
 
 [lib]
 path = "src/lib.rs"
-name = "io_algo_4_rna_stap_matrix_pair"
+name = "io_algo_4_rna_stap_mp"

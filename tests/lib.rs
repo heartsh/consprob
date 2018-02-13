@@ -1,10 +1,10 @@
-extern crate io_algo_4_rna_stap_matrix_pair;
+extern crate io_algo_4_rna_stap_mp;
 extern crate bio_seq_algos;
 extern crate rna_algos;
 #[macro_use]
 extern crate lazy_static;
 
-use io_algo_4_rna_stap_matrix_pair::*;
+use io_algo_4_rna_stap_mp::*;
 use bio_seq_algos::utils::*;
 use bio_seq_algos::durbin_algo::*;
 use rna_algos::mccaskill_algo::*;
@@ -18,9 +18,6 @@ lazy_static! {
       String::from("AUGCAAGGGGGCUUUAACAC").into_bytes(),
       String::from("GAUGCAUGCAAGGGCGCUUUGACA").into_bytes(),
     )
-  };
-  static ref TS_LEN_PAIR: (usize, usize) = {
-    (TEST_SEQ_PAIR.0.len(), TEST_SEQ_PAIR.1.len())
   };
 }
 

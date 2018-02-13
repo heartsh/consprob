@@ -122,7 +122,7 @@ impl StaScoringParams {
 pub fn io_algo_4_rna_stap_mp(sp: &SsPair, log_bpp_mp: &LpmPair, log_bap_matrix: &LogProbMatrix, bpp_mp: &PmPair, nbpp_mp: &PmPair, log_nbpp_mp: &LpmPair, sta_sps: &StaScoringParams) -> StapMp {
   let seq_len_pair = (sp.0.len(), sp.1.len());
   let log_sta_ppf_matrices = get_log_sta_ppf_matrices(sp, &seq_len_pair, log_bpp_mp, log_bap_matrix, bpp_mp, nbpp_mp, log_nbpp_mp, sta_sps);
-  let log_stap_mp = get_log_stap_mp(sp, &log_sta_ppf_matrices, &seq_len_pair, log_bpp_mp, log_bap_matrix, bpp_mp, nbpp_mp, log_nbpp_mp, sta_sps);
+  let log_stap_mp = get_log_stap_mp(&log_sta_ppf_matrices, &seq_len_pair, log_bpp_mp, log_bap_matrix, bpp_mp, nbpp_mp, log_nbpp_mp, sta_sps);
   get_stap_mp(&log_stap_mp)
 }
 
@@ -566,7 +566,7 @@ fn get_kld(pd: PdSlice, lpd_1: LpdSlice, lpd_2: LpdSlice) -> JensenShannonDist {
 }
 
 #[inline]
-fn get_log_stap_mp(sp: &SsPair, log_sta_ppf_matrices: &LogStaPpfMatrices, slp: &(usize, usize), log_bpp_mp: &LpmPair, log_bap_matrix: &LogProbMatrix, bpp_mp: &PmPair, nbpp_mp: &PmPair, log_nbpp_mp: &LpmPair, sta_sps: &StaScoringParams) -> LogStapMp {
+fn get_log_stap_mp(log_sta_ppf_matrices: &LogStaPpfMatrices, slp: &(usize, usize), log_bpp_mp: &LpmPair, log_bap_matrix: &LogProbMatrix, bpp_mp: &PmPair, nbpp_mp: &PmPair, log_nbpp_mp: &LpmPair, sta_sps: &StaScoringParams) -> LogStapMp {
   let mut log_stap_mp = LogStapMp::new(slp);
   let log_sta_ppf = log_sta_ppf_matrices.log_sta_ppf_matrix[0][slp.0 - 1][0][slp.1 - 1];
   let mut log_prob_matrix_4_ils_1 = log_stap_mp.log_bpap_matrix.clone();

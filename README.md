@@ -1,4 +1,4 @@
-# "io-algo-4-rna-stap-matrix-pair", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair
+# "io-algo-4-rna-stap-mp", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair
 This library provides an inside-outside algorithm for RNA structural-alignment probability matrix pair.
 
 # Author
