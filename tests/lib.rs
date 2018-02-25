@@ -3,12 +3,15 @@ extern crate bio_seq_algos;
 extern crate rna_algos;
 #[macro_use]
 extern crate lazy_static;
+extern crate time;
+// extern crate num;
 
 use io_algo_4_rna_stap_mp::*;
 use bio_seq_algos::utils::*;
 use bio_seq_algos::durbin_algo::*;
 use rna_algos::mccaskill_algo::*;
-use std::f64::consts::LOG2_E;
+use std::f32::consts::LOG2_E;
+use time::precise_time_s;
 
 type SeqPair = (Seq, Seq);
 
@@ -32,19 +35,15 @@ fn test_stap_mp() {
   }
   let sa_sps = SaScoringParams::new(&ca_sm, -4., -1.);
   let log_bap_matrix = get_log_cap_matrix(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_sps);
-  let log_bpp_mp = (get_log_bpp_matrix(&TEST_SEQ_PAIR.0[..]), get_log_bpp_matrix(&TEST_SEQ_PAIR.1[..]));
-  let sta_sps = StaScoringParams::new((0.00_000_5 as f64).ln(), (0.00_000_5 as f64).ln(), -(0.00_000_5 as f64).ln() / LOG2_E.sqrt(), -11., -1., -11., -1.);
-  let bpp_mp = (get_bpp_matrix(&log_bpp_mp.0), get_bpp_matrix(&log_bpp_mp.1));
-  let nbpp_mp = (
-    bpp_mp.0.iter().map(|xs| xs.iter().map(|&x| 1. - x).collect()).collect::<LogProbMatrix>(),
-    bpp_mp.1.iter().map(|xs| xs.iter().map(|&x| 1. - x).collect()).collect::<LogProbMatrix>(),
-  );
-  let log_nbpp_mp = (
-    nbpp_mp.0.iter().map(|xs| xs.iter().map(|&x| fast_ln(x)).collect()).collect::<ProbMatrix>(),
-    nbpp_mp.1.iter().map(|xs| xs.iter().map(|&x| fast_ln(x)).collect()).collect::<ProbMatrix>(),
-  );
-  let stap_mp = io_algo_4_rna_stap_mp(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &log_bpp_mp, &log_bap_matrix, &bpp_mp, &nbpp_mp, &log_nbpp_mp, &sta_sps);
-  println!("The BPAP matrix pair for the seq. pair \"{}\" and \"{}\" = \"{:?}\".", String::from_utf8_lossy(&TEST_SEQ_PAIR.0[..]), String::from_utf8_lossy(&TEST_SEQ_PAIR.1[..]), &stap_mp.bpap_matrix);
+  let sta_sps = StaScoringParams::new((0.00_000_5 as StaScore).ln(), (0.00_000_5 as StaScore).ln(), -(0.00_000_5 as StaScore).ln() / LOG2_E.sqrt(), -11., -1., -11., -1.);
+  let bppt_4_sta_ss = 0.25;
+  let bpp_mp = (mccaskill_algo(&TEST_SEQ_PAIR.0[..]), mccaskill_algo(&TEST_SEQ_PAIR.1[..]));
+  let slp = (TEST_SEQ_PAIR.0.len(), TEST_SEQ_PAIR.1.len());
+  let begin = precise_time_s();
+  let stap_mp = io_algo_4_rna_stap_mp(&slp, &bpp_mp, &log_bap_matrix, &sta_sps, bppt_4_sta_ss);
+  let elapsed_time = precise_time_s() - begin;
+  println!("The elapsed time = {}[s].", elapsed_time);
+  // println!("The BPAP matrix pair for the seq. pair \"{}\" and \"{}\" = \"{:?}\".", String::from_utf8_lossy(&TEST_SEQ_PAIR.0[..]), String::from_utf8_lossy(&TEST_SEQ_PAIR.1[..]), &stap_mp.bpap_matrix);
   for sub_bpap_matrix in &stap_mp.bpap_matrix {
     for sub_sub_bpap_matrix in sub_bpap_matrix {
       for bpaps in sub_sub_bpap_matrix {
@@ -52,8 +51,8 @@ fn test_stap_mp() {
       }
     }
   }
-  println!("The BAP matrix pair for the seq. pair \"{}\" and \"{}\" = \"{:?}\".", String::from_utf8_lossy(&TEST_SEQ_PAIR.0[..]), String::from_utf8_lossy(&TEST_SEQ_PAIR.1[..]), &stap_mp.bap_matrix);
-  for baps in &stap_mp.bap_matrix {
+  // println!("The BAP matrix pair for the seq. pair \"{}\" and \"{}\" = \"{:?}\".", String::from_utf8_lossy(&TEST_SEQ_PAIR.0[..]), String::from_utf8_lossy(&TEST_SEQ_PAIR.1[..]), &stap_mp.bap_matrix);
+  /* for baps in &stap_mp.bap_matrix {
     for &bap in baps {assert!((0. <= bap && bap <= 1.));}
-  }
+  } */
 }

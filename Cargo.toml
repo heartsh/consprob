@@ -9,6 +9,7 @@ bio-seq-algos = "0.1"
 rna-algos = "0.1"
 itertools = "0.7"
 lazy_static = "0.1"
+time = "0.1"
 
 [lib]
 path = "src/lib.rs"
