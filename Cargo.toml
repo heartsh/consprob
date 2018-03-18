@@ -1,16 +1,16 @@
 [package]
-name = "io-algo-4-rna-stap-mp"
+name = "io-algo-4-rna-stapmp"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "\"io-algo-4-rna-stap-mp\", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair"
+description = "\"io-algo-4-rna-stapmp\", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair"
 
 [dependencies]
-bio-seq-algos = "0.1"
-rna-algos = "0.1"
+bio-seq-algos = "0.1.6"
+rna-algos = "0.1.4"
 itertools = "0.7"
 lazy_static = "0.1"
 time = "0.1"
 
 [lib]
 path = "src/lib.rs"
-name = "io_algo_4_rna_stap_mp"
+name = "io_algo_4_rna_stapmp"
