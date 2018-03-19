@@ -8,13 +8,13 @@ use itertools::multizip;
 
 pub type ThreeDPm = Vec<ProbMatrix>;
 pub type FourDPm = Vec<ThreeDPm>;
-pub struct StapMp {
+pub struct Stapmp {
   pub bpap_matrix: FourDPm, 
   pub bap_matrix: ProbMatrix,
 }
 pub type Log3DPm = Vec<LogProbMatrix>;
 pub type Log4DPm = Vec<Log3DPm>;
-pub struct LogStapMp {
+pub struct LogStapmp {
   pub log_bpap_matrix: Log4DPm, 
   pub log_bap_matrix: LogProbMatrix,
 }
@@ -22,17 +22,13 @@ type LogPpf3DMatrix = Vec<LogPpfMatrix>;
 type LogPpf4DMatrix = Vec<LogPpf3DMatrix>;
 pub struct LogStaPpfMatrices {
   pub log_sta_ppf_matrix: LogPpf4DMatrix,
-  pub log_sta_ppf_matrix_4_rbpas: LogPpf4DMatrix,
+  pub log_sta_ppf_matrix_4_rightmost_bpas: LogPpf4DMatrix,
   pub log_sta_ppf_matrix_4_bpas: LogPpf4DMatrix,
+  pub log_sta_ppf_matrix_4_bas: LogPpf4DMatrix,
+  pub log_sta_ppf_matrix_4_base_gaps_1: LogPpf4DMatrix,
+  pub log_sta_ppf_matrix_4_bgs_2: LogPpf4DMatrix,
   pub log_sta_ppf_matrix_4_2_loop_deletions_1: LogPpf4DMatrix,
   pub log_sta_ppf_matrix_4_2lds_2: LogPpf4DMatrix,
-  pub log_sa_ppf_matrices: LogSaPpfMatrices,
-}
-pub struct LogSaPpfMatrices {
-  pub log_sa_ppf_matrix: LogPpf4DMatrix,
-  pub log_sa_ppf_matrix_4_ba: LogPpf4DMatrix,
-  pub log_sa_ppf_matrix_4_base_gap_1: LogPpf4DMatrix,
-  pub log_sa_ppf_matrix_4_bg_2: LogPpf4DMatrix,
 }
 pub type PmPair = (ProbMatrix, ProbMatrix);
 pub type LpmPair = (LogProbMatrix, LogProbMatrix);
@@ -73,30 +69,20 @@ impl LogStaPpfMatrices {
     let ni_matrix = vec![vec![vec![vec![NEG_INFINITY; slp.1 + 2]; slp.1 + 2]; slp.0 + 2]; slp.0 + 2];
     LogStaPpfMatrices {
       log_sta_ppf_matrix: ni_matrix.clone(),
-      log_sta_ppf_matrix_4_rbpas: ni_matrix.clone(),
+      log_sta_ppf_matrix_4_rightmost_bpas: ni_matrix.clone(),
+      log_sta_ppf_matrix_4_bas: ni_matrix.clone(),
+      log_sta_ppf_matrix_4_base_gaps_1: ni_matrix.clone(),
+      log_sta_ppf_matrix_4_bgs_2: ni_matrix.clone(),
       log_sta_ppf_matrix_4_bpas: ni_matrix.clone(),
       log_sta_ppf_matrix_4_2_loop_deletions_1: ni_matrix.clone(),
       log_sta_ppf_matrix_4_2lds_2: ni_matrix,
-      log_sa_ppf_matrices: LogSaPpfMatrices::new(slp),
     }
   }
 }
 
-impl LogSaPpfMatrices {
-  fn new(slp: &(usize, usize)) -> LogSaPpfMatrices {
-    let ni_matrix = vec![vec![vec![vec![NEG_INFINITY; slp.1 + 2]; slp.1 + 2]; slp.0 + 2]; slp.0 + 2];
-    LogSaPpfMatrices {
-      log_sa_ppf_matrix: ni_matrix.clone(),
-      log_sa_ppf_matrix_4_ba: ni_matrix.clone(),
-      log_sa_ppf_matrix_4_base_gap_1: ni_matrix.clone(),
-      log_sa_ppf_matrix_4_bg_2: ni_matrix,
-    }
-  }
-}
-
-impl LogStapMp {
-  fn new(slp: &(usize, usize)) -> LogStapMp {
-    LogStapMp {
+impl LogStapmp {
+  fn new(slp: &(usize, usize)) -> LogStapmp {
+    LogStapmp {
       log_bpap_matrix: vec![vec![vec![vec![NEG_INFINITY; slp.1 + 2]; slp.1 + 2]; slp.0 + 2]; slp.0 + 2],
       log_bap_matrix: vec![vec![NEG_INFINITY; slp.1 + 2]; slp.0 + 2]
     }
@@ -118,7 +104,7 @@ impl StaScoringParams {
 }
 
 #[inline]
-pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mp: &PmPair, log_bap_matrix: &LogProbMatrix, sta_sps: &StaScoringParams, bpp_thres_4_sta_space_sparsification: Prob) -> StapMp {
+pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mp: &PmPair, log_bap_matrix: &LogProbMatrix, sta_sps: &StaScoringParams, bpp_thres_4_sta_space_sparsification: Prob) -> Stapmp {
   let mut poips_with_ssls_with_bppt_4_sta_ss = (IpsWithSsls::default(), IpsWithSsls::default());
   for ssl in 2 .. seq_len_pair.0 + 1 {
     let mut ips = Ips::new();
@@ -238,8 +224,8 @@ pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mp: &PmPair, log_
 }
 
 #[inline]
-fn get_stapmp(log_stapmp: &LogStapMp) -> StapMp {
-  StapMp {
+fn get_stapmp(log_stapmp: &LogStapmp) -> Stapmp {
+  Stapmp {
     bpap_matrix: log_stapmp.log_bpap_matrix.iter().map(|three_d_matrix| three_d_matrix.iter().map(|two_d_matrix| two_d_matrix.iter().map(|xs| xs.iter().map(|&x| x.exp()).collect()).collect()).collect()).collect(),
     bap_matrix: log_stapmp.log_bap_matrix.iter().map(|xs| xs.iter().map(|&x| x.exp()).collect()).collect(),
   }
@@ -252,8 +238,7 @@ pub fn get_log_sta_ppf_matrices(slp: &(usize, usize), log_bap_matrix: &LogProbMa
     for j in i .. slp.0 + 1 {
       for k in 0 .. slp.1 + 1 {
         let bgp = sta_sps.base_opening_gap_penalty + get_begp(&(i + 1, j), sta_sps);
-        log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_base_gap_1[i][j][k + 1][k] = bgp;
-        log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[i][j][k + 1][k] = bgp;
+        log_sta_ppf_matrices.log_sta_ppf_matrix_4_base_gaps_1[i][j][k + 1][k] = bgp;
         log_sta_ppf_matrices.log_sta_ppf_matrix[i][j][k + 1][k] = bgp;
       }
     }
@@ -262,15 +247,13 @@ pub fn get_log_sta_ppf_matrices(slp: &(usize, usize), log_bap_matrix: &LogProbMa
     for l in k .. slp.1 + 1 {
       for i in 0 .. slp.0 + 1 {
         let bgp = sta_sps.base_opening_gap_penalty + get_begp(&(k + 1, l), sta_sps);
-        log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_bg_2[i + 1][i][k][l] = bgp;
-        log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[i + 1][i][k][l] = bgp;
+        log_sta_ppf_matrices.log_sta_ppf_matrix_4_bgs_2[i + 1][i][k][l] = bgp;
         log_sta_ppf_matrices.log_sta_ppf_matrix[i + 1][i][k][l] = bgp;
       }
     }
   }
   for i in 0 .. slp.0 + 1 {
     for j in 0 .. slp.1 + 1 {
-      log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[i + 1][i][j + 1][j] = 0.;
       log_sta_ppf_matrices.log_sta_ppf_matrix[i + 1][i][j + 1][j] = 0.;
     }
   }
@@ -281,43 +264,6 @@ pub fn get_log_sta_ppf_matrices(slp: &(usize, usize), log_bap_matrix: &LogProbMa
       for ssl_2 in 1 .. slp.1 + 1 {
         for k in 1 .. slp.1 - ssl_2 + 2 {
           let l = k + ssl_2 - 1;
-          log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_ba[i][j][k][l] = if i == j && k == l {0.} else {log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[i][j - 1][k][l - 1]} + get_ba_score(&(j, l), log_bap_matrix, sta_sps);
-          let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
-          let mut max_ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_ba[i][j - 1][k][l] + sta_sps.base_opening_gap_penalty;
-          if max_ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
-          }
-          let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_base_gap_1[i][j - 1][k][l] + sta_sps.base_extending_gap_penalty;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-          }
-          if eps_of_terms_4_log_pf.len() > 0 {
-            log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_base_gap_1[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
-          }
-          let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
-          let mut max_ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_ba[i][j][k][l - 1] + sta_sps.base_opening_gap_penalty;
-          if max_ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
-          }
-          let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_bg_2[i][j][k][l - 1] + sta_sps.base_extending_gap_penalty;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-          }
-          if eps_of_terms_4_log_pf.len() > 0 {
-            log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_bg_2[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
-          }
-          let eps_of_terms_4_log_pf = [
-            log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_ba[i][j][k][l],
-            log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_base_gap_1[i][j][k][l],
-            log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix_4_bg_2[i][j][k][l],
-          ];
-          let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          for &ep_of_term_4_log_pf in &eps_of_terms_4_log_pf {
-            if max_ep_of_term_4_log_pf < ep_of_term_4_log_pf {max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;}
-          }
-          if max_ep_of_term_4_log_pf.is_finite() {
-            log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
-          }
           let pp_closing_loop_2 = (k, l);
           match bppmp_with_bppt_4_sta_ss.0.get(&pp_closing_loop_1.0) {
             Some(bpps_with_bppt_4_sta_ss) => {
@@ -362,17 +308,17 @@ pub fn get_log_sta_ppf_matrices(slp: &(usize, usize), log_bap_matrix: &LogProbMa
           }
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          match bppmp_with_bppt_4_sta_ss.0.get(&i) {
-            Some(bpps_with_bppt_4_sta_ss) => {
-              for &h_1 in bpps_with_bppt_4_sta_ss.keys() {
-                if h_1 <= j {
-                  match bppmp_with_bppt_4_sta_ss.1.get(&k) {
-                    Some(bpps_with_bppt_4_sta_ss) => {
-                      for &h_2 in bpps_with_bppt_4_sta_ss.keys() {
-                        if h_2 <= l {
-                          let log_sta_ppf_4_bpa = log_sta_ppf_matrices.log_sta_ppf_matrix_4_bpas[i][h_1][k][h_2];
+          match imp_with_bppt_4_sta_ss_1.0.get(&j) {
+            Some(indices_with_bppt_4_sta_ss) => {
+              for &h_1 in indices_with_bppt_4_sta_ss.keys() {
+                if h_1 >= i {
+                  match imp_with_bppt_4_sta_ss_1.1.get(&l) {
+                    Some(indices_with_bppt_4_sta_ss) => {
+                      for &h_2 in indices_with_bppt_4_sta_ss.keys() {
+                        if h_2 >= k {
+                          let log_sta_ppf_4_bpa = log_sta_ppf_matrices.log_sta_ppf_matrix_4_bpas[h_1][j][h_2][l];
                           if log_sta_ppf_4_bpa.is_finite() {
-                            let ep_of_term_4_log_pf = log_sta_ppf_4_bpa + log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[h_1 + 1][j][h_2 + 1][l];
+                            let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix[i][h_1 - 1][k][h_2 - 1] + log_sta_ppf_4_bpa;
                             if ep_of_term_4_log_pf.is_finite() {
                               if max_ep_of_term_4_log_pf < ep_of_term_4_log_pf {max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;}
                               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -387,23 +333,52 @@ pub fn get_log_sta_ppf_matrices(slp: &(usize, usize), log_bap_matrix: &LogProbMa
             }, None => {},
           }
           if eps_of_terms_4_log_pf.len() > 0 {
-            log_sta_ppf_matrices.log_sta_ppf_matrix_4_rbpas[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_rightmost_bpas[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
           }
+          log_sta_ppf_matrices.log_sta_ppf_matrix_4_bas[i][j][k][l] = if i == j && k == l {0.} else {log_sta_ppf_matrices.log_sta_ppf_matrix[i][j - 1][k][l - 1]} + get_ba_score(&(j, l), log_bap_matrix, sta_sps);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
-          let mut max_ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sa_ppf_matrices.log_sa_ppf_matrix[i][j][k][l];
+          let mut max_ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix_4_rightmost_bpas[i][j - 1][k][l] + sta_sps.base_opening_gap_penalty;
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          for h_1 in i .. j {
-            for h_2 in k .. l {
-              let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix[i][h_1 - 1][k][h_2 - 1] + log_sta_ppf_matrices.log_sta_ppf_matrix_4_rbpas[h_1][j][h_2][l];
-              if ep_of_term_4_log_pf.is_finite() {
-                if max_ep_of_term_4_log_pf < ep_of_term_4_log_pf {max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;}
-                eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-              }
-            }
+          let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix_4_bas[i][j - 1][k][l] + sta_sps.base_opening_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+          }
+          let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix_4_base_gaps_1[i][j - 1][k][l] + sta_sps.base_extending_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
           }
           if eps_of_terms_4_log_pf.len() > 0 {
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_base_gaps_1[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
+          }
+          let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+          let mut max_ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix_4_rightmost_bpas[i][j][k][l - 1] + sta_sps.base_opening_gap_penalty;
+          if max_ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
+          }
+          let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix_4_bas[i][j][k][l - 1] + sta_sps.base_opening_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+          }
+          let ep_of_term_4_log_pf = log_sta_ppf_matrices.log_sta_ppf_matrix_4_bgs_2[i][j][k][l - 1] + sta_sps.base_extending_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+          }
+          if eps_of_terms_4_log_pf.len() > 0 {
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_bgs_2[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
+          }
+          let eps_of_terms_4_log_pf = [
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_rightmost_bpas[i][j][k][l],
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_bas[i][j][k][l],
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_base_gaps_1[i][j][k][l],
+            log_sta_ppf_matrices.log_sta_ppf_matrix_4_bgs_2[i][j][k][l],
+          ];
+          let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+          for &ep_of_term_4_log_pf in &eps_of_terms_4_log_pf {
+            if max_ep_of_term_4_log_pf < ep_of_term_4_log_pf {max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;}
+          }
+          if max_ep_of_term_4_log_pf.is_finite() {
             log_sta_ppf_matrices.log_sta_ppf_matrix[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
           }
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
@@ -501,10 +476,9 @@ fn get_kld(pd: PdSlice, lpd_1: LpdSlice, lpd_2: LpdSlice) -> JensenShannonDist {
 }
 
 #[inline]
-fn get_log_stapmp(log_sta_ppf_matrices: &LogStaPpfMatrices, slp: &(usize, usize), log_bap_matrix: &LogProbMatrix, sta_sps: &StaScoringParams, poips_with_ssls_with_bppt_4_sta_ss: &PairOfIpsWithSsls, bppmp_with_bppt_4_sta_ss: &PmPairWithBppt4StaSs, nbppmp_with_bppt_4_sta_ss: &PmPairWithBppt4StaSs, lbppmp_with_bppt_4_sta_ss: &LpmPairWithBppt4StaSs, lnbppmp_with_bppt_4_sta_ss: &LpmPairWithBppt4StaSs, imp_with_bppt_4_sta_ss_1: &ImPairWithBppt4StaSs, imp_with_bppt_4_sta_ss_2: &ImPairWithBppt4StaSs) -> LogStapMp {
-  let mut log_stapmp = LogStapMp::new(slp);
+fn get_log_stapmp(log_sta_ppf_matrices: &LogStaPpfMatrices, slp: &(usize, usize), log_bap_matrix: &LogProbMatrix, sta_sps: &StaScoringParams, poips_with_ssls_with_bppt_4_sta_ss: &PairOfIpsWithSsls, bppmp_with_bppt_4_sta_ss: &PmPairWithBppt4StaSs, nbppmp_with_bppt_4_sta_ss: &PmPairWithBppt4StaSs, lbppmp_with_bppt_4_sta_ss: &LpmPairWithBppt4StaSs, lnbppmp_with_bppt_4_sta_ss: &LpmPairWithBppt4StaSs, imp_with_bppt_4_sta_ss_1: &ImPairWithBppt4StaSs, imp_with_bppt_4_sta_ss_2: &ImPairWithBppt4StaSs) -> LogStapmp {
+  let mut log_stapmp = LogStapmp::new(slp);
   let log_sta_ppf = log_sta_ppf_matrices.log_sta_ppf_matrix[1][slp.0][1][slp.1];
-  println!("{}.", log_sta_ppf);
   let mut log_pseudo_prob_matrix = log_stapmp.log_bpap_matrix.clone();
   for ssl_1 in (2 .. slp.0 + 1).rev() {
     match poips_with_ssls_with_bppt_4_sta_ss.0.get(&ssl_1) {
@@ -712,5 +686,6 @@ fn get_log_stapmp(log_sta_ppf_matrices: &LogStaPpfMatrices, slp: &(usize, usize)
       log_stapmp.log_bap_matrix[i][j] = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
     }
   }
+  log_pseudo_prob_matrix[0][slp.0 + 1][0][slp.1 + 1] = 0.;
   log_stapmp
 }
