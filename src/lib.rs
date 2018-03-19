@@ -22,11 +22,10 @@ type LogPpf3DMat = Vec<LogPpfMat>;
 type LogPpf4DMat = Vec<LogPpf3DMat>;
 pub struct LogStaPpfMats {
   pub log_sta_ppf_mat: LogPpf4DMat,
-  pub log_sta_ppf_mat_4_rightmost_bpas: LogPpf4DMat,
-  pub log_sta_ppf_mat_4_bpas: LogPpf4DMat,
   pub log_sta_ppf_mat_4_bas: LogPpf4DMat,
   pub log_sta_ppf_mat_4_base_gaps_1: LogPpf4DMat,
   pub log_sta_ppf_mat_4_bgs_2: LogPpf4DMat,
+  pub log_sta_ppf_mat_4_bpas: LogPpf4DMat,
   pub log_sta_ppf_mat_4_2_loop_deletions_1: LogPpf4DMat,
   pub log_sta_ppf_mat_4_2lds_2: LogPpf4DMat,
 }
@@ -69,7 +68,6 @@ impl LogStaPpfMats {
     let ni_mat = vec![vec![vec![vec![NEG_INFINITY; slp.1 + 2]; slp.1 + 2]; slp.0 + 2]; slp.0 + 2];
     LogStaPpfMats {
       log_sta_ppf_mat: ni_mat.clone(),
-      log_sta_ppf_mat_4_rightmost_bpas: ni_mat.clone(),
       log_sta_ppf_mat_4_bas: ni_mat.clone(),
       log_sta_ppf_mat_4_base_gaps_1: ni_mat.clone(),
       log_sta_ppf_mat_4_bgs_2: ni_mat.clone(),
@@ -306,44 +304,47 @@ pub fn get_log_sta_ppf_mats(slp: &(usize, usize), log_bap_mat: &LogProbMat, sta_
               }
             }, None => {},
           }
-          let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
-          let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          match imp_with_bppt_4_sta_ss_1.0.get(&j) {
-            Some(indexes_with_bppt_4_sta_ss) => {
-              for &h_1 in indexes_with_bppt_4_sta_ss.keys() {
-                if h_1 >= i {
-                  match imp_with_bppt_4_sta_ss_1.1.get(&l) {
-                    Some(indexes_with_bppt_4_sta_ss) => {
-                      for &h_2 in indexes_with_bppt_4_sta_ss.keys() {
-                        if h_2 >= k {
-                          let log_sta_ppf_4_bpa = log_sta_ppf_mats.log_sta_ppf_mat_4_bpas[h_1][j][h_2][l];
-                          if log_sta_ppf_4_bpa.is_finite() {
-                            let ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat[i][h_1 - 1][k][h_2 - 1] + log_sta_ppf_4_bpa;
-                            if ep_of_term_4_log_pf.is_finite() {
-                              if max_ep_of_term_4_log_pf < ep_of_term_4_log_pf {max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;}
-                              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+          let ba_score = get_ba_score(&(j, l), log_bap_mat, sta_sps);
+          if i == j && k == l {
+            log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j][k][l] = ba_score;
+          } else {
+            let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+            let mut max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat[i][j - 1][k][l - 1] + ba_score;
+            if max_ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
+            }
+            match imp_with_bppt_4_sta_ss_1.0.get(&j) {
+              Some(indexes_with_bppt_4_sta_ss) => {
+                for &h_1 in indexes_with_bppt_4_sta_ss.keys() {
+                  if h_1 >= i {
+                    match imp_with_bppt_4_sta_ss_1.1.get(&l) {
+                      Some(indexes_with_bppt_4_sta_ss) => {
+                        for &h_2 in indexes_with_bppt_4_sta_ss.keys() {
+                          if h_2 >= k {
+                            let log_sta_ppf_4_bpa = log_sta_ppf_mats.log_sta_ppf_mat_4_bpas[h_1][j][h_2][l];
+                            if log_sta_ppf_4_bpa.is_finite() {
+                              let ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat[i][h_1 - 1][k][h_2 - 1] + log_sta_ppf_4_bpa;
+                              if ep_of_term_4_log_pf.is_finite() {
+                                if max_ep_of_term_4_log_pf < ep_of_term_4_log_pf {max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;}
+                                eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                              }
                             }
                           }
                         }
-                      }
-                    }, None => {},
+                      }, None => {},
+                    }
                   }
                 }
-              }
-            }, None => {},
+              }, None => {},
+            }
+            if eps_of_terms_4_log_pf.len() > 0 {
+              log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
+            }
           }
-          if eps_of_terms_4_log_pf.len() > 0 {
-            log_sta_ppf_mats.log_sta_ppf_mat_4_rightmost_bpas[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
-          }
-          log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j][k][l] = if i == j && k == l {0.} else {log_sta_ppf_mats.log_sta_ppf_mat[i][j - 1][k][l - 1]} + get_ba_score(&(j, l), log_bap_mat, sta_sps);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
-          let mut max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_rightmost_bpas[i][j - 1][k][l] + sta_sps.base_opening_gap_penalty;
+          let mut max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j - 1][k][l] + sta_sps.base_opening_gap_penalty;
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
-          }
-          let ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j - 1][k][l] + sta_sps.base_opening_gap_penalty;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
           }
           let ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_base_gaps_1[i][j - 1][k][l] + sta_sps.base_extending_gap_penalty;
           if ep_of_term_4_log_pf.is_finite() {
@@ -353,13 +354,9 @@ pub fn get_log_sta_ppf_mats(slp: &(usize, usize), log_bap_mat: &LogProbMat, sta_
             log_sta_ppf_mats.log_sta_ppf_mat_4_base_gaps_1[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
           }
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
-          let mut max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_rightmost_bpas[i][j][k][l - 1] + sta_sps.base_opening_gap_penalty;
+          let max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j][k][l - 1] + sta_sps.base_opening_gap_penalty;
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
-          }
-          let ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j][k][l - 1] + sta_sps.base_opening_gap_penalty;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
           }
           let ep_of_term_4_log_pf = log_sta_ppf_mats.log_sta_ppf_mat_4_bgs_2[i][j][k][l - 1] + sta_sps.base_extending_gap_penalty;
           if ep_of_term_4_log_pf.is_finite() {
@@ -369,7 +366,6 @@ pub fn get_log_sta_ppf_mats(slp: &(usize, usize), log_bap_mat: &LogProbMat, sta_
             log_sta_ppf_mats.log_sta_ppf_mat_4_bgs_2[i][j][k][l] = logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf);
           }
           let eps_of_terms_4_log_pf = [
-            log_sta_ppf_mats.log_sta_ppf_mat_4_rightmost_bpas[i][j][k][l],
             log_sta_ppf_mats.log_sta_ppf_mat_4_bas[i][j][k][l],
             log_sta_ppf_mats.log_sta_ppf_mat_4_base_gaps_1[i][j][k][l],
             log_sta_ppf_mats.log_sta_ppf_mat_4_bgs_2[i][j][k][l],
