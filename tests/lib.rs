@@ -33,10 +33,15 @@ fn test_stapmp() {
     }
   }
   let sa_sps = SaScoringParams::new(&ca_sm, -1., -0.1);
-  let log_bap_mat = get_log_cap_mat(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_sps);
-  let log_prob_1 = (0.01 as StaScore).ln();
-  let log_prob_2 = (0.00_001 as StaScore).ln();
-  let sta_sps = StaScoringParams::new(log_prob_1, log_prob_1, -log_prob_1 / LN_2.sqrt(), log_prob_2, log_prob_1, log_prob_2, log_prob_1);
+  let mut log_bap_mat = get_log_cap_mat(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_sps);
+  for log_baps in &mut log_bap_mat {
+    for log_bap in log_baps {
+      *log_bap = *log_bap - LN_2;
+    }
+  }
+  let log_prob_1 = (0.01 as StaScore).log2();
+  let log_prob_2 = (0.00_001 as StaScore).log2();
+  let sta_sps = StaScoringParams::new(log_prob_1, log_prob_1, -log_prob_1 * 2., 0.5, log_prob_2, log_prob_1, log_prob_2, log_prob_1);
   let bppt_4_sta_ss_1 = 0.;
   let bpp_mp = (mccaskill_algo(&TEST_SEQ_PAIR.0[..]), mccaskill_algo(&TEST_SEQ_PAIR.1[..]));
   let begin = precise_time_s();

@@ -35,7 +35,8 @@ pub type StaScore = LogProb;
 pub struct StaScoringParams {
   pub log_null_hypothesis_bpp: StaScore,
   pub log_nh_bap: StaScore,
-  pub scaling_param_4_ss_dist: StaScore,
+  pub scaling_param_4_bpa_score: StaScore,
+  pub offset_bpa_score: StaScore,
   pub base_opening_gap_penalty: StaScore,
   pub base_extending_gap_penalty: StaScore,
   pub loop_opening_gap_penalty: StaScore,
@@ -88,11 +89,12 @@ impl LogStapmp {
 }
 
 impl StaScoringParams {
-  pub fn new(log_nh_bpp: LogProb, log_nh_bap: LogProb, sp_4_ssd: StaScore, bogp: StaScore, begp: StaScore, logp: StaScore, legp: StaScore) -> StaScoringParams {
+  pub fn new(log_nh_bpp: LogProb, log_nh_bap: LogProb, sp_4_bpas: StaScore, obpas: StaScore, bogp: StaScore, begp: StaScore, logp: StaScore, legp: StaScore) -> StaScoringParams {
     StaScoringParams {
       log_null_hypothesis_bpp: log_nh_bpp,
       log_nh_bap: log_nh_bap,
-      scaling_param_4_ss_dist: sp_4_ssd,
+      scaling_param_4_bpa_score: sp_4_bpas,
+      offset_bpa_score: obpas,
       base_opening_gap_penalty: bogp,
       base_extending_gap_penalty: begp,
       loop_opening_gap_penalty: logp,
@@ -156,8 +158,8 @@ pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mp: &PmPair, log_
     for j in i + 1 .. seq_len_pair.0 {
       let bpp = bpp_mp.0[i][j];
       let nbpp = 1. - bpp;
-      let lbpp = fast_ln(bpp);
-      let lnbpp = fast_ln(nbpp);
+      let lbpp = bpp.log2();
+      let lnbpp = nbpp.log2();
       if bpp >= bpp_thres_4_sta_space_sparsification {
         bpps_with_bppt_4_sta_ss.insert(j + 1, bpp);
         nbpps_with_bppt_4_sta_ss.insert(j + 1, nbpp);
@@ -196,8 +198,8 @@ pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mp: &PmPair, log_
     for j in i + 1 .. seq_len_pair.1 {
       let bpp = bpp_mp.1[i][j];
       let nbpp = 1. - bpp;
-      let lbpp = fast_ln(bpp);
-      let lnbpp = fast_ln(nbpp);
+      let lbpp = bpp.log2();
+      let lnbpp = nbpp.log2();
       if bpp >= bpp_thres_4_sta_space_sparsification {
         bpps_with_bppt_4_sta_ss.insert(j + 1, bpp);
         nbpps_with_bppt_4_sta_ss.insert(j + 1, nbpp);
@@ -454,13 +456,13 @@ fn get_bpa_score(pp_1: &PosPair, pp_2: &PosPair, log_bap_mat: &LogProbMat, sta_s
   let bin_lpd_2 = [lbppmp_with_bppt_4_sta_ss.1[&pp_2.0][&pp_2.1], lnbppmp_with_bppt_4_sta_ss.1[&pp_2.0][&pp_2.1]];
   lbppmp_with_bppt_4_sta_ss.0[&pp_1.0][&pp_1.1] + lbppmp_with_bppt_4_sta_ss.1[&pp_2.0][&pp_2.1] - 2. * sta_sps.log_null_hypothesis_bpp
   + get_ba_score(&(pp_1.0, pp_2.0), log_bap_mat, sta_sps) + get_ba_score(&(pp_1.1, pp_2.1), log_bap_mat, sta_sps)
-  - sta_sps.scaling_param_4_ss_dist * get_jsd(&bin_pd_1[..], &bin_pd_2[..], &bin_lpd_1[..], &bin_lpd_2[..])
+  + sta_sps.scaling_param_4_bpa_score * (sta_sps.offset_bpa_score - get_jsd(&bin_pd_1[..], &bin_pd_2[..], &bin_lpd_1[..], &bin_lpd_2[..]))
 }
 
 #[inline]
 fn get_jsd(pd_1: PdSlice, pd_2: PdSlice, lpd_1: LpdSlice, lpd_2: LpdSlice) -> JensenShannonDist {
   let mid_pd = pd_1.iter().zip(pd_2).map(|(&x, &y)| (x + y) / 2.).collect::<ProbDist>();
-  let log_mid_prob_dist = mid_pd.iter().map(|&x| fast_ln(x)).collect::<LogProbDist>();
+  let log_mid_prob_dist = mid_pd.iter().map(|&x| x.log2()).collect::<LogProbDist>();
   let jsd = ((get_kld(pd_1, lpd_1, &log_mid_prob_dist)
   + get_kld(pd_2, lpd_2, &log_mid_prob_dist)) / 2.).sqrt();
   if jsd.is_finite() {jsd} else {0.}
