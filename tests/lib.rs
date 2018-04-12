@@ -24,47 +24,49 @@ lazy_static! {
 
 #[test]
 fn test_stapmp() {
-  let slp = (TEST_SEQ_PAIR.0.len(), TEST_SEQ_PAIR.1.len());
-  let mut ca_sm = CaScoreMat::default();
+  let seq_len_pair = (TEST_SEQ_PAIR.0.len(), TEST_SEQ_PAIR.1.len());
+  println!("The upper bound of the number of base pair alignments = {}.", seq_len_pair.0 * seq_len_pair.0 * seq_len_pair.1 * seq_len_pair.1 / 4);
+  let mut ca_score_mat = CaScoreMat::default();
   let alphabet = b"AUGC";
   for &base_1 in alphabet {
     for &base_2 in alphabet {
-      ca_sm.insert((base_1, base_2), if base_1 == base_2 {0.1} else {-0.1});
+      ca_score_mat.insert((base_1, base_2), if base_1 == base_2 {0.1} else {-0.1});
     }
   }
-  let sa_sps = SaScoringParams::new(&ca_sm, -1., -0.1);
-  let mut log_bap_mat = get_log_cap_mat(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_sps);
-  for log_baps in &mut log_bap_mat {
-    for log_bap in log_baps {
-      *log_bap = *log_bap - LN_2;
+  let sa_scoring_params = SaScoringParams::new(&ca_score_mat, -1., -0.1);
+  let mut lbap_mat = get_log_cap_mat(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_scoring_params);
+  for lbaps in &mut lbap_mat {
+    for lbap in lbaps {
+      *lbap = *lbap - LN_2;
     }
   }
+  let bpp_mat_pair = (mccaskill_algo(&TEST_SEQ_PAIR.0[..]), mccaskill_algo(&TEST_SEQ_PAIR.1[..]));
   let log_prob_1 = (0.01 as StaScore).log2();
   let log_prob_2 = (0.00_001 as StaScore).log2();
-  let sta_sps = StaScoringParams::new(log_prob_1, log_prob_1, -log_prob_1 * 2., 0.5, log_prob_2, log_prob_1, log_prob_2, log_prob_1);
-  let bppt_4_sta_ss_1 = 0.;
-  let bpp_mp = (mccaskill_algo(&TEST_SEQ_PAIR.0[..]), mccaskill_algo(&TEST_SEQ_PAIR.1[..]));
+  let sta_scoring_params = StaScoringParams::new(log_prob_1, log_prob_1, -log_prob_1 * 2., 0.5, log_prob_2, log_prob_1, log_prob_2, log_prob_1);
+  let min_bpp = 0.;
   let begin = precise_time_s();
-  let stapmp = io_algo_4_rna_stapmp(&slp, &bpp_mp, &log_bap_mat, &sta_sps, bppt_4_sta_ss_1);
+  let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp);
   check_stapmp(&stapmp);
   let elapsed_time = precise_time_s() - begin;
-  let bppt_4_sta_ss_2 = 0.00_1;
+  println!("The elapsed time = {}.", elapsed_time);
+  let min_bpp = 0.00_1 as Prob;
   let begin = precise_time_s();
-  let stapmp = io_algo_4_rna_stapmp(&slp, &bpp_mp, &log_bap_mat, &sta_sps, bppt_4_sta_ss_2);
+  let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp);
   check_stapmp(&stapmp);
   let acceleration = elapsed_time / (precise_time_s() - begin);
-  println!("The acceleration with the Base-Pairing Probability Threshold (= BPPT) = {} is {}-fold compared with the BPPT = {}.", bppt_4_sta_ss_2, acceleration, bppt_4_sta_ss_1);
+  println!("The acceleration with the minimum Base-Pairing-Probability (= BPP) {} is {}-fold compared with the minimum BPP {}.", min_bpp, acceleration, min_bpp);
 }
 
 fn check_stapmp(stapmp: &Stapmp) {
-  for sub_bpap_mat in &stapmp.bpap_mat {
-    for sub_sub_bpap_mat in sub_bpap_mat {
-      for bpaps in sub_sub_bpap_mat {
-        for &bpap in bpaps {assert!((0. <= bpap && bpap <= 1.));}
-      }
-    }
+  for &bpap in stapmp.base_pair_align_prob_mat.values() {
+    assert!((0. <= bpap && bpap <= 1.));
   }
-  for baps in &stapmp.bap_mat {
-    for &bap in baps {assert!((0. <= bap && bap <= 1.));}
+  println!("The size of the base pair alignment probability matrix = {}.", stapmp.base_pair_align_prob_mat.len());
+  for baps in &stapmp.base_align_prob_mat {
+    for &bap in baps {
+      // assert!(0. <= bap && bap <= 1.)
+      if !(0. <= bap && bap <= 1.) {println!("{}", bap);}
+    }
   }
 }
