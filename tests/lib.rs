@@ -25,7 +25,6 @@ lazy_static! {
 #[test]
 fn test_stapmp() {
   let seq_len_pair = (TEST_SEQ_PAIR.0.len(), TEST_SEQ_PAIR.1.len());
-  println!("The upper bound of the number of base pair alignments = {}.", seq_len_pair.0 * seq_len_pair.0 * seq_len_pair.1 * seq_len_pair.1 / 4);
   let mut ca_score_mat = CaScoreMat::default();
   let alphabet = b"AUGC";
   for &base_1 in alphabet {
@@ -49,7 +48,6 @@ fn test_stapmp() {
   let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp);
   check_stapmp(&stapmp);
   let elapsed_time = precise_time_s() - begin;
-  println!("The elapsed time = {}.", elapsed_time);
   let min_bpp = 0.00_1 as Prob;
   let begin = precise_time_s();
   let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp);
@@ -62,11 +60,9 @@ fn check_stapmp(stapmp: &Stapmp) {
   for &bpap in stapmp.base_pair_align_prob_mat.values() {
     assert!((0. <= bpap && bpap <= 1.));
   }
-  println!("The size of the base pair alignment probability matrix = {}.", stapmp.base_pair_align_prob_mat.len());
   for baps in &stapmp.base_align_prob_mat {
     for &bap in baps {
-      // assert!(0. <= bap && bap <= 1.)
-      if !(0. <= bap && bap <= 1.) {println!("{}", bap);}
+      assert!(0. <= bap && bap <= 1.);
     }
   }
 }

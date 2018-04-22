@@ -19,7 +19,6 @@ pub struct LogStapmp {
   pub log_bap_mat: LogProbMat,
 }
 type LogPpf4dMat = HashMap<PosQuadruple, LogPf, Hasher>;
-type SparseLogPpfMat = HashMap<PosPair, LogPf, Hasher>;
 pub type ProbMatPair = (ProbMat, ProbMat);
 pub type StaScore = LogProb;
 pub struct StaScoringParams {
@@ -41,7 +40,6 @@ type ProbDistDist = ProbDistDiv;
 type PosSpan = usize;
 type Poss = Vec<Pos>;
 type PosSeqsWithPosSpans = HashMap<PosSpan, Poss, Hasher>;
-type PosSeqSetPairWithPosSpans = (PosSeqsWithPosSpans, PosSeqsWithPosSpans);
 type PosSpanPair = (PosSpan, PosSpan);
 type PosPairs = Vec<PosPair>;
 type PosPairSeqsWithPosSpanPairs = HashMap<PosSpanPair, PosPairs, Hasher>;
@@ -247,8 +245,8 @@ pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
       }
     }
   }
-  let log_sta_ppf_mat_4_bpas_1 = get_log_sta_ppf_mat_4_bpas_1(&seq_len_pair, &sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_seq_set_pair_with_pos_spans, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_seq_set_pair_with_poss_4_backward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas);
-  let lstapmp = get_lstapmp(&log_sta_ppf_mat_4_bpas_1, &seq_len_pair, &sparse_log_bpp_mat_pair, &log_bap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_seq_set_pair_with_pos_spans, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_seq_set_pair_with_poss_4_backward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas);
+  let log_sta_ppf_mat_4_bpas_1 = get_log_sta_ppf_mat_4_bpas_1(&seq_len_pair, &sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas);
+  let lstapmp = get_lstapmp(&log_sta_ppf_mat_4_bpas_1, &seq_len_pair, &sparse_log_bpp_mat_pair, &log_bap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_pair_seqs_with_pos_span_pairs, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas);
   get_stapmp(&lstapmp)
 }
 
@@ -261,7 +259,7 @@ fn get_stapmp(lstapmp: &LogStapmp) -> Stapmp {
 }
 
 #[inline]
-pub fn get_log_sta_ppf_mat_4_bpas_1(seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seq_set_pair_with_pos_spans: &PosSeqSetPairWithPosSpans, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_seq_set_pair_with_poss_4_backward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogPpf4dMat {
+pub fn get_log_sta_ppf_mat_4_bpas_1(seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, ) -> LogPpf4dMat {
   let mut log_sta_ppf_mat_4_bpas_1 = LogPpf4dMat::default();
   let mut log_sta_ppf_mat_4_bpas_2 = log_sta_ppf_mat_4_bpas_1.clone();
   for substr_len_1 in 2 .. seq_len_pair.0 + 3 {
@@ -271,7 +269,7 @@ pub fn get_log_sta_ppf_mat_4_bpas_1(seq_len_pair: &(usize, usize), sparse_log_bp
           for &(i, k) in pos_pairs {
             let j = i + substr_len_1 - 1;
             let l = k + substr_len_2 - 1;
-            let log_sta_ppf_mat_4_2_loops = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair, pos_seq_set_pair_with_pos_spans, pos_pair_seqs_with_pos_span_pairs, pos_seq_set_pair_with_poss_4_forward_bps, pos_seq_set_pair_with_poss_4_backward_bps, pos_pair_seqs_with_pos_pairs_4_forward_bpas, pos_pair_seqs_with_pos_pairs_4_backward_bpas, &log_sta_ppf_mat_4_bpas_1);
+            let log_sta_ppf_mat_4_2_loops = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), log_bap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, &log_sta_ppf_mat_4_bpas_1);
             let mut log_sta_ppfs_4_2_loop_deletions_1 = vec![NEG_INFINITY; substr_len_1 - 1];
             let mut log_sta_ppfs_4_2_lds_2 = vec![NEG_INFINITY; substr_len_2 - 1];
             for n in i + 2 .. j {
@@ -354,7 +352,7 @@ pub fn get_log_sta_ppf_mat_4_bpas_1(seq_len_pair: &(usize, usize), sparse_log_bp
 }
 
 #[inline]
-fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seq_set_pair_with_pos_spans: &PosSeqSetPairWithPosSpans, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_seq_set_pair_with_poss_4_backward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
+fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
   let &(i, j, k, l) = pos_quadruple;
   let substr_len_1 = j - i + 1;
   let substr_len_2 = l - k + 1;
@@ -509,12 +507,12 @@ fn get_kullback_leibler_div(prob_dist: ProbDistSlice, log_prob_dist_1: LogProbDi
 }
 
 #[inline]
-fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seq_set_pair_with_pos_spans: &PosSeqSetPairWithPosSpans, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_seq_set_pair_with_poss_4_backward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogStapmp {
+fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogStapmp {
   let mut lstapmp = LogStapmp::new(seq_len_pair);
   let pos_quadruple_4_2_external_loops = (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1);
   let log_sta_pf_4_bpa = log_sta_ppf_mat_4_bpas_1[&pos_quadruple_4_2_external_loops];
-  let log_sta_ppf_mat_4_2_els_1 = get_log_sta_ppf_mat_4_2_loops_1(&pos_quadruple_4_2_external_loops, seq_len_pair, sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair, pos_seq_set_pair_with_pos_spans, pos_pair_seqs_with_pos_span_pairs, pos_seq_set_pair_with_poss_4_forward_bps, pos_seq_set_pair_with_poss_4_backward_bps, pos_pair_seqs_with_pos_pairs_4_forward_bpas, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
-  let log_sta_ppf_mat_4_2_els_2 = get_log_sta_ppf_mat_4_2_loops_2(&pos_quadruple_4_2_external_loops, seq_len_pair, sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair, pos_seq_set_pair_with_pos_spans, pos_pair_seqs_with_pos_span_pairs, pos_seq_set_pair_with_poss_4_forward_bps, pos_seq_set_pair_with_poss_4_backward_bps, pos_pair_seqs_with_pos_pairs_4_forward_bpas, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
+  let log_sta_ppf_mat_4_2_els_1 = get_log_sta_ppf_mat_4_2_loops_1(&pos_quadruple_4_2_external_loops, log_bap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
+  let log_sta_ppf_mat_4_2_els_2 = get_log_sta_ppf_mat_4_2_loops_2(&pos_quadruple_4_2_external_loops, log_bap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
   for substr_len_1 in (2 .. seq_len_pair.0 + 1).rev() {
     for substr_len_2 in (2 .. seq_len_pair.1 + 1).rev() {
       match pos_pair_seqs_with_pos_span_pairs.get(&(substr_len_1, substr_len_2)) {
@@ -582,8 +580,8 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
             let sum_of_terms_4_ep_of_term_4_log_prob = lbpap
             + get_bpa_score(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair)
             - log_sta_pf_4_bpa;
-            let log_sta_ppf_mat_4_2_loops_1 = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair, pos_seq_set_pair_with_pos_spans, pos_pair_seqs_with_pos_span_pairs, pos_seq_set_pair_with_poss_4_forward_bps, pos_seq_set_pair_with_poss_4_backward_bps, pos_pair_seqs_with_pos_pairs_4_forward_bpas, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
-            let log_sta_ppf_mat_4_2_loops_2 = get_log_sta_ppf_mat_4_2_loops_2(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, log_bap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair, pos_seq_set_pair_with_pos_spans, pos_pair_seqs_with_pos_span_pairs, pos_seq_set_pair_with_poss_4_forward_bps, pos_seq_set_pair_with_poss_4_backward_bps, pos_pair_seqs_with_pos_pairs_4_forward_bpas, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
+            let log_sta_ppf_mat_4_2_loops_1 = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), log_bap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
+            let log_sta_ppf_mat_4_2_loops_2 = get_log_sta_ppf_mat_4_2_loops_2(&(i, j, k, l), log_bap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
             for substr_len_3 in (2 .. substr_len_1 - 1).rev() {
               for substr_len_4 in (2 .. substr_len_2 - 1).rev() {
                 match pos_pair_seqs_with_pos_span_pairs.get(&(substr_len_3, substr_len_4)) {
@@ -641,11 +639,11 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
                         + log_sta_ppf_mat_4_2_loops_1[n - i - 1][p - k - 1]
                         + log_sta_ppf_mat_4_bpas_1[&(n, m, p, o)]
                         + log_sta_ppf_mat_4_2_loops_2[m - (i + 1) + 1][o - (k + 1) + 1];
-                      }
-                      if ep_of_term_4_log_prob.is_finite() {
-                        eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
-                        if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
-                          max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                        if ep_of_term_4_log_prob.is_finite() {
+                          eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+                          if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+                            max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                          }
                         }
                       }
                     }, None => {},
@@ -660,11 +658,11 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
                         + log_sta_ppf_mat_4_2_loops_1[m - i - 1][o - k - 1]
                         + log_sta_ppf_mat_4_bpas_1[&(m, n, o, p)]
                         + log_sta_ppf_mat_4_2_loops_2[n - (i + 1) + 1][p - (k + 1) + 1];
-                      }
-                      if ep_of_term_4_log_prob.is_finite() {
-                        eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
-                        if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
-                          max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                        if ep_of_term_4_log_prob.is_finite() {
+                          eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+                          if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+                            max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                          }
                         }
                       }
                     }, None => {},
@@ -687,7 +685,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
 }
 
 #[inline]
-fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seq_set_pair_with_pos_spans: &PosSeqSetPairWithPosSpans, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_seq_set_pair_with_poss_4_backward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
+fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
   let &(i, j, k, l) = pos_quadruple;
   let substr_len_1 = j - i + 1;
   let substr_len_2 = l - k + 1;
