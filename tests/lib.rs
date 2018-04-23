@@ -43,26 +43,26 @@ fn test_stapmp() {
   let log_prob_1 = (0.01 as StaScore).log2();
   let log_prob_2 = (0.00_001 as StaScore).log2();
   let sta_scoring_params = StaScoringParams::new(log_prob_1, log_prob_1, -log_prob_1 * 2., 0.5, log_prob_2, log_prob_1, log_prob_2, log_prob_1);
-  let min_bpp = 0.;
+  let min_bpp_1 = 0. as Prob;
+  let min_lbap_1 = min_bpp_1.log2();
   let begin = precise_time_s();
-  let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp);
-  check_stapmp(&stapmp);
+  let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp_1, min_lbap_1);
   let elapsed_time = precise_time_s() - begin;
-  let min_bpp = 0.00_1 as Prob;
-  let begin = precise_time_s();
-  let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp);
   check_stapmp(&stapmp);
+  let min_bpp_2 = 0.01 as Prob;
+  let min_lbap_2 = (0.05 as Prob).log2();
+  let begin = precise_time_s();
+  let stapmp = io_algo_4_rna_stapmp(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp_2, min_lbap_2);
   let acceleration = elapsed_time / (precise_time_s() - begin);
-  println!("The acceleration with the minimum Base-Pairing-Probability (= BPP) {} is {}-fold compared with the minimum BPP {}.", min_bpp, acceleration, min_bpp);
+  check_stapmp(&stapmp);
+  println!("The acceleration with the minimum Base-Pairing-Probability (= BPP) {} and minimum Base-Alignment-Probability (= BAP) {} is {}-fold compared with the minimum BPP {} and minimum BAP {}.", min_bpp_1, min_lbap_1.exp2(), acceleration, min_bpp_2, min_lbap_2.exp2());
 }
 
 fn check_stapmp(stapmp: &Stapmp) {
   for &bpap in stapmp.base_pair_align_prob_mat.values() {
     assert!((0. <= bpap && bpap <= 1.));
   }
-  for baps in &stapmp.base_align_prob_mat {
-    for &bap in baps {
-      assert!(0. <= bap && bap <= 1.);
-    }
+  for &bap in stapmp.base_align_prob_mat.values() {
+    assert!(0. <= bap && bap <= 1.);
   }
 }
