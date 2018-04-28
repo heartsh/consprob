@@ -8,17 +8,22 @@ use itertools::multizip;
 pub type PosQuadruple = (Pos, Pos, Pos, Pos);
 pub type Prob4dMat = HashMap<PosQuadruple, Prob, Hasher>;
 pub type SparseProbMat = HashMap<PosPair, Prob, Hasher>;
-pub struct Stapmp {
+pub struct Stapmq {
   pub base_pair_align_prob_mat: Prob4dMat, 
   pub base_align_prob_mat: SparseProbMat,
+  pub base_pair_indel_prob_mat_1: SparseProbMat,
+  pub bpip_mat_2: SparseProbMat,
 }
 pub type LogProb4dMat = HashMap<PosQuadruple, LogProb, Hasher>;
 pub type SparseLogProbMat = HashMap<PosPair, LogProb, Hasher>;
-pub struct LogStapmp {
+pub struct LogStapmq {
   pub log_bpap_mat: LogProb4dMat,
   pub log_bap_mat: SparseLogProbMat,
+  pub log_bpip_mat_1: SparseLogProbMat,
+  pub log_bpip_mat_2: SparseLogProbMat,
 }
 type LogPpf4dMat = HashMap<PosQuadruple, LogPf, Hasher>;
+type LogPpf4dMatPair = (LogPpf4dMat, LogPpf4dMat);
 pub type ProbMatPair = (ProbMat, ProbMat);
 pub type StaScore = LogProb;
 pub struct StaScoringParams {
@@ -49,11 +54,13 @@ type PosSeqsWithPoss = HashMap<Pos, Poss, Hasher>;
 type PosSeqSetPairWithPoss = (PosSeqsWithPoss, PosSeqsWithPoss);
 type PosPairSeqsWithPosPairs = HashMap<PosPair, PosPairs, Hasher>;
 
-impl LogStapmp {
-  fn new() -> LogStapmp {
-    LogStapmp {
+impl LogStapmq {
+  fn new() -> LogStapmq {
+    LogStapmq {
       log_bpap_mat: LogProb4dMat::default(),
       log_bap_mat: SparseLogProbMat::default(), 
+      log_bpip_mat_1: SparseLogProbMat::default(), 
+      log_bpip_mat_2: SparseLogProbMat::default(), 
     }
   }
 }
@@ -74,7 +81,7 @@ impl StaScoringParams {
 }
 
 #[inline]
-pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, min_bpp: Prob, min_lbap: LogProb) -> Stapmp {
+pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, min_bpp: Prob, min_lbap: LogProb) -> Stapmq {
   let mut pos_seq_set_pair_with_pos_spans = (PosSeqsWithPosSpans::default(), PosSeqsWithPosSpans::default());
   let mut sparse_bpp_mat_pair = (SparseProbMat::default(), SparseProbMat::default());
   let mut sparse_log_bpp_mat_pair = (SparseLogProbMat::default(), SparseLogProbMat::default());
@@ -296,21 +303,23 @@ pub fn io_algo_4_rna_stapmp(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
       }, None => {},
     }
   }
-  let log_sta_ppf_mat_4_bpas_1 = get_log_sta_ppf_mat_4_bpas_1(&seq_len_pair, &sparse_log_bpp_mat_pair, &sparse_lbap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas);
-  let lstapmp = get_lstapmp(&log_sta_ppf_mat_4_bpas_1, &seq_len_pair, &sparse_log_bpp_mat_pair, &sparse_lbap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_seqs_with_poss_4_bas, &pos_pair_seqs_with_pos_span_pairs, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas);
-  get_stapmp(&lstapmp)
+  let (log_sta_ppf_mat_4_bpas_1, log_sta_ppf_mat_4_bpas_2) = get_log_sta_ppf_mat_pair_4_bpas(&seq_len_pair, &sparse_log_bpp_mat_pair, &sparse_lbap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas);
+  let lstapmq = get_lstapmq(&log_sta_ppf_mat_4_bpas_1, &log_sta_ppf_mat_4_bpas_2, &seq_len_pair, &sparse_log_bpp_mat_pair, &sparse_lbap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_seqs_with_poss_4_bas, &pos_pair_seqs_with_pos_span_pairs, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas);
+  get_stapmq(&lstapmq)
 }
 
 #[inline]
-fn get_stapmp(lstapmp: &LogStapmp) -> Stapmp {
-  Stapmp {
-    base_pair_align_prob_mat: lstapmp.log_bpap_mat.iter().map(|(pos_quadruple, &lbpap)| (*pos_quadruple, lbpap.exp())).collect(),
-    base_align_prob_mat: lstapmp.log_bap_mat.iter().map(|(pos_pair, &lbap)| (*pos_pair, lbap.exp())).collect(),
+fn get_stapmq(lstapmq: &LogStapmq) -> Stapmq {
+  Stapmq {
+    base_pair_align_prob_mat: lstapmq.log_bpap_mat.iter().map(|(pos_quadruple, &lbpap)| (*pos_quadruple, lbpap.exp())).collect(),
+    base_align_prob_mat: lstapmq.log_bap_mat.iter().map(|(pos_pair, &lbap)| (*pos_pair, lbap.exp())).collect(),
+    base_pair_indel_prob_mat_1: lstapmq.log_bpip_mat_1.iter().map(|(pos_pair, &lbpip)| (*pos_pair, lbpip.exp())).collect(),
+    bpip_mat_2: lstapmq.log_bpip_mat_2.iter().map(|(pos_pair, &lbpip)| (*pos_pair, lbpip.exp())).collect(),
   }
 }
 
 #[inline]
-pub fn get_log_sta_ppf_mat_4_bpas_1(seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs) -> LogPpf4dMat {
+pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs) -> LogPpf4dMatPair {
   let mut log_sta_ppf_mat_4_bpas_1 = LogPpf4dMat::default();
   let mut log_sta_ppf_mat_4_bpas_2 = log_sta_ppf_mat_4_bpas_1.clone();
   for substr_len_1 in 2 .. seq_len_pair.0 + 3 {
@@ -399,7 +408,7 @@ pub fn get_log_sta_ppf_mat_4_bpas_1(seq_len_pair: &(usize, usize), sparse_log_bp
       }
     }
   }
-  log_sta_ppf_mat_4_bpas_1
+  (log_sta_ppf_mat_4_bpas_1, log_sta_ppf_mat_4_bpas_2)
 }
 
 #[inline]
@@ -562,8 +571,8 @@ fn get_kullback_leibler_div(prob_dist: ProbDistSlice, log_prob_dist_1: LogProbDi
 }
 
 #[inline]
-fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seqs_with_poss_4_bas: &PosSeqsWithPoss, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogStapmp {
-  let mut lstapmp = LogStapmp::new();
+fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2: &LogPpf4dMat, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seqs_with_poss_4_bas: &PosSeqsWithPoss, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogStapmq {
+  let mut lstapmq = LogStapmq::new();
   let pos_quadruple_4_2_external_loops = (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1);
   let log_sta_pf_4_bpa = log_sta_ppf_mat_4_bpas_1[&pos_quadruple_4_2_external_loops];
   let log_sta_ppf_mat_4_2_els_1 = get_log_sta_ppf_mat_4_2_loops_1(&pos_quadruple_4_2_external_loops, sparse_lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
@@ -575,7 +584,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
           for &(i, k) in pos_pairs {
             let j = i + substr_len_1 - 1;
             let l = k + substr_len_2 - 1;
-            lstapmp.log_bpap_mat.insert((i, j, k, l), log_sta_ppf_mat_4_2_els_1[i - 1][k - 1] + log_sta_ppf_mat_4_bpas_1[&(i, j, k, l)] + log_sta_ppf_mat_4_2_els_2[j - 1 + 1][l - 1 + 1] - log_sta_pf_4_bpa);
+            lstapmq.log_bpap_mat.insert((i, j, k, l), log_sta_ppf_mat_4_2_els_1[i - 1][k - 1] + log_sta_ppf_mat_4_bpas_1[&(i, j, k, l)] + log_sta_ppf_mat_4_2_els_2[j - 1 + 1][l - 1 + 1] - log_sta_pf_4_bpa);
           }
         }, None => {},
       }
@@ -622,7 +631,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
               }
             }, None => {},
           }
-          lstapmp.log_bap_mat.insert((i, k), logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob) - log_sta_pf_4_bpa);
+          lstapmq.log_bap_mat.insert((i, k), logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob) - log_sta_pf_4_bpa);
         }
       }, None => {},
     }
@@ -634,7 +643,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
           for &(i, k) in pos_pairs {
             let j = i + substr_len_1 - 1;
             let l = k + substr_len_2 - 1;
-            let lbpap = lstapmp.log_bpap_mat[&(i, j, k, l)];
+            let lbpap = lstapmq.log_bpap_mat[&(i, j, k, l)];
             let log_sta_pf_4_bpa = log_sta_ppf_mat_4_bpas_1[&(i, j, k, l)];
             let sum_of_terms_4_ep_of_term_4_log_prob = lbpap
             + get_bpa_score(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, sparse_lbap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair)
@@ -650,7 +659,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
                       let p = o + substr_len_4 - 1;
                       if m <= i || n >= j || o <= k || p >= l {continue;}
                       let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
-                      let mut max_ep_of_term_4_log_prob = lstapmp.log_bpap_mat[&(m, n, o, p)];
+                      let mut max_ep_of_term_4_log_prob = lstapmq.log_bpap_mat[&(m, n, o, p)];
                       if max_ep_of_term_4_log_prob.is_finite() {
                         eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
                       }
@@ -664,7 +673,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
                           max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                         }
                         if eps_of_terms_4_log_prob.len() > 0 {
-                          *lstapmp.log_bpap_mat.get_mut(&(m, n, o, p)).expect("Failed to index a hash map.") = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+                          *lstapmq.log_bpap_mat.get_mut(&(m, n, o, p)).expect("Failed to index a hash map.") = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
                         }
                       }
                     }
@@ -678,7 +687,7 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
                   for &o in poss {
                     if o <= k || l <= o {continue;}
                     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
-                    let mut max_ep_of_term_4_log_prob = lstapmp.log_bap_mat[&(m, o)];
+                    let mut max_ep_of_term_4_log_prob = lstapmq.log_bap_mat[&(m, o)];
                     if max_ep_of_term_4_log_prob.is_finite() {
                       eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
                     }
@@ -731,7 +740,75 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
                       }
                     }
                     if eps_of_terms_4_log_prob.len() > 0 {
-                      *lstapmp.log_bap_mat.get_mut(&(m, o)).expect("Failed to index a hash map.") = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+                      *lstapmq.log_bap_mat.get_mut(&(m, o)).expect("Failed to index a hash map.") = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+                    }
+                  }
+                }, None => {},
+              }
+            }
+            for substr_len_3 in (2 .. substr_len_1 - 1).rev() {
+              match pos_pair_seqs_with_pos_span_pairs.get(&(substr_len_3, substr_len_2)) {
+                Some(pos_pairs) => {
+                  for &(m, o) in pos_pairs {
+                    let n = m + substr_len_3 - 1;
+                    let p = o + substr_len_2 - 1;
+                    if m <= i || n >= j || o != k || p != l {continue;}
+                    match lstapmq.log_bpip_mat_1.get(&(m, n)) {
+                      None => {lstapmq.log_bpip_mat_1.insert((m, n), NEG_INFINITY);}, Some(_) => {},
+                    }
+                    let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+                    let mut max_ep_of_term_4_log_prob = lstapmq.log_bpip_mat_1[&(m, n)];
+                    if max_ep_of_term_4_log_prob.is_finite() {
+                      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
+                    }
+                    let ep_of_term_4_log_prob = lbpap
+                    + get_legp(&(i + 1, m - 1), sta_scoring_params)
+                    + get_logp(&(m, n), &sparse_log_bpp_mat_pair.0, sta_scoring_params)
+                    + log_sta_ppf_mat_4_bpas_2[&(m, n, k, l)]
+                    + get_legp(&(n + 1, j - 1), sta_scoring_params)
+                    - log_sta_pf_4_bpa;
+                    if ep_of_term_4_log_prob.is_finite() {
+                      eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+                      if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+                        max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                      }
+                      if eps_of_terms_4_log_prob.len() > 0 {
+                        *lstapmq.log_bpip_mat_1.get_mut(&(m, n)).expect("Failed to index a hash map.") = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+                      }
+                    }
+                  }
+                }, None => {},
+              }
+            }
+            for substr_len_3 in (2 .. substr_len_2 - 1).rev() {
+              match pos_pair_seqs_with_pos_span_pairs.get(&(substr_len_1, substr_len_3)) {
+                Some(pos_pairs) => {
+                  for &(m, o) in pos_pairs {
+                    let n = m + substr_len_3 - 1;
+                    let p = o + substr_len_2 - 1;
+                    if o <= k || p >= l || i != m || j != l {continue;}
+                    match lstapmq.log_bpip_mat_1.get(&(o, p)) {
+                      None => {lstapmq.log_bpip_mat_1.insert((o, p), NEG_INFINITY);}, Some(_) => {},
+                    }
+                    let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+                    let mut max_ep_of_term_4_log_prob = lstapmq.log_bpip_mat_1[&(m, n)];
+                    if max_ep_of_term_4_log_prob.is_finite() {
+                      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
+                    }
+                    let ep_of_term_4_log_prob = lbpap
+                    + get_legp(&(k + 1, o - 1), sta_scoring_params)
+                    + get_logp(&(o, p), &sparse_log_bpp_mat_pair.1, sta_scoring_params)
+                    + log_sta_ppf_mat_4_bpas_2[&(i, j, o, p)]
+                    + get_legp(&(p + 1, l - 1), sta_scoring_params)
+                    - log_sta_pf_4_bpa;
+                    if ep_of_term_4_log_prob.is_finite() {
+                      eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+                      if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+                        max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                      }
+                      if eps_of_terms_4_log_prob.len() > 0 {
+                        *lstapmq.log_bpip_mat_2.get_mut(&(o, p)).expect("Failed to index a hash map.") = logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+                      }
                     }
                   }
                 }, None => {},
@@ -742,10 +819,10 @@ fn get_lstapmp(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, seq_len_pair: &(usize, us
       }
     }
   }
-  lstapmp.log_bpap_mat.insert((0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1), 0.);
-  lstapmp.log_bap_mat.insert((0, 0), 0.);
-  lstapmp.log_bap_mat.insert((seq_len_pair.0 + 1, seq_len_pair.1 + 1), 0.);
-  lstapmp
+  lstapmq.log_bpap_mat.insert((0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1), 0.);
+  lstapmq.log_bap_mat.insert((0, 0), 0.);
+  lstapmq.log_bap_mat.insert((seq_len_pair.0 + 1, seq_len_pair.1 + 1), 0.);
+  lstapmq
 }
 
 #[inline]
