@@ -1,5 +1,5 @@
-# "io-algo-4-rna-stapmp", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Pair
-This library provides an inside-outside algorithm for RNA structural-alignment probability matrix pair.
+# "io-algo-4-rna-stapmq", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Quadruple
+This library provides an inside-outside algorithm for RNA structural-alignment probability matrix quadruple.
 
 # Author
 [Heartsh](https://github.com/heartsh)

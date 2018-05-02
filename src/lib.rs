@@ -468,6 +468,13 @@ fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, sparse_lbap_mat
       if max_ep_of_term_4_log_pf.is_finite() {
         eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
       }
+      let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bgs_2[n - i - 1][p - k] + sta_scoring_params.base_opening_gap_penalty;
+      if ep_of_term_4_log_pf.is_finite() {
+        eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+        if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+          max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+        }
+      }
       let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_base_gaps_1[n - i - 1][p - k] + sta_scoring_params.base_extending_gap_penalty;
       if ep_of_term_4_log_pf.is_finite() {
         eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -482,6 +489,13 @@ fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, sparse_lbap_mat
       let mut max_ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bas[n - i][p - k - 1] + sta_scoring_params.base_opening_gap_penalty;
       if max_ep_of_term_4_log_pf.is_finite() {
         eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
+      }
+      let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_base_gaps_1[n - i][p - k - 1] + sta_scoring_params.base_opening_gap_penalty;
+      if ep_of_term_4_log_pf.is_finite() {
+        eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+        if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+          max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+        }
       }
       let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bgs_2[n - i][p - k - 1] + sta_scoring_params.base_extending_gap_penalty;
       if ep_of_term_4_log_pf.is_finite() {
@@ -882,6 +896,13 @@ fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, sparse_lbap_mat
       if max_ep_of_term_4_log_pf.is_finite() {
         eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
       }
+      let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bgs_2[m - (i + 1) + 1][o - (k + 1)] + sta_scoring_params.base_opening_gap_penalty;
+      if ep_of_term_4_log_pf.is_finite() {
+        eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+        if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+          max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+        }
+      }
       let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bgs_1[m - (i + 1) + 1][o - (k + 1)] + sta_scoring_params.base_extending_gap_penalty;
       if ep_of_term_4_log_pf.is_finite() {
         eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -896,6 +917,13 @@ fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, sparse_lbap_mat
       let mut max_ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bas[m - (i + 1)][o - (k + 1) + 1] + sta_scoring_params.base_opening_gap_penalty;
       if max_ep_of_term_4_log_pf.is_finite() {
         eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
+      }
+      let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bgs_1[m - (i + 1)][o - (k + 1) + 1] + sta_scoring_params.base_opening_gap_penalty;
+      if ep_of_term_4_log_pf.is_finite() {
+        eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+        if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+          max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+        }
       }
       let ep_of_term_4_log_pf = log_sta_ppf_mat_4_2_loops_and_bgs_2[m - (i + 1)][o - (k + 1) + 1] + sta_scoring_params.base_extending_gap_penalty;
       if ep_of_term_4_log_pf.is_finite() {
