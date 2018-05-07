@@ -9,7 +9,6 @@ use io_algo_4_rna_stapmq::*;
 use bio_seq_algos::durbin_algo::*;
 use rna_algos::mccaskill_algo::*;
 use time::precise_time_s;
-use std::f64::consts::LN_2;
 
 type SeqPair = (Seq, Seq);
 
@@ -25,6 +24,7 @@ lazy_static! {
 #[test]
 fn test_stapmq() {
   let seq_len_pair = (TEST_SEQ_PAIR.0.len(), TEST_SEQ_PAIR.1.len());
+  let lbpp_mat_pair = (&get_log_bpp_mat(&TEST_SEQ_PAIR.0[..]), &get_log_bpp_mat(&TEST_SEQ_PAIR.1[..]));
   let mut ca_score_mat = CaScoreMat::default();
   let alphabet = b"AUGC";
   for &base_1 in alphabet {
@@ -33,29 +33,27 @@ fn test_stapmq() {
     }
   }
   let sa_scoring_params = SaScoringParams::new(&ca_score_mat, -1., -0.1);
-  let mut lbap_mat = get_log_cap_mat(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_scoring_params);
-  for lbaps in &mut lbap_mat {
-    for lbap in lbaps {
-      *lbap = *lbap - LN_2;
-    }
-  }
-  let bpp_mat_pair = (mccaskill_algo(&TEST_SEQ_PAIR.0[..]), mccaskill_algo(&TEST_SEQ_PAIR.1[..]));
+  let lbap_mat = get_log_cap_mat(&(&TEST_SEQ_PAIR.0[..], &TEST_SEQ_PAIR.1[..]), &sa_scoring_params);
   let log_prob_1 = (0.01 as StaScore).log2();
   let log_prob_2 = (0.00_001 as StaScore).log2();
   let sta_scoring_params = StaScoringParams::new(log_prob_1, log_prob_1, -log_prob_1 * 2., 0.5, log_prob_2, log_prob_1, log_prob_2, log_prob_1);
-  let min_bpp_1 = 0. as Prob;
-  let min_lbap_1 = min_bpp_1.log2();
+  let min_lbpp_1 = (0. as Prob).log2();
+  let min_lbap_1 = min_lbpp_1;
+  let sparse_lbpp_mat_pair = (&get_sparse_lbpp_mat(&lbpp_mat_pair.0, min_lbpp_1), &get_sparse_lbpp_mat(lbpp_mat_pair.1, min_lbpp_1));
+  let sparse_lbap_mat = get_sparse_lbap_mat(&lbap_mat, min_lbap_1);
   let begin = precise_time_s();
-  let stapmq = io_algo_4_rna_stapmq(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp_1, min_lbap_1);
+  let stapmq = io_algo_4_rna_stapmq(&seq_len_pair, &sparse_lbpp_mat_pair, &sparse_lbap_mat, &sta_scoring_params, min_lbpp_1, min_lbap_1);
   let elapsed_time = precise_time_s() - begin;
   check_stapmq(&stapmq);
-  let min_bpp_2 = 0.01 as Prob;
+  let min_lbpp_2 = (0.01 as Prob).log2();
   let min_lbap_2 = (0.05 as Prob).log2();
+  let sparse_lbpp_mat_pair = (&get_sparse_lbpp_mat(&lbpp_mat_pair.0, min_lbpp_2), &get_sparse_lbpp_mat(lbpp_mat_pair.1, min_lbpp_2));
+  let sparse_lbap_mat = get_sparse_lbap_mat(&lbap_mat, min_lbap_2);
   let begin = precise_time_s();
-  let stapmq = io_algo_4_rna_stapmq(&seq_len_pair, &bpp_mat_pair, &lbap_mat, &sta_scoring_params, min_bpp_2, min_lbap_2);
+  let stapmq = io_algo_4_rna_stapmq(&seq_len_pair, &sparse_lbpp_mat_pair, &sparse_lbap_mat, &sta_scoring_params, min_lbpp_2, min_lbap_2);
   let acceleration = elapsed_time / (precise_time_s() - begin);
   check_stapmq(&stapmq);
-  println!("The acceleration with the minimum Base-Pairing-Probability (= BPP) {} and minimum Base-Alignment-Probability (= BAP) {} is {}-fold compared with the minimum BPP {} and minimum BAP {}.", min_bpp_1, min_lbap_1.exp2(), acceleration, min_bpp_2, min_lbap_2.exp2());
+  println!("The acceleration with the minimum Base-Pairing-Probability (= BPP) {} and minimum Base-Alignment-Probability (= BAP) {} is {}-fold compared with the minimum BPP {} and minimum BAP {}.", min_lbpp_1.exp2(), min_lbap_1.exp2(), acceleration, min_lbpp_2.exp2(), min_lbap_2.exp2());
 }
 
 fn check_stapmq(stapmq: &Stapmq) {

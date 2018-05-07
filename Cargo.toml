@@ -10,6 +10,10 @@ rna-algos = "0.1"
 itertools = "0.7"
 lazy_static = "0.1"
 time = "0.1"
+scoped_threadpool = "0.1"
+getopts = "0.2"
+bio = "0.9"
+num_cpus = "1.0"
 
 [lib]
 path = "src/lib.rs"

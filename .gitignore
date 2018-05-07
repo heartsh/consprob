@@ -2,6 +2,7 @@
 !**/
 target
 !*.rs
+!*.py
 !Cargo.toml
 !.gitignore
 !README.md

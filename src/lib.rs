@@ -4,6 +4,7 @@ extern crate itertools;
 
 pub use rna_algos::utils::*;
 use itertools::multizip;
+use std::f64::consts::LN_2;
 
 pub type PosQuadruple = (Pos, Pos, Pos, Pos);
 pub type Prob4dMat = HashMap<PosQuadruple, Prob, Hasher>;
@@ -16,6 +17,7 @@ pub struct Stapmq {
 }
 pub type LogProb4dMat = HashMap<PosQuadruple, LogProb, Hasher>;
 pub type SparseLogProbMat = HashMap<PosPair, LogProb, Hasher>;
+#[derive(Clone)]
 pub struct LogStapmq {
   pub log_bpap_mat: LogProb4dMat,
   pub log_bap_mat: SparseLogProbMat,
@@ -24,12 +26,11 @@ pub struct LogStapmq {
 }
 type LogPpf4dMat = HashMap<PosQuadruple, LogPf, Hasher>;
 type LogPpf4dMatPair = (LogPpf4dMat, LogPpf4dMat);
-pub type ProbMatPair = (ProbMat, ProbMat);
 pub type StaScore = LogProb;
 pub struct StaScoringParams {
   pub log_null_hypothesis_bpp: LogProb,
   pub log_nh_bap: LogProb,
-  pub scaling_param_4_bpa_score: StaScore,
+  pub scale_param_4_bpa_score: StaScore,
   pub offset_bpa_score: StaScore,
   pub base_opening_gap_penalty: StaScore,
   pub base_extending_gap_penalty: StaScore,
@@ -53,9 +54,15 @@ type LogProbMatPair = (SparseLogProbMat, SparseLogProbMat);
 type PosSeqsWithPoss = HashMap<Pos, Poss, Hasher>;
 type PosSeqSetPairWithPoss = (PosSeqsWithPoss, PosSeqsWithPoss);
 type PosPairSeqsWithPosPairs = HashMap<PosPair, PosPairs, Hasher>;
+pub type RnaId = usize;
+pub type RnaIdPair = (RnaId, RnaId);
+type StapmqsWithRnaIdPairs = HashMap<RnaIdPair, Stapmq, Hasher>;
+type LstapmqsWithRnaIdPairs = HashMap<RnaIdPair, LogStapmq, Hasher>;
+pub type LogProbMatsWithRnaIdPairs = HashMap<RnaIdPair, SparseLogProbMat, Hasher>;
+pub type Ref2LogProbMatPair<'a> = (&'a SparseLogProbMat, &'a SparseLogProbMat);
 
 impl LogStapmq {
-  fn new() -> LogStapmq {
+  pub fn new() -> LogStapmq {
     LogStapmq {
       log_bpap_mat: LogProb4dMat::default(),
       log_bap_mat: SparseLogProbMat::default(), 
@@ -70,7 +77,7 @@ impl StaScoringParams {
     StaScoringParams {
       log_null_hypothesis_bpp: lnhbpp,
       log_nh_bap: lnhbap,
-      scaling_param_4_bpa_score: sp4bpas,
+      scale_param_4_bpa_score: sp4bpas,
       offset_bpa_score: obpas,
       base_opening_gap_penalty: bogp,
       base_extending_gap_penalty: begp,
@@ -81,27 +88,32 @@ impl StaScoringParams {
 }
 
 #[inline]
-pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMatPair, log_bap_mat: &LogProbMat, sta_scoring_params: &StaScoringParams, min_bpp: Prob, min_lbap: LogProb) -> Stapmq {
+pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), lbpp_mat_pair: &Ref2LogProbMatPair, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, min_lbpp: Prob) -> Stapmq {
+  let lstapmq = io_algo_4_rna_lstapmq(seq_len_pair, lbpp_mat_pair, lbap_mat, sta_scoring_params, min_lbpp);
+  get_stapmq(&lstapmq)
+}
+
+#[inline]
+pub fn io_algo_4_rna_lstapmq(seq_len_pair: &(usize, usize), lbpp_mat_pair: &Ref2LogProbMatPair, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, min_lbpp: LogProb) -> LogStapmq {
   let mut pos_seq_set_pair_with_pos_spans = (PosSeqsWithPosSpans::default(), PosSeqsWithPosSpans::default());
-  let mut sparse_bpp_mat_pair = (SparseProbMat::default(), SparseProbMat::default());
-  let mut sparse_log_bpp_mat_pair = (SparseLogProbMat::default(), SparseLogProbMat::default());
-  let mut sparse_not_bpp_mat_pair = (SparseProbMat::default(), SparseProbMat::default());
-  let mut sparse_log_nbpp_mat_pair = (SparseLogProbMat::default(), SparseLogProbMat::default());
+  let mut bpp_mat_pair = (SparseProbMat::default(), SparseProbMat::default());
+  let mut not_bpp_mat_pair = (SparseProbMat::default(), SparseProbMat::default());
+  let mut log_nbpp_mat_pair = (SparseLogProbMat::default(), SparseLogProbMat::default());
   for substr_len in 2 .. seq_len_pair.0 + 1 {
     let mut poss = Poss::new();
-    for i in 0 .. seq_len_pair.0 - substr_len + 1 {
+    for i in 1 .. seq_len_pair.0 - substr_len + 2 {
       let j = i + substr_len - 1;
-      let bpp = bpp_mat_pair.0[i][j];
-      if bpp >= min_bpp && bpp > 0. {
-        let lbpp = bpp.log2();
-        let nbpp = 1. - bpp;
-        let lnbpp = nbpp.log2();
-        poss.push(i + 1);
-        let pos_pair = (i + 1, j + 1);
-        sparse_bpp_mat_pair.0.insert(pos_pair, bpp);
-        sparse_log_bpp_mat_pair.0.insert(pos_pair, lbpp);
-        sparse_not_bpp_mat_pair.0.insert(pos_pair, nbpp);
-        sparse_log_nbpp_mat_pair.0.insert(pos_pair, lnbpp);
+      match lbpp_mat_pair.0.get(&(i, j)) {
+        Some(&lbpp) => {
+          let bpp = lbpp.exp2();
+          let nbpp = 1. - bpp;
+          let lnbpp = nbpp.log2();
+          poss.push(i);
+          let pos_pair = (i, j);
+          bpp_mat_pair.0.insert(pos_pair, bpp);
+          not_bpp_mat_pair.0.insert(pos_pair, nbpp);
+          log_nbpp_mat_pair.0.insert(pos_pair, lnbpp);
+        }, None => {},
       }
     }
     if poss.len() > 0 {
@@ -110,32 +122,23 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
   }
   for substr_len in 2 .. seq_len_pair.1 + 1 {
     let mut poss = Poss::new();
-    for i in 0 .. seq_len_pair.1 - substr_len + 1 {
+    for i in 1 .. seq_len_pair.1 - substr_len + 2 {
       let j = i + substr_len - 1;
-      let bpp = bpp_mat_pair.1[i][j];
-      if bpp >= min_bpp && bpp > 0. {
-        let lbpp = bpp.log2();
-        let nbpp = 1. - bpp;
-        let lnbpp = nbpp.log2();
-        poss.push(i + 1);
-        let pos_pair = (i + 1, j + 1);
-        sparse_bpp_mat_pair.1.insert(pos_pair, bpp);
-        sparse_log_bpp_mat_pair.1.insert(pos_pair, lbpp);
-        sparse_not_bpp_mat_pair.1.insert(pos_pair, nbpp);
-        sparse_log_nbpp_mat_pair.1.insert(pos_pair, lnbpp);
+      match lbpp_mat_pair.1.get(&(i, j)) {
+        Some(&lbpp) => {
+          let bpp = lbpp.exp2();
+          let nbpp = 1. - bpp;
+          let lnbpp = nbpp.log2();
+          poss.push(i);
+          let pos_pair = (i, j);
+          bpp_mat_pair.1.insert(pos_pair, bpp);
+          not_bpp_mat_pair.1.insert(pos_pair, nbpp);
+          log_nbpp_mat_pair.1.insert(pos_pair, lnbpp);
+        }, None => {},
       }
     }
     if poss.len() > 0 {
       pos_seq_set_pair_with_pos_spans.1.insert(substr_len, poss);
-    }
-  }
-  let mut sparse_lbap_mat = SparseLogProbMat::default();
-  for i in 0 .. seq_len_pair.0 {
-    for j in 0 .. seq_len_pair.1 {
-      let lbap = log_bap_mat[i][j];
-      if lbap >= min_lbap && lbap > NEG_INFINITY {
-        sparse_lbap_mat.insert((i + 1, j + 1), lbap);
-      }
     }
   }
   let mut pos_pair_seqs_with_pos_span_pairs = PosPairSeqsWithPosSpanPairs::default();
@@ -148,11 +151,11 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
               let mut pos_pairs = PosPairs::new();
               for &i in poss_1 {
                 for &k in poss_2 {
-                  match sparse_lbap_mat.get(&(i, k)) {
+                  match lbap_mat.get(&(i, k)) {
                     Some(_) => {
                       let j = i + substr_len_1 - 1;
                       let l = k + substr_len_2 - 1;
-                      match sparse_lbap_mat.get(&(j, l)) {
+                      match lbap_mat.get(&(j, l)) {
                         Some(_) => {
                           pos_pairs.push((i, k));
                         }, None => {},
@@ -177,11 +180,11 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
     let mut forward_poss = Poss::new();
     let mut backward_poss = Poss::new();
     let mut num_of_allowed_bps = 0.;
-    let max_num_of_allowed_bps = (1. / min_bpp).floor();
+    let max_num_of_allowed_bps = (1. / min_lbpp.exp2()).floor();
     for j in 1 .. seq_len_pair.0 + 1 {
       if i == j {continue;}
       let pos_pair = (min(i, j), max(i, j));
-      match sparse_bpp_mat_pair.0.get(&pos_pair) {
+      match bpp_mat_pair.0.get(&pos_pair) {
         Some(_) => {
           if j < i {
             forward_poss.push(j);
@@ -206,11 +209,11 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
     let mut forward_poss = Poss::new();
     let mut backward_poss = Poss::new();
     let mut num_of_allowed_bps = 0.;
-    let max_num_of_allowed_bps = (1. / min_bpp).floor();
+    let max_num_of_allowed_bps = (1. / min_lbpp.exp2()).floor();
     for j in 1 .. seq_len_pair.1 + 1 {
       if i == j {continue;}
       let pos_pair = (min(i, j), max(i, j));
-      match sparse_bpp_mat_pair.1.get(&pos_pair) {
+      match bpp_mat_pair.1.get(&pos_pair) {
         Some(_) => {
           if j < i {
             forward_poss.push(j);
@@ -232,23 +235,15 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
     }
   }
   let mut pos_seqs_with_poss_4_bas = PosSeqsWithPoss::default();
-  for i in 1 .. seq_len_pair.0 + 1 {
-    let mut poss = Poss::new();
-    let mut num_of_allowed_bas = 0.;
-    let max_num_of_allowed_bas = (1. / min_lbap.exp2()).floor();
-    for j in 1 .. seq_len_pair.1 + 1 {
-      match sparse_lbap_mat.get(&(i, j)) {
-        Some(_) => {
-          poss.push(j);
-          num_of_allowed_bas += 1.;
-          if num_of_allowed_bas == max_num_of_allowed_bas {
-            break;
-          }
-        }, None => {},
-      }
-    }
-    if poss.len() > 0 {
-      pos_seqs_with_poss_4_bas.insert(i, poss);
+  for &(i, j) in lbap_mat.keys() {
+    let poss_with_i_exists = match pos_seqs_with_poss_4_bas.get(&i) {
+      Some(_) => {true},
+      None => {false},
+    };
+    if poss_with_i_exists {
+      pos_seqs_with_poss_4_bas.get_mut(&i).expect("Failed to get an element from a hash map.").push(j);
+    } else {
+      pos_seqs_with_poss_4_bas.insert(i, vec![j]);
     }
   }
   let mut pos_pair_seqs_with_pos_pairs_4_forward_bpas = PosPairSeqsWithPosPairs::default();
@@ -264,7 +259,7 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
                 Some(poss_2) => {
                   for &j in poss_1 {
                     for &l in poss_2 {
-                      match sparse_lbap_mat.get(&(j, l)) {
+                      match lbap_mat.get(&(j, l)) {
                         Some(_) => {
                           forward_pos_pairs.push((j, l));
                         }, None => {},
@@ -285,7 +280,7 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
                 Some(poss_2) => {
                   for &j in poss_1 {
                     for &l in poss_2 {
-                      match sparse_lbap_mat.get(&(j, l)) {
+                      match lbap_mat.get(&(j, l)) {
                         Some(_) => {
                           backward_pos_pairs.push((j, l));
                         }, None => {},
@@ -303,9 +298,8 @@ pub fn io_algo_4_rna_stapmq(seq_len_pair: &(usize, usize), bpp_mat_pair: &ProbMa
       }, None => {},
     }
   }
-  let (log_sta_ppf_mat_4_bpas_1, log_sta_ppf_mat_4_bpas_2) = get_log_sta_ppf_mat_pair_4_bpas(&seq_len_pair, &sparse_log_bpp_mat_pair, &sparse_lbap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas);
-  let lstapmq = get_lstapmq(&log_sta_ppf_mat_4_bpas_1, &log_sta_ppf_mat_4_bpas_2, &seq_len_pair, &sparse_log_bpp_mat_pair, &sparse_lbap_mat, sta_scoring_params, &sparse_bpp_mat_pair, &sparse_not_bpp_mat_pair, &sparse_log_nbpp_mat_pair, &pos_seqs_with_poss_4_bas, &pos_pair_seqs_with_pos_span_pairs, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas);
-  get_stapmq(&lstapmq)
+  let (log_sta_ppf_mat_4_bpas_1, log_sta_ppf_mat_4_bpas_2) = get_log_sta_ppf_mat_pair_4_bpas(&seq_len_pair, &lbpp_mat_pair, &lbap_mat, sta_scoring_params, &bpp_mat_pair, &not_bpp_mat_pair, &log_nbpp_mat_pair, &pos_pair_seqs_with_pos_span_pairs, &pos_seq_set_pair_with_poss_4_forward_bps, &pos_pair_seqs_with_pos_pairs_4_forward_bpas);
+  get_lstapmq(&log_sta_ppf_mat_4_bpas_1, &log_sta_ppf_mat_4_bpas_2, &seq_len_pair, &lbpp_mat_pair, &lbap_mat, sta_scoring_params, &bpp_mat_pair, &not_bpp_mat_pair, &log_nbpp_mat_pair, &pos_seqs_with_poss_4_bas, &pos_pair_seqs_with_pos_span_pairs, &pos_pair_seqs_with_pos_pairs_4_forward_bpas, &pos_pair_seqs_with_pos_pairs_4_backward_bpas)
 }
 
 #[inline]
@@ -319,7 +313,7 @@ fn get_stapmq(lstapmq: &LogStapmq) -> Stapmq {
 }
 
 #[inline]
-pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs) -> LogPpf4dMatPair {
+pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), lbpp_mat_pair: &Ref2LogProbMatPair, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, bpp_mat_pair: &SparseProbMatPair, not_bpp_mat_pair: &SparseProbMatPair, log_nbpp_mat_pair: &LogProbMatPair, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_seq_set_pair_with_poss_4_forward_bps: &PosSeqSetPairWithPoss, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs) -> LogPpf4dMatPair {
   let mut log_sta_ppf_mat_4_bpas_1 = LogPpf4dMat::default();
   let mut log_sta_ppf_mat_4_bpas_2 = log_sta_ppf_mat_4_bpas_1.clone();
   for substr_len_1 in 2 .. seq_len_pair.0 + 3 {
@@ -329,7 +323,7 @@ pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log
           for &(i, k) in pos_pairs {
             let j = i + substr_len_1 - 1;
             let l = k + substr_len_2 - 1;
-            let log_sta_ppf_mat_4_2_loops = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), sparse_lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, &log_sta_ppf_mat_4_bpas_1);
+            let log_sta_ppf_mat_4_2_loops = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, &log_sta_ppf_mat_4_bpas_1);
             let mut log_sta_ppfs_4_2_loop_deletions_1 = vec![NEG_INFINITY; substr_len_1 - 1];
             let mut log_sta_ppfs_4_2_lds_2 = vec![NEG_INFINITY; substr_len_2 - 1];
             for n in i + 2 .. j {
@@ -344,7 +338,7 @@ pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log
                     if m <= i {continue;}
                     match log_sta_ppf_mat_4_bpas_2.get(&(m, n, k, l)) {
                       Some (log_sta_pf_4_bpa) => {
-                        let ep_of_term_4_log_pf = get_legp(&(i + 1, m - 1), sta_scoring_params) + get_logp(&(m, n), &sparse_log_bpp_mat_pair.0, sta_scoring_params) + log_sta_pf_4_bpa;
+                        let ep_of_term_4_log_pf = get_legp(&(i + 1, m - 1), sta_scoring_params) + get_logp(&(m, n), &lbpp_mat_pair.0, sta_scoring_params) + log_sta_pf_4_bpa;
                         if ep_of_term_4_log_pf.is_finite() {
                           eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                           if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -372,7 +366,7 @@ pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log
                     if o <= k {continue;}
                     match log_sta_ppf_mat_4_bpas_2.get(&(i, j, o, p)) {
                       Some (log_sta_pf_4_bpa) => {
-                        let ep_of_term_4_log_pf = get_legp(&(k + 1, o - 1), sta_scoring_params) + get_logp(&(o, p), &sparse_log_bpp_mat_pair.1, sta_scoring_params) + log_sta_pf_4_bpa;
+                        let ep_of_term_4_log_pf = get_legp(&(k + 1, o - 1), sta_scoring_params) + get_logp(&(o, p), &lbpp_mat_pair.1, sta_scoring_params) + log_sta_pf_4_bpa;
                         if ep_of_term_4_log_pf.is_finite() {
                           eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                           if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -402,7 +396,7 @@ pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log
             log_sta_ppf_mat_4_bpas_2.insert((i, j, k, l), if max_ep_of_term_4_log_pf.is_finite() {
               logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)
             } else {NEG_INFINITY});
-            log_sta_ppf_mat_4_bpas_1.insert((i, j, k, l), get_bpa_score(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, sparse_lbap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair) + log_sta_ppf_mat_4_bpas_2[&(i, j, k, l)]);
+            log_sta_ppf_mat_4_bpas_1.insert((i, j, k, l), get_bpa_score(&(i, j, k, l), seq_len_pair, lbpp_mat_pair, lbap_mat, sta_scoring_params, bpp_mat_pair, not_bpp_mat_pair, log_nbpp_mat_pair) + log_sta_ppf_mat_4_bpas_2[&(i, j, k, l)]);
           }
         }, None => {},
       }
@@ -412,7 +406,7 @@ pub fn get_log_sta_ppf_mat_pair_4_bpas(seq_len_pair: &(usize, usize), sparse_log
 }
 
 #[inline]
-fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
+fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
   let &(i, j, k, l) = pos_quadruple;
   let substr_len_1 = j - i + 1;
   let substr_len_2 = l - k + 1;
@@ -432,9 +426,9 @@ fn get_log_sta_ppf_mat_4_2_loops_1(pos_quadruple: &PosQuadruple, sparse_lbap_mat
   }
   for n in i + 1 .. j {
     for p in k + 1 .. l {
-      match sparse_lbap_mat.get(&(n, p)) {
+      match lbap_mat.get(&(n, p)) {
         Some(_) => {
-          let ba_score = get_ba_score(&(n, p), sparse_lbap_mat, sta_scoring_params);
+          let ba_score = get_ba_score(&(n, p), lbap_mat, sta_scoring_params);
           if n == i + 1 && p == k + 1 {
             log_sta_ppf_mat_4_2_loops_and_bas[n - i][p - k] = ba_score;
           } else {
@@ -532,8 +526,8 @@ fn get_begp(pos_pair: &PosPair, sta_scoring_params: &StaScoringParams) -> StaSco
 }
 
 #[inline]
-fn get_logp(pos_pair: &PosPair, sparse_log_bpp_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams) -> StaScore {
-  get_bp_score(pos_pair, sparse_log_bpp_mat, sta_scoring_params) + 2. * sta_scoring_params.loop_opening_gap_penalty
+fn get_logp(pos_pair: &PosPair, lbpp_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams) -> StaScore {
+  get_bp_score(pos_pair, lbpp_mat, sta_scoring_params) + 2. * sta_scoring_params.loop_opening_gap_penalty
 }
 
 #[inline]
@@ -542,31 +536,31 @@ fn get_legp(pos_pair: &PosPair, sta_scoring_params: &StaScoringParams) -> StaSco
 }
 
 #[inline]
-fn get_ba_score(pos_pair: &PosPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams) -> StaScore {
-  sparse_lbap_mat[pos_pair] - sta_scoring_params.log_nh_bap
+fn get_ba_score(pos_pair: &PosPair, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams) -> StaScore {
+  lbap_mat[pos_pair] - sta_scoring_params.log_nh_bap
 }
 
 #[inline]
-fn get_bp_score(pos_pair: &PosPair, sparse_log_bpp_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams) -> StaScore {
-  sparse_log_bpp_mat[pos_pair] - sta_scoring_params.log_null_hypothesis_bpp
+fn get_bp_score(pos_pair: &PosPair, lbpp_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams) -> StaScore {
+  lbpp_mat[pos_pair] - sta_scoring_params.log_null_hypothesis_bpp
 }
 
 #[inline]
-fn get_bpa_score(pos_quadruple: &PosQuadruple, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair) -> StaScore {
+fn get_bpa_score(pos_quadruple: &PosQuadruple, seq_len_pair: &(usize, usize), lbpp_mat_pair: &Ref2LogProbMatPair, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, bpp_mat_pair: &SparseProbMatPair, not_bpp_mat_pair: &SparseProbMatPair, log_nbpp_mat_pair: &LogProbMatPair) -> StaScore {
   if *pos_quadruple == (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1) {0.} else {
     let bp_pos_pair_1 = (pos_quadruple.0, pos_quadruple.1);
     let bp_pos_pair_2 = (pos_quadruple.2, pos_quadruple.3);
     let aligned_pos_pair_1 = (pos_quadruple.0, pos_quadruple.2);
     let aligned_pos_pair_2 = (pos_quadruple.1, pos_quadruple.3);
-    let bin_prob_dist_1 = [sparse_bpp_mat_pair.0[&bp_pos_pair_1], sparse_not_bpp_mat_pair.0[&bp_pos_pair_1]];
-    let bin_prob_dist_2 = [sparse_bpp_mat_pair.1[&bp_pos_pair_2], sparse_not_bpp_mat_pair.1[&bp_pos_pair_2]];
-    let bin_log_prob_dist_1 = [sparse_log_bpp_mat_pair.0[&bp_pos_pair_1], sparse_log_nbpp_mat_pair.0[&bp_pos_pair_1]];
-    let bin_log_prob_dist_2 = [sparse_log_bpp_mat_pair.1[&bp_pos_pair_2], sparse_log_nbpp_mat_pair.1[&bp_pos_pair_2]];
-    get_bp_score(&bp_pos_pair_1, &sparse_log_bpp_mat_pair.0, sta_scoring_params)
-    + get_bp_score(&bp_pos_pair_2, &sparse_log_bpp_mat_pair.1, sta_scoring_params)
-    + get_ba_score(&aligned_pos_pair_1, sparse_lbap_mat, sta_scoring_params)
-    + get_ba_score(&aligned_pos_pair_2, sparse_lbap_mat, sta_scoring_params)
-    + sta_scoring_params.scaling_param_4_bpa_score * (sta_scoring_params.offset_bpa_score - get_jensen_shannon_dist(&bin_prob_dist_1[..], &bin_prob_dist_2[..], &bin_log_prob_dist_1[..], &bin_log_prob_dist_2[..]))
+    let bin_prob_dist_1 = [bpp_mat_pair.0[&bp_pos_pair_1], not_bpp_mat_pair.0[&bp_pos_pair_1]];
+    let bin_prob_dist_2 = [bpp_mat_pair.1[&bp_pos_pair_2], not_bpp_mat_pair.1[&bp_pos_pair_2]];
+    let bin_log_prob_dist_1 = [lbpp_mat_pair.0[&bp_pos_pair_1], log_nbpp_mat_pair.0[&bp_pos_pair_1]];
+    let bin_log_prob_dist_2 = [lbpp_mat_pair.1[&bp_pos_pair_2], log_nbpp_mat_pair.1[&bp_pos_pair_2]];
+    get_bp_score(&bp_pos_pair_1, &lbpp_mat_pair.0, sta_scoring_params)
+    + get_bp_score(&bp_pos_pair_2, &lbpp_mat_pair.1, sta_scoring_params)
+    + get_ba_score(&aligned_pos_pair_1, lbap_mat, sta_scoring_params)
+    + get_ba_score(&aligned_pos_pair_2, lbap_mat, sta_scoring_params)
+    + sta_scoring_params.scale_param_4_bpa_score * (sta_scoring_params.offset_bpa_score - get_jensen_shannon_dist(&bin_prob_dist_1[..], &bin_prob_dist_2[..], &bin_log_prob_dist_1[..], &bin_log_prob_dist_2[..]))
   }
 }
 
@@ -585,12 +579,12 @@ fn get_kullback_leibler_div(prob_dist: ProbDistSlice, log_prob_dist_1: LogProbDi
 }
 
 #[inline]
-fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2: &LogPpf4dMat, seq_len_pair: &(usize, usize), sparse_log_bpp_mat_pair: &LogProbMatPair, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, sparse_bpp_mat_pair: &SparseProbMatPair, sparse_not_bpp_mat_pair: &SparseProbMatPair, sparse_log_nbpp_mat_pair: &LogProbMatPair, pos_seqs_with_poss_4_bas: &PosSeqsWithPoss, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogStapmq {
+fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2: &LogPpf4dMat, seq_len_pair: &(usize, usize), lbpp_mat_pair: &Ref2LogProbMatPair, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, bpp_mat_pair: &SparseProbMatPair, not_bpp_mat_pair: &SparseProbMatPair, log_nbpp_mat_pair: &LogProbMatPair, pos_seqs_with_poss_4_bas: &PosSeqsWithPoss, pos_pair_seqs_with_pos_span_pairs: &PosPairSeqsWithPosSpanPairs, pos_pair_seqs_with_pos_pairs_4_forward_bpas: &PosPairSeqsWithPosPairs, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs) -> LogStapmq {
   let mut lstapmq = LogStapmq::new();
   let pos_quadruple_4_2_external_loops = (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1);
   let log_sta_pf_4_bpa = log_sta_ppf_mat_4_bpas_1[&pos_quadruple_4_2_external_loops];
-  let log_sta_ppf_mat_4_2_els_1 = get_log_sta_ppf_mat_4_2_loops_1(&pos_quadruple_4_2_external_loops, sparse_lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
-  let log_sta_ppf_mat_4_2_els_2 = get_log_sta_ppf_mat_4_2_loops_2(&pos_quadruple_4_2_external_loops, sparse_lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
+  let log_sta_ppf_mat_4_2_els_1 = get_log_sta_ppf_mat_4_2_loops_1(&pos_quadruple_4_2_external_loops, lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
+  let log_sta_ppf_mat_4_2_els_2 = get_log_sta_ppf_mat_4_2_loops_2(&pos_quadruple_4_2_external_loops, lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
   for substr_len_1 in (2 .. seq_len_pair.0 + 1).rev() {
     for substr_len_2 in (2 .. seq_len_pair.1 + 1).rev() {
       match pos_pair_seqs_with_pos_span_pairs.get(&(substr_len_1, substr_len_2)) {
@@ -610,7 +604,7 @@ fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2:
         for &k in poss {
           let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
           let mut max_ep_of_term_4_log_prob = log_sta_ppf_mat_4_2_els_1[i - 1][k - 1]
-          + get_ba_score(&(i, k), sparse_lbap_mat, sta_scoring_params)
+          + get_ba_score(&(i, k), lbap_mat, sta_scoring_params)
           + log_sta_ppf_mat_4_2_els_2[i - 1 + 1][k - 1 + 1];
           if max_ep_of_term_4_log_prob.is_finite() {
             eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
@@ -660,10 +654,10 @@ fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2:
             let lbpap = lstapmq.log_bpap_mat[&(i, j, k, l)];
             let log_sta_pf_4_bpa = log_sta_ppf_mat_4_bpas_1[&(i, j, k, l)];
             let sum_of_terms_4_ep_of_term_4_log_prob = lbpap
-            + get_bpa_score(&(i, j, k, l), seq_len_pair, sparse_log_bpp_mat_pair, sparse_lbap_mat, sta_scoring_params, sparse_bpp_mat_pair, sparse_not_bpp_mat_pair, sparse_log_nbpp_mat_pair)
+            + get_bpa_score(&(i, j, k, l), seq_len_pair, lbpp_mat_pair, lbap_mat, sta_scoring_params, bpp_mat_pair, not_bpp_mat_pair, log_nbpp_mat_pair)
             - log_sta_pf_4_bpa;
-            let log_sta_ppf_mat_4_2_loops_1 = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), sparse_lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
-            let log_sta_ppf_mat_4_2_loops_2 = get_log_sta_ppf_mat_4_2_loops_2(&(i, j, k, l), sparse_lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
+            let log_sta_ppf_mat_4_2_loops_1 = get_log_sta_ppf_mat_4_2_loops_1(&(i, j, k, l), lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_forward_bpas, log_sta_ppf_mat_4_bpas_1);
+            let log_sta_ppf_mat_4_2_loops_2 = get_log_sta_ppf_mat_4_2_loops_2(&(i, j, k, l), lbap_mat, sta_scoring_params, pos_pair_seqs_with_pos_pairs_4_backward_bpas, log_sta_ppf_mat_4_bpas_1);
             for substr_len_3 in (2 .. substr_len_1 - 1).rev() {
               for substr_len_4 in (2 .. substr_len_2 - 1).rev() {
                 match pos_pair_seqs_with_pos_span_pairs.get(&(substr_len_3, substr_len_4)) {
@@ -707,7 +701,7 @@ fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2:
                     }
                     let ep_of_term_4_log_prob = sum_of_terms_4_ep_of_term_4_log_prob
                     + log_sta_ppf_mat_4_2_loops_1[m - i - 1][o - k - 1]
-                    + get_ba_score(&(m, o), sparse_lbap_mat, sta_scoring_params)
+                    + get_ba_score(&(m, o), lbap_mat, sta_scoring_params)
                     + log_sta_ppf_mat_4_2_loops_2[m - (i + 1) + 1][o - (k + 1) + 1];
                     if ep_of_term_4_log_prob.is_finite() {
                       eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
@@ -777,7 +771,7 @@ fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2:
                     }
                     let ep_of_term_4_log_prob = lbpap
                     + get_legp(&(i + 1, m - 1), sta_scoring_params)
-                    + get_logp(&(m, n), &sparse_log_bpp_mat_pair.0, sta_scoring_params)
+                    + get_logp(&(m, n), &lbpp_mat_pair.0, sta_scoring_params)
                     + log_sta_ppf_mat_4_bpas_2[&(m, n, k, l)]
                     + get_legp(&(n + 1, j - 1), sta_scoring_params)
                     - log_sta_pf_4_bpa;
@@ -811,7 +805,7 @@ fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2:
                     }
                     let ep_of_term_4_log_prob = lbpap
                     + get_legp(&(k + 1, o - 1), sta_scoring_params)
-                    + get_logp(&(o, p), &sparse_log_bpp_mat_pair.1, sta_scoring_params)
+                    + get_logp(&(o, p), &lbpp_mat_pair.1, sta_scoring_params)
                     + log_sta_ppf_mat_4_bpas_2[&(i, j, o, p)]
                     + get_legp(&(p + 1, l - 1), sta_scoring_params)
                     - log_sta_pf_4_bpa;
@@ -840,7 +834,7 @@ fn get_lstapmq(log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat, log_sta_ppf_mat_4_bpas_2:
 }
 
 #[inline]
-fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, sparse_lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
+fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, lbap_mat: &SparseLogProbMat, sta_scoring_params: &StaScoringParams, pos_pair_seqs_with_pos_pairs_4_backward_bpas: &PosPairSeqsWithPosPairs, log_sta_ppf_mat_4_bpas_1: &LogPpf4dMat) -> LogPpfMat {
   let &(i, j, k, l) = pos_quadruple;
   let substr_len_1 = j - i + 1;
   let substr_len_2 = l - k + 1;
@@ -860,9 +854,9 @@ fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, sparse_lbap_mat
   }
   for m in (i + 1 .. j).rev() {
     for o in (k + 1 .. l).rev() {
-      match sparse_lbap_mat.get(&(m, o)) {
+      match lbap_mat.get(&(m, o)) {
         Some(_) => {
-          let ba_score = get_ba_score(&(m, o), sparse_lbap_mat, sta_scoring_params);
+          let ba_score = get_ba_score(&(m, o), lbap_mat, sta_scoring_params);
           if m == j - 1 && o == l - 1 {
             log_sta_ppf_mat_4_2_loops_and_bas[m - (i + 1)][o - (k + 1)] = ba_score;
           } else {
@@ -952,4 +946,152 @@ fn get_log_sta_ppf_mat_4_2_loops_2(pos_quadruple: &PosQuadruple, sparse_lbap_mat
     }
   }
   log_sta_ppf_mat_4_2_loops
+}
+
+#[inline]
+pub fn prob_cons_transformation_of_lstapmq(lstapmqs_with_rna_id_pairs: &LstapmqsWithRnaIdPairs, rna_id_pair: &RnaIdPair, num_of_rnas: usize) -> LogStapmq {
+  let mut lstapmq = lstapmqs_with_rna_id_pairs[rna_id_pair].clone();
+  let log_coefficient = -fast_ln((num_of_rnas - 1) as Prob);
+  for (pos_quadruple, lbpap) in lstapmq.log_bpap_mat.iter_mut() {
+    let (i, j, k, l) = *pos_quadruple;
+    let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+    let mut max_ep_of_term_4_log_prob = *lbpap;
+    if max_ep_of_term_4_log_prob.is_finite() {
+      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
+    }
+    for rna_id in 0 .. num_of_rnas {
+      if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
+      for (&(m, n, o, p), &lbpap_1) in lstapmqs_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].log_bpap_mat.iter() {
+        if (rna_id_pair.0 < rna_id && m != i && n != j) || (rna_id_pair.0 > rna_id && o != i && p != j) {continue;}
+        for (&(m, n, o, p), &lbpap_2) in lstapmqs_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].log_bpap_mat.iter() {
+          if (rna_id_pair.1 < rna_id && m != k && n != l) || (rna_id_pair.1 > rna_id && o != k && p != l) {continue;}
+          let ep_of_term_4_log_prob = lbpap_1 + lbpap_2;
+          if ep_of_term_4_log_prob.is_finite() {
+            eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+            if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+              max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+            }
+          }
+        }
+      }
+    }
+    if eps_of_terms_4_log_prob.len() > 0 {
+      *lbpap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+    }
+  }
+  for (pos_pair, lbap) in lstapmq.log_bap_mat.iter_mut() {
+    let (i, j) = *pos_pair;
+    let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+    let mut max_ep_of_term_4_log_prob = *lbap;
+    if max_ep_of_term_4_log_prob.is_finite() {
+      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
+    }
+    for rna_id in 0 .. num_of_rnas {
+      if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
+      for (&(k, l), &lbap_1) in lstapmqs_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].log_bap_mat.iter() {
+        if (rna_id_pair.0 < rna_id && k != i) || (rna_id_pair.0 > rna_id && l != i) {continue;}
+        for (&(k, l), &lbap_2) in lstapmqs_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].log_bap_mat.iter() {
+          if (rna_id_pair.1 < rna_id && k != j) || (rna_id_pair.1 > rna_id && l != j) {continue;}
+          let ep_of_term_4_log_prob = lbap_1 + lbap_2;
+          if ep_of_term_4_log_prob.is_finite() {
+            eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+            if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+              max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+            }
+          }
+        }
+      }
+    }
+    if eps_of_terms_4_log_prob.len() > 0 {
+      *lbap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+    }
+  }
+  lstapmq
+}
+
+#[inline]
+pub fn get_stapmqs_with_rna_id_pairs(lstapmqs_with_rna_id_pairs: &LstapmqsWithRnaIdPairs) -> StapmqsWithRnaIdPairs {
+  let mut stapmqs_with_rna_id_pairs = StapmqsWithRnaIdPairs::default();
+  for (rna_id_pair, lstapmq) in lstapmqs_with_rna_id_pairs.iter() {
+    stapmqs_with_rna_id_pairs.insert(*rna_id_pair, get_stapmq(lstapmq));
+  }
+  stapmqs_with_rna_id_pairs
+}
+
+#[inline]
+pub fn pct_of_lbap_mat(lbap_mats_with_rna_id_pairs: &LogProbMatsWithRnaIdPairs, rna_id_pair: &RnaIdPair, num_of_rnas: usize) -> SparseLogProbMat {
+  let mut lbap_mat = lbap_mats_with_rna_id_pairs[rna_id_pair].clone();
+  let log_coefficient = -fast_ln((num_of_rnas - 1) as Prob);
+  for (&(i, j), lbap) in lbap_mat.iter_mut() {
+    let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+    let mut max_ep_of_term_4_log_prob = *lbap;
+    if max_ep_of_term_4_log_prob.is_finite() {
+      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
+    }
+    for rna_id in 0 .. num_of_rnas {
+      if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
+      for (&(k, l), &lbap_1) in lbap_mats_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].iter() {
+        if (rna_id_pair.0 < rna_id && k != i) || (rna_id_pair.0 > rna_id && l != i) {continue;}
+        for (&(k, l), &lbap_2) in lbap_mats_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].iter() {
+          if (rna_id_pair.1 < rna_id && k != j) || (rna_id_pair.1 > rna_id && l != j) {continue;}
+          let ep_of_term_4_log_prob = lbap_1 + lbap_2;
+          if ep_of_term_4_log_prob.is_finite() {
+            eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+            if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+              max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+            }
+          }
+        }
+      }
+    }
+    *lbap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
+    debug_assert!(NEG_INFINITY <= *lbap && *lbap <= 0.);
+  }
+  lbap_mat
+}
+
+#[inline]
+pub fn get_sparse_lbpp_mat(lbpp_mat: &LogProbMat, min_lbpp: LogProb) -> SparseLogProbMat {
+  let mut sparse_lbpp_mat = SparseLogProbMat::default();
+  let lbpp_mat_dims = (lbpp_mat.len(), lbpp_mat[0].len());
+  for i in 0 .. lbpp_mat_dims.0 {
+    for j in 0 .. lbpp_mat_dims.1 {
+      let lbpp = lbpp_mat[i][j] - LN_2;
+      if lbpp >= min_lbpp && lbpp > NEG_INFINITY {
+        sparse_lbpp_mat.insert((i + 1, j + 1), lbpp);
+      }
+    }
+  }
+  sparse_lbpp_mat
+}
+
+#[inline]
+pub fn get_sparse_lbap_mat(lbap_mat: &LogProbMat, min_lbap: LogProb) -> SparseLogProbMat {
+  let mut sparse_lbap_mat = SparseLogProbMat::default();
+  let lbap_mat_dims = (lbap_mat.len(), lbap_mat[0].len());
+  for i in 0 .. lbap_mat_dims.0 {
+    for j in 0 .. lbap_mat_dims.1 {
+      let lbap = lbap_mat[i][j] - LN_2;
+      if lbap >= min_lbap && lbap > NEG_INFINITY {
+        sparse_lbap_mat.insert((i + 1, j + 1), lbap);
+      }
+    }
+  }
+  sparse_lbap_mat
+}
+
+#[inline]
+pub fn remove_little_lbaps_from_sparse_lbap_mat(lbap_mat: &SparseLogProbMat, min_lbap: LogProb) -> SparseLogProbMat {
+  lbap_mat.iter().filter(|&(_, &lbap)| {lbap >= min_lbap && lbap > NEG_INFINITY}).map(|(pos_quadruple, &lbap)| {(*pos_quadruple, lbap)}).collect::<SparseLogProbMat>()
+}
+
+#[inline]
+pub fn is_rna_base(base: Base) -> bool {
+  match base {
+    A => true,
+    U => true,
+    G => true,
+    C => true,
+    _ => false,
+  }
 }
