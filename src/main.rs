@@ -47,13 +47,15 @@ const DEFAULT_OFFSET_BPA_SCORE: StaScore = 0.5;
 const DEFAULT_MIN_BPP: Prob = 0.00_1;
 const DEFAULT_MIN_BAP: Prob = 0.03;
 const DEFAULT_MAX_BP_SPAN: usize = 200;
+const DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS: usize = 5;
 const PARASOR_COMMAND: &'static str = "ParasoR";
-const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
+const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 const BAP_MAT_ON_SA_FILE_NAME: &'static str = "bap_mats_on_sa.dat";
 const BPAP_MAT_FILE_NAME: &'static str = "bpap_mats.dat";
 const BAP_MAT_ON_STA_FILE_NAME: &'static str = "bap_mats_on_sta.dat";
 const BPIP_MAT_FILE_NAME_1: &'static str = "bpip_mats_1.dat";
 const BPIP_MAT_FILE_NAME_2: &'static str = "bpip_mats_2.dat";
+const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -76,6 +78,7 @@ fn main() {
   opts.optopt("", "min_base_pairing_prob", &format!("A minimum BPP (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "min_base_align_prob", &format!("A minimum BAP (Uses {} by default)", DEFAULT_MIN_BAP), "FLOAT");
   opts.optopt("", "max_base_pairing_span", &format!("A maximum base-pairing span (Uses {} by default)", DEFAULT_MAX_BP_SPAN), "FLOAT");
+  opts.optopt("", "num_of_times_of_improvements_of_stapmqs", &format!("The number of times of the improvements of structural-alignment probability quadruples (Uses {} by default)", DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS), "FLOAT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
   let opts = match opts.parse(&args[1 ..]) {
@@ -163,6 +166,11 @@ fn main() {
   } else {
     DEFAULT_MAX_BP_SPAN
   };
+  let num_of_times_of_improvements_of_stapmqs = if opts.opt_present("max_base_pairing_span") {
+    opts.opt_str("num_of_times_of_improvements").expect("Failed to get the number of times of the improvements of structural-alignment probability quadruples from command arguments.").parse().expect("Failed to parse the number of times of the improvements of structural-alignment probability quadruples.")
+  } else {
+    DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS
+  };
   let num_of_threads = if opts.opt_present("t") {
     opts.opt_str("t").expect("Failed to get the number of threads in multithreading from command arguments.").parse().expect("Failed to parse the number of threads in multithreading.")
   } else {
@@ -188,18 +196,18 @@ fn main() {
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  let mut buf_4_writer_2_bpp_mat_file = format!("; The path to the input file to compute the base-pairing matrices in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"min_base_pairing_prob\" = {}, \"max_base_pairing_span\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), min_bpp, max_bp_span, num_of_threads);
-  let bpp_mat_file_path = output_dir_path.join(BPP_MAT_FILE_NAME);
-  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).expect("Failed to create an output file."));
+  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The path to the input file to compute the base-pairing matrices on secondary structure in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"min_base_pairing_prob\" = {}, \"max_base_pairing_span\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), min_bpp, max_bp_span, num_of_threads);
+  let bpp_mat_on_ss_file_path = output_dir_path.join(BPP_MAT_ON_SS_FILE_NAME);
+  let mut writer_2_bpp_mat_on_ss_file = BufWriter::new(File::create(bpp_mat_on_ss_file_path).expect("Failed to create an output file."));
   for (rna_id, lbpp_mat) in lbpp_mats.iter().enumerate() {
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
     for (&(i, j), &lbpp) in lbpp_mat.iter() {
       buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, lbpp.exp2()));
     }
-    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+    buf_4_writer_2_bpp_mat_on_ss_file.push_str(&buf_4_rna_id);
   }
   thread::spawn(move || {
-    let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+    let _ = writer_2_bpp_mat_on_ss_file.write_all(buf_4_writer_2_bpp_mat_on_ss_file.as_bytes());
   });
   let mut lbap_mats_with_rna_id_pairs = LogProbMatsWithRnaIdPairs::default();
   let mut lstapmqs_with_rna_id_pairs = LstapmqsWithRnaIdPairs::default();
@@ -242,7 +250,7 @@ fn main() {
       });
     }
   });
-  let lbap_mats_with_rna_id_pairs = lbap_mats_with_rna_id_pairs_from_pct;
+  let mut lbap_mats_with_rna_id_pairs = lbap_mats_with_rna_id_pairs_from_pct;
   let mut buf_4_writer_2_bap_mat_on_sa_file = format!("; The path to the input file to compute the base alignment probability matrices on sequence alignment in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"base_match_score\" = {}, \"base_mismatch_score\" = {}, \"base_opening_gap_penalty_on_sa\" = {}, \"base_extending_gap_penalty_on_sa\" = {}, \"min_base_align_prob\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), bms, bmms, bogp_on_sa, begp_on_sa, min_bap, num_of_threads);
   let bap_mat_on_sa_file_path = output_dir_path.join(BAP_MAT_ON_SA_FILE_NAME);
   let mut writer_2_bap_mat_on_sa_file = BufWriter::new(File::create(bap_mat_on_sa_file_path).expect("Failed to create an output file."));
@@ -257,31 +265,79 @@ fn main() {
     let _ = writer_2_bap_mat_on_sa_file.write_all(buf_4_writer_2_bap_mat_on_sa_file.as_bytes());
   });
   let sta_scoring_params = StaScoringParams::new(log_nh_bpp, log_nh_bap, scale_param_4_bpa_score, offset_bpa_score, bogp_on_sta, begp_on_sta, logp, legp);
-  thread_pool.scoped(|scope| {
-    for (rna_id_pair, lstapmq) in lstapmqs_with_rna_id_pairs.iter_mut() {
-      let seq_len_pair = (fasta_records[rna_id_pair.0].1.len(), fasta_records[rna_id_pair.1].1.len());
-      let lbpp_mat_pair = (&lbpp_mats[rna_id_pair.0], &lbpp_mats[rna_id_pair.1]);
-      let ref lbap_mat = lbap_mats_with_rna_id_pairs[rna_id_pair];
-      let ref ref_2_sta_scoring_params = sta_scoring_params;
-      scope.execute(move || {
-        *lstapmq = io_algo_4_rna_lstapmq(&seq_len_pair, &lbpp_mat_pair, lbap_mat, ref_2_sta_scoring_params, min_lbpp);
-      });
+  for i in 0 .. num_of_times_of_improvements_of_stapmqs + 1 {
+    thread_pool.scoped(|scope| {
+      for (rna_id_pair, lstapmq) in lstapmqs_with_rna_id_pairs.iter_mut() {
+        let seq_len_pair = (fasta_records[rna_id_pair.0].1.len(), fasta_records[rna_id_pair.1].1.len());
+        let lbpp_mat_pair = (&lbpp_mats[rna_id_pair.0], &lbpp_mats[rna_id_pair.1]);
+        let ref lbap_mat = lbap_mats_with_rna_id_pairs[rna_id_pair];
+        let ref ref_2_sta_scoring_params = sta_scoring_params;
+        scope.execute(move || {
+          *lstapmq = io_algo_4_rna_lstapmq(&seq_len_pair, &lbpp_mat_pair, lbap_mat, ref_2_sta_scoring_params, min_lbpp);
+        });
+      }
+    });
+    thread_pool.scoped(|scope| {
+      for (rna_id_pair, lstapmq) in lstapmqs_with_rna_id_pairs_from_pct.iter_mut() {
+        let ref ref_2_lstapmqs_with_rna_id_pairs = lstapmqs_with_rna_id_pairs;
+        scope.execute(move || {
+          *lstapmq = prob_cons_transformation_of_lstapmq(ref_2_lstapmqs_with_rna_id_pairs, rna_id_pair, num_of_fasta_records);
+        });
+      }
+    });
+    let mut lbpp_mat_pairs_with_rna_id_pairs = LogProbMatPairsWithRnaIdPairs::default();
+    for rna_id_1 in 0 .. num_of_fasta_records {
+      for rna_id_2 in rna_id_1 + 1 .. num_of_fasta_records {
+        lbpp_mat_pairs_with_rna_id_pairs.insert((rna_id_1, rna_id_2), (SparseLogProbMat::default(), SparseLogProbMat::default()));
+      }
     }
-  });
-  thread_pool.scoped(|scope| {
-    for (rna_id_pair, lstapmq) in lstapmqs_with_rna_id_pairs_from_pct.iter_mut() {
-      let ref ref_2_lstapmqs_with_rna_id_pairs = lstapmqs_with_rna_id_pairs;
-      scope.execute(move || {
-        *lstapmq = prob_cons_transformation_of_lstapmq(ref_2_lstapmqs_with_rna_id_pairs, rna_id_pair, num_of_fasta_records);
-      });
-    }
-  });
+    thread_pool.scoped(|scope| {
+      for (rna_id_pair, lbpp_mat_pair) in lbpp_mat_pairs_with_rna_id_pairs.iter_mut() {
+        let ref ref_2_lstapmqs_with_rna_id_pairs = lstapmqs_with_rna_id_pairs_from_pct;
+        scope.execute(move || {
+          *lbpp_mat_pair = get_lbpp_mat_pair(ref_2_lstapmqs_with_rna_id_pairs, rna_id_pair);
+        });
+      }
+    });
+    thread_pool.scoped(|scope| {
+      for (rna_id, lbpp_mat) in lbpp_mats.iter_mut().enumerate() {
+        let ref ref_2_lbpp_mat_pairs_with_rna_id_pairs = lbpp_mat_pairs_with_rna_id_pairs;
+        scope.execute(move || {
+          *lbpp_mat = pct_of_lbpp_mat(ref_2_lbpp_mat_pairs_with_rna_id_pairs, rna_id, num_of_fasta_records);
+          if i < num_of_times_of_improvements_of_stapmqs {
+            *lbpp_mat = remove_little_lbpps_from_sparse_lbpp_mat(lbpp_mat, min_lbpp);
+          }
+        });
+      }
+      if i < num_of_times_of_improvements_of_stapmqs {
+        for (rna_id_pair, lbap_mat) in lbap_mats_with_rna_id_pairs.iter_mut() {
+          let ref ref_2_lbap_mat = lstapmqs_with_rna_id_pairs_from_pct[rna_id_pair].log_bap_mat;
+          scope.execute(move || {
+            *lbap_mat = remove_little_lbaps_from_sparse_lbap_mat(ref_2_lbap_mat, min_lbap);
+          });
+        }
+      }
+    });
+  }
   let stapmqs_with_rna_id_pairs = get_stapmqs_with_rna_id_pairs(&lstapmqs_with_rna_id_pairs_from_pct);
-  let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"base_match_score\" = {}, \"base_mismatch_score\" = {}, \"base_opening_gap_penalty_on_sa\" = {}, \"base_extending_gap_penalty_on_sa\" = {}, \"log_null_hypothesis_base_pairing_prob\" = {}, \"log_null_hypothesis_base_align_prob\" = {}, \"scale_param_4_base_pair_align_score\" = {}, \"offset_base_pair_align_score\" = {}, \"base_opening_gap_penalty_on_sta\" = {}, \"base_extending_gap_penalty_on_sta\" = {}, \"loop_opening_gap_penalty\" = {}, \"loop_extending_gap_penalty\" = {}, \"min_base_pairing_prob\" = {}, \"min_base_align_prob\" = {}, \"max_base_pairing_span\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), bms, bmms, bogp_on_sa, begp_on_sa, log_nh_bpp, log_nh_bap, scale_param_4_bpa_score, offset_bpa_score, bogp_on_sta, begp_on_sta, logp, legp, min_bpp, min_bap, max_bp_span, num_of_threads);
+  let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"base_match_score\" = {}, \"base_mismatch_score\" = {}, \"base_opening_gap_penalty_on_sa\" = {}, \"base_extending_gap_penalty_on_sa\" = {}, \"log_null_hypothesis_base_pairing_prob\" = {}, \"log_null_hypothesis_base_align_prob\" = {}, \"scale_param_4_base_pair_align_score\" = {}, \"offset_base_pair_align_score\" = {}, \"base_opening_gap_penalty_on_sta\" = {}, \"base_extending_gap_penalty_on_sta\" = {}, \"loop_opening_gap_penalty\" = {}, \"loop_extending_gap_penalty\" = {}, \"min_base_pairing_prob\" = {}, \"min_base_align_prob\" = {}, \"max_base_pairing_span\" = {}, \"num_of_times_of_improvements_of_stapmqs\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), bms, bmms, bogp_on_sa, begp_on_sa, log_nh_bpp, log_nh_bap, scale_param_4_bpa_score, offset_bpa_score, bogp_on_sta, begp_on_sta, logp, legp, min_bpp, min_bap, max_bp_span, num_of_times_of_improvements_of_stapmqs, num_of_threads);
   let bpap_mat_file_path = output_dir_path.join(BPAP_MAT_FILE_NAME);
   let bap_mat_on_sta_file_path = output_dir_path.join(BAP_MAT_ON_STA_FILE_NAME);
   let bpip_mat_file_path_1 = output_dir_path.join(BPIP_MAT_FILE_NAME_1);
   let bpip_mat_file_path_2 = output_dir_path.join(BPIP_MAT_FILE_NAME_2);
+  let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
+  let mut buf_4_writer_2_bpp_mat_on_sta_file = String::from("; The path to the input file to compute the base-pairing matrices on structural alignment") + &output_file_header;
+  let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
+  for (rna_id, lbpp_mat) in lbpp_mats.iter().enumerate() {
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (&(i, j), &lbpp) in lbpp_mat.iter() {
+      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, lbpp.exp2()));
+    }
+    buf_4_writer_2_bpp_mat_on_sta_file.push_str(&buf_4_rna_id);
+  }
+  thread::spawn(move || {
+    let _ = writer_2_bpp_mat_on_sta_file.write_all(buf_4_writer_2_bpp_mat_on_sta_file.as_bytes());
+  });
   let mut writer_2_bpap_mat_file = BufWriter::new(File::create(bpap_mat_file_path).expect("Failed to create an output file."));
   let mut writer_2_bap_mat_on_sta_file = BufWriter::new(File::create(bap_mat_on_sta_file_path).expect("Failed to create an output file."));
   let mut writer_2_bpip_mat_file_1 = BufWriter::new(File::create(bpip_mat_file_path_1).expect("Failed to create an output file."));
@@ -292,31 +348,22 @@ fn main() {
   let mut buf_4_writer_2_bpip_mat_file_2 = buf_4_writer_2_bpip_mat_file_1.clone();
   for (rna_id_pair, stapmq) in &stapmqs_with_rna_id_pairs {
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    let seq_len_pair = (fasta_records[rna_id_pair.0].1.len(), fasta_records[rna_id_pair.1].1.len());
-    for (pos_quadruple, &bpap) in stapmq.base_pair_align_prob_mat.iter() {
-      if *pos_quadruple == (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1) {continue;}
-      let &(i, j, k, l) = pos_quadruple;
+    for (&(i, j, k, l), &bpap) in stapmq.base_pair_align_prob_mat.iter() {
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{},{} ", i - 1, j - 1, k - 1, l - 1, bpap));
     }
     buf_4_writer_2_bpap_mat_file.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    for (pos_pair, &bap) in stapmq.base_align_prob_mat.iter() {
-      if *pos_pair == (0, 0) || *pos_pair == (seq_len_pair.0 + 1, seq_len_pair.1 + 1) {continue;}
-      let &(i, j) = pos_pair;
+    for (&(i, j), &bap) in stapmq.base_align_prob_mat.iter() {
       buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, bap));
     }
     buf_4_writer_2_bap_mat_on_sta_file.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id_pair.0);
-    for (pos_pair, &bpip) in stapmq.base_pair_indel_prob_mat_1.iter() {
-      if *pos_pair == (0, seq_len_pair.0 + 1) {continue;}
-      let &(i, j) = pos_pair;
+    for (&(i, j), &bpip) in stapmq.base_pair_indel_prob_mat_1.iter() {
       buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpip));
     }
     buf_4_writer_2_bpip_mat_file_1.push_str(&buf_4_rna_id);
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id_pair.1);
-    for (pos_pair, &bpip) in stapmq.bpip_mat_2.iter() {
-      if *pos_pair == (0, seq_len_pair.1 + 1) {continue;}
-      let &(i, j) = pos_pair;
+    for (&(i, j), &bpip) in stapmq.bpip_mat_2.iter() {
       buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpip));
     }
     buf_4_writer_2_bpip_mat_file_2.push_str(&buf_4_rna_id);
