@@ -21,7 +21,7 @@ def main():
   sa_len = sa.get_alignment_length()
   css_file_path = asset_dir_path + "/sampled_trnas/css_from_sa_with_mafft_ginsi.sth"
   css_string = utils.get_css_string(css_file_path)
-  css = utils.get_css(css_string)
+  css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
   bpap_mat_file_path = asset_dir_path + "/sampled_trnas/bpap_mats.dat"
   bpap_mats = utils.get_bpap_mats(bpap_mat_file_path, seq_lens)
@@ -32,7 +32,7 @@ def main():
   sa_len = sa.get_alignment_length()
   css_file_path = asset_dir_path + "/sampled_trnas/css_from_sa_with_mafft_xinsi.sth"
   css_string = utils.get_css_string(css_file_path)
-  css = utils.get_css(css_string)
+  css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
   print(colored.black("(B)"))
   utils.print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
@@ -41,7 +41,7 @@ def main():
   sa_len = sa.get_alignment_length()
   css_file_path = asset_dir_path + "/sampled_trnas/css_from_ref_sa.sth"
   css_string = utils.get_css_string(css_file_path)
-  css = utils.get_css(css_string)
+  css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
   print(colored.black("(C)"))
   utils.print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)

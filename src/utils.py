@@ -74,13 +74,13 @@ def print_color_coded_sa(sa, bap_mats_on_sa, uabp_seq_pairs, nums_of_gaps_in_fro
     for j in range(0, num_of_records):
       char = sa[j].seq[i].upper()
       color_coded_char = colored.blue(char)
-      if sum_of_log_probs >= log(0.1 ** 6, 2):
+      if sum_of_log_probs >= 6 * log(0.1, 2):
         color_coded_char = colored.red(char)
-      elif sum_of_log_probs >= log(0.1 ** 9, 2):
+      elif sum_of_log_probs >= 9 * log(0.1, 2):
         color_coded_char = colored.yellow(char)
-      elif sum_of_log_probs >= log(0.1 ** 12, 2):
+      elif sum_of_log_probs >= 12 * log(0.1, 2):
         color_coded_char = colored.green(char)
-      elif sum_of_log_probs >= log(0.1 ** 15, 2):
+      elif sum_of_log_probs >= 15 * log(0.1, 2):
         color_coded_char = colored.cyan(char)
       color_coded_sa[j] += color_coded_char
   for seq in color_coded_sa:
@@ -150,15 +150,15 @@ def get_css_string(css_file_path):
   css_string = line.split()[2]
   return css_string
 
-def get_css(css_string):
-  css = []
+def get_ss(ss_string):
+  ss = []
   stack = []
-  for (i, char) in enumerate(css_string):
+  for (i, char) in enumerate(ss_string):
     if char == "(":
       stack.append(i)
     elif char == ")":
-      css.insert(0, (stack.pop(), i))
-  return css
+      ss.insert(0, (stack.pop(), i))
+  return ss
 
 def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len):
   color_coded_css_with_sa = [list(map(colored.black, sa[i].seq.upper())) for i in range(0, num_of_records)]
@@ -175,18 +175,18 @@ def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_i
         if bpap > 0:
           sum_of_lbpaps += log(bpap, 2)
         else:
-          sum_of_lbpaps += log(0.01 ** 4, 2)
+          sum_of_lbpaps += 4 * log(0.01, 2)
     for k in range(0, num_of_records + 1):
       for l in (i, j):
         char = colored.clean(color_coded_css_with_sa[k][l])
         color_coded_char = colored.blue(char)
-        if sum_of_lbpaps >= log(0.1 ** 66, 2):
+        if sum_of_lbpaps >= 66 * log(0.1, 2):
           color_coded_char = colored.red(char)
-        elif sum_of_lbpaps >= log(0.1 ** 74, 2):
+        elif sum_of_lbpaps >= 74 * log(0.1, 2):
           color_coded_char = colored.yellow(char)
-        elif sum_of_lbpaps >= log(0.1 ** 82, 2):
+        elif sum_of_lbpaps >= 82 * log(0.1, 2):
           color_coded_char = colored.green(char)
-        elif sum_of_lbpaps >= log(0.1 ** 90, 2):
+        elif sum_of_lbpaps >= 90 * log(0.1, 2):
           color_coded_char = colored.cyan(char)
         color_coded_css_with_sa[k][l] = color_coded_char
   for string in color_coded_css_with_sa:
@@ -212,3 +212,63 @@ def get_bpap_mats(bpap_mat_file_path, seq_lens):
       bpap_mat[j, k, l, m] = bpap
     bpap_mats[rna_id_pair] = bpap_mat
   return bpap_mats
+
+def get_bpp_mats(bpp_mat_file_path, seq_lens):
+  bpp_mats = {}
+  bpp_mat_file = open(bpp_mat_file_path)
+  lines = bpp_mat_file.readlines()
+  lines = [line for line in lines if line[0].isdigit() or line[0].startswith(">")]
+  num_of_lines = len(lines)
+  for i in range(0, num_of_lines - 1, 2):
+    rna_id = int(lines[i][1 :])
+    seq_len = seq_lens[rna_id]
+    bpp_mat = numpy.zeros((seq_len, seq_len))
+    for string in lines[i + 1].strip().split(" "):
+      substrings = string.split(",")
+      (j, k, bpp) = (int(substrings[0]), int(substrings[1]), float(substrings[2]))
+      if bpp >= 0.01:
+        bpp_mat[j, k] = bpp
+    bpp_mats[rna_id] = bpp_mat
+  return bpp_mats
+
+def print_color_coded_sss(sss, ss_strings, bpp_mats, records, num_of_records):
+  color_coded_seqs = [list(map(colored.black, record.seq)) for record in records]
+  color_coded_sss = [list(map(colored.black, ss_string)) for ss_string in ss_strings]
+  for i in range(0, num_of_records):
+    for (j, k) in sss[i]:
+      bpp = bpp_mats[i][j, k]
+      for l in (j, k):
+        char_pair = (colored.clean(color_coded_seqs[i][l]), colored.clean(color_coded_sss[i][l]))
+        color_coded_char_pair = (colored.blue(char_pair[0]), colored.blue(char_pair[1]))
+        if bpp >= 0.5:
+          color_coded_char_pair = (colored.red(char_pair[0]), colored.red(char_pair[1]))
+        elif bpp >= 0.5 ** 2:
+          color_coded_char_pair = (colored.yellow(char_pair[0]), colored.yellow(char_pair[1]))
+        elif bpp >= 0.5 ** 3:
+          color_coded_char_pair = (colored.green(char_pair[0]), colored.green(char_pair[1]))
+        elif bpp >= 0.5 ** 4:
+          color_coded_char_pair = (colored.cyan(char_pair[0]), colored.cyan(char_pair[1]))
+        color_coded_seqs[i][l] = color_coded_char_pair[0]
+        color_coded_sss[i][l] = color_coded_char_pair[1]
+  for seq, ss in zip(color_coded_seqs, color_coded_sss):
+    color_coded_seq = ""
+    for char in seq:
+      color_coded_seq += char
+    color_coded_ss = ""
+    for char in ss:
+      color_coded_ss += char
+    print(color_coded_seq)
+    print(color_coded_ss)
+
+def get_ss_strings(ss_file_path):
+  ss_strings = []
+  ss_file = open(ss_file_path)
+  lines = ss_file.readlines()
+  num_of_lines = len(lines)
+  for i in range(0, num_of_lines - 1, 7):
+    ss_string = lines[i + 5].split()[0]
+    ss_strings.append(ss_string)
+  return ss_strings
+
+def get_sss(ss_strings):
+  return list(map(get_ss, ss_strings))
