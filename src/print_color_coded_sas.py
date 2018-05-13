@@ -47,11 +47,11 @@ def main():
   print(colored.black("(F)"))
   utils.print_color_coded_sa(sa, bap_mats_on_sta, uabp_seq_pairs_on_sta, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
   print(
-    colored.red("p >= %.0e, " % (0.1 ** 9))
-    + colored.yellow("p >= %.0e, " % (0.1 ** 12))
-    + colored.green("p >= %.0e, " % (0.1 ** 15))
-    + colored.cyan("p >= %.0e, " % (0.1 ** 18))
-    + colored.blue("p < %.0e" % (0.1 ** 18))
+    colored.red("p >= %.0e, " % (0.1 ** 6))
+    + colored.yellow("p >= %.0e, " % (0.1 ** 9))
+    + colored.green("p >= %.0e, " % (0.1 ** 12))
+    + colored.cyan("p >= %.0e, " % (0.1 ** 15))
+    + colored.blue("p < %.0e" % (0.1 ** 15))
     + colored.black(" where p is the product of the BAPs\nfor the base pairs and unaligned base probabilities for the bases aligned with base gaps in a\ncolor-coded column")
   )
 

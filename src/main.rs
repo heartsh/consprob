@@ -1,4 +1,4 @@
-extern crate io_algo_4_rna_stapmq;
+extern crate strap;
 extern crate bio_seq_algos;
 #[macro_use]
 extern crate lazy_static;
@@ -8,7 +8,7 @@ extern crate bio;
 extern crate itertools;
 extern crate num_cpus;
 
-use io_algo_4_rna_stapmq::*;
+use strap::*;
 use bio_seq_algos::durbin_algo::*;
 use getopts::Options;
 use self::scoped_threadpool::Pool;
@@ -19,8 +19,6 @@ use std::io::prelude::*;
 use std::io::BufWriter;
 use std::fs::File;
 use std::fs::create_dir;
-use std::process::{Command, Output};
-use std::str::from_utf8_unchecked;
 use std::thread;
 
 type Arg = String;
@@ -44,11 +42,10 @@ lazy_static! {
   static ref DEFAULT_LEGP: StaScore = *DEFAULT_BEGP_ON_STA;
 }
 const DEFAULT_OFFSET_BPA_SCORE: StaScore = 0.5;
-const DEFAULT_MIN_BPP: Prob = 0.00_1;
-const DEFAULT_MIN_BAP: Prob = 0.03;
+const DEFAULT_MIN_BPP: Prob = 0.01;
+const DEFAULT_MIN_BAP: Prob = 0.01;
 const DEFAULT_MAX_BP_SPAN: usize = 200;
 const DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS: usize = 5;
-const PARASOR_COMMAND: &'static str = "ParasoR";
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 const BAP_MAT_ON_SA_FILE_NAME: &'static str = "bap_mats_on_sa.dat";
 const BPAP_MAT_FILE_NAME: &'static str = "bpap_mats.dat";
@@ -78,7 +75,7 @@ fn main() {
   opts.optopt("", "min_base_pairing_prob", &format!("A minimum BPP (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "min_base_align_prob", &format!("A minimum BAP (Uses {} by default)", DEFAULT_MIN_BAP), "FLOAT");
   opts.optopt("", "max_base_pairing_span", &format!("A maximum base-pairing span (Uses {} by default)", DEFAULT_MAX_BP_SPAN), "FLOAT");
-  opts.optopt("", "num_of_times_of_improvements_of_stapmqs", &format!("The number of times of the improvements of structural-alignment probability quadruples (Uses {} by default)", DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS), "FLOAT");
+  opts.optopt("", "num_of_times_of_improvements_of_stapmqs", &format!("The number of times of the improvements of structural-alignment probability quadruples (Uses {} by default)", DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
   let opts = match opts.parse(&args[1 ..]) {
@@ -166,8 +163,8 @@ fn main() {
   } else {
     DEFAULT_MAX_BP_SPAN
   };
-  let num_of_times_of_improvements_of_stapmqs = if opts.opt_present("max_base_pairing_span") {
-    opts.opt_str("num_of_times_of_improvements").expect("Failed to get the number of times of the improvements of structural-alignment probability quadruples from command arguments.").parse().expect("Failed to parse the number of times of the improvements of structural-alignment probability quadruples.")
+  let num_of_times_of_improvements_of_stapmqs = if opts.opt_present("num_of_times_of_improvements_of_stapmqs") {
+    opts.opt_str("num_of_times_of_improvements_of_stapmqs").expect("Failed to get the number of times of the improvements of structural-alignment probability quadruples from command arguments.").parse().expect("Failed to parse the number of times of the improvements of structural-alignment probability quadruples.")
   } else {
     DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS
   };
@@ -273,7 +270,7 @@ fn main() {
         let ref lbap_mat = lbap_mats_with_rna_id_pairs[rna_id_pair];
         let ref ref_2_sta_scoring_params = sta_scoring_params;
         scope.execute(move || {
-          *lstapmq = io_algo_4_rna_lstapmq(&seq_len_pair, &lbpp_mat_pair, lbap_mat, ref_2_sta_scoring_params, min_lbpp);
+          *lstapmq = io_algo_4_rna_lstapmq(&seq_len_pair, &lbpp_mat_pair, lbap_mat, ref_2_sta_scoring_params);
         });
       }
     });
@@ -384,26 +381,4 @@ fn main() {
 fn print_program_usage(program_name: &str, opts: &Options) {
   let program_usage = format!("The usage of this program: {} [options]", program_name);
   print!("{}", opts.usage(&program_usage));
-}
-
-#[inline]
-fn get_lbpp_mat_from_parasor(seq: SeqSlice, max_bp_span: usize, min_bpp: Prob) -> SparseProbMat {
-  let arg_1 = format!("--bpp={}", min_bpp);
-  let arg_2 = max_bp_span.to_string();
-  let args = unsafe {vec!["-f", from_utf8_unchecked(seq), "--pre", &arg_1, "--constraint", &arg_2]};
-  let parasor_output = unsafe {String::from_utf8_unchecked(run_command(PARASOR_COMMAND, &args, "Failed to run ParasoR.").stdout)};
-  parasor_output.lines().filter(|line| {!line.starts_with("#")}).map(|line| {
-    let strings = line.trim().splitn(4, '\t').collect::<Vec<&str>>();
-    (
-      (
-        strings[1].parse().expect("Failed to parse a string."),
-        strings[2].parse().expect("Failed to parse a string."),
-      ),
-      strings[3].parse::<Prob>().expect("Failed to parse a string.").log2()
-    )
-  }).collect::<SparseLogProbMat>()
-}
-
-fn run_command(command: &str, args: &[&str], expect: &str) -> Output {
-  Command::new(command).args(args).output().expect(expect)
 }

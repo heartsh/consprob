@@ -1,8 +1,8 @@
 [package]
-name = "io-algo-4-rna-stapmq"
+name = "strap"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "\"io-algo-4-rna-stapmq\", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Quadruple"
+description = "STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruple"
 
 [dependencies]
 bio-seq-algos = "0.1"
@@ -17,4 +17,4 @@ num_cpus = "1.0"
 
 [lib]
 path = "src/lib.rs"
-name = "io_algo_4_rna_stapmq"
+name = "strap"

@@ -1,5 +1,5 @@
-# "io-algo-4-rna-stapmq", Inside-outside Algorithm for RNA Structural-alignment Probability Matrix Quadruple
-This library provides an inside-outside algorithm for RNA structural-alignment probability matrix quadruple.
+# STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruple
+This binary provides an iterative-Bayesian-estimation algorithm for RNA structural-alignment probability matrix quadruples.
 
 # Author
 [Heartsh](https://github.com/heartsh)

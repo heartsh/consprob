@@ -21,10 +21,10 @@ def main():
   bap_mat_on_sta_file_path = asset_dir_path + "/sampled_trnas/bap_mats_on_sta.dat"
   bap_mats_on_sta = utils.get_bap_mats(bap_mat_on_sta_file_path, seq_lens)
   for rna_id_1 in range(0, num_of_records):
-    axes[num_of_records - 1 - rna_id_1][rna_id_1].set_visible(False)
+    axes[rna_id_1][rna_id_1].set_visible(False)
     for rna_id_2 in range(rna_id_1 + 1, num_of_records):
-      seaborn.heatmap(bap_mats_on_sa[(rna_id_1, rna_id_2)], ax = axes[num_of_records - 1 - rna_id_2][rna_id_1], xticklabels = False, yticklabels = False, cbar = False)
-      seaborn.heatmap(bap_mats_on_sta[(rna_id_1, rna_id_2)].transpose(), ax = axes[num_of_records - 1 - rna_id_1][rna_id_2], xticklabels = False, yticklabels = False, cbar = False)
+      seaborn.heatmap(bap_mats_on_sa[(rna_id_1, rna_id_2)], ax = axes[rna_id_1][rna_id_2], xticklabels = False, yticklabels = False, cbar = False)
+      seaborn.heatmap(bap_mats_on_sta[(rna_id_1, rna_id_2)].transpose(), ax = axes[rna_id_2][rna_id_1], xticklabels = False, yticklabels = False, cbar = False)
   image_dir_path = asset_dir_path + "/images"
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)
