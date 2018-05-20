@@ -53,6 +53,7 @@ const BAP_MAT_ON_STA_FILE_NAME: &'static str = "bap_mats_on_sta.dat";
 const BPIP_MAT_FILE_NAME_1: &'static str = "bpip_mats_1.dat";
 const BPIP_MAT_FILE_NAME_2: &'static str = "bpip_mats_2.dat";
 const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
+const VERSION: &'static str = "0.1";
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -193,7 +194,7 @@ fn main() {
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The path to the input file to compute the base-pairing matrices on secondary structure in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"min_base_pairing_prob\" = {}, \"max_base_pairing_span\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), min_bpp, max_bp_span, num_of_threads);
+  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The STRAP program version {}.\n; The path to the input file to compute the Base-Pairing Probability Matrices (= BPPMs) on secondary structure (= SS) in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"min_base_pairing_prob\" = {}, \"max_base_pairing_span\" = {}, \"num_of_threads\" = {}.", VERSION, input_file_path.display(), min_bpp, max_bp_span, num_of_threads) + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on SS.";
   let bpp_mat_on_ss_file_path = output_dir_path.join(BPP_MAT_ON_SS_FILE_NAME);
   let mut writer_2_bpp_mat_on_ss_file = BufWriter::new(File::create(bpp_mat_on_ss_file_path).expect("Failed to create an output file."));
   for (rna_id, lbpp_mat) in lbpp_mats.iter().enumerate() {
@@ -248,7 +249,7 @@ fn main() {
     }
   });
   let mut lbap_mats_with_rna_id_pairs = lbap_mats_with_rna_id_pairs_from_pct;
-  let mut buf_4_writer_2_bap_mat_on_sa_file = format!("; The path to the input file to compute the base alignment probability matrices on sequence alignment in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"base_match_score\" = {}, \"base_mismatch_score\" = {}, \"base_opening_gap_penalty_on_sa\" = {}, \"base_extending_gap_penalty_on_sa\" = {}, \"min_base_align_prob\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), bms, bmms, bogp_on_sa, begp_on_sa, min_bap, num_of_threads);
+  let mut buf_4_writer_2_bap_mat_on_sa_file = format!("; The STRAP program version {}.\n; The path to the input file to compute the base alignment probability matrices (= BAPMs) on sequence alignment (= SA) in this file = \"{}\".\n; The values of the parameters used to compute these matrices are as follows.\n; \"base_match_score\" = {}, \"base_mismatch_score\" = {}, \"base_opening_gap_penalty_on_sa\" = {}, \"base_extending_gap_penalty_on_sa\" = {}, \"min_base_align_prob\" = {}, \"num_of_threads\" = {}.", VERSION, input_file_path.display(), bms, bmms, bogp_on_sa, begp_on_sa, min_bap, num_of_threads) + "\n; Each row beginning with \">\" is with the 2 IDs of 2 RNA sequences. The row next to this row is with the BAPM between these 2 sequences on SA.";
   let bap_mat_on_sa_file_path = output_dir_path.join(BAP_MAT_ON_SA_FILE_NAME);
   let mut writer_2_bap_mat_on_sa_file = BufWriter::new(File::create(bap_mat_on_sa_file_path).expect("Failed to create an output file."));
   for (rna_id_pair, lbap_mat) in &lbap_mats_with_rna_id_pairs {
@@ -323,7 +324,7 @@ fn main() {
   let bpip_mat_file_path_1 = output_dir_path.join(BPIP_MAT_FILE_NAME_1);
   let bpip_mat_file_path_2 = output_dir_path.join(BPIP_MAT_FILE_NAME_2);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
-  let mut buf_4_writer_2_bpp_mat_on_sta_file = String::from("; The path to the input file to compute the base-pairing matrices on structural alignment") + &output_file_header;
+  let mut buf_4_writer_2_bpp_mat_on_sta_file = format!("; The STRAP program version {}.\n; The path to the input file to compute the Base-Pairing Probability Matrices (= BPPMs) on STructural Alignment (= STA)", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
   let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
   for (rna_id, lbpp_mat) in lbpp_mats.iter().enumerate() {
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
@@ -339,10 +340,10 @@ fn main() {
   let mut writer_2_bap_mat_on_sta_file = BufWriter::new(File::create(bap_mat_on_sta_file_path).expect("Failed to create an output file."));
   let mut writer_2_bpip_mat_file_1 = BufWriter::new(File::create(bpip_mat_file_path_1).expect("Failed to create an output file."));
   let mut writer_2_bpip_mat_file_2 = BufWriter::new(File::create(bpip_mat_file_path_2).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_bpap_mat_file = String::from("; The path to the input file to compute the base pair alignment probability matrices") + &output_file_header;
-  let mut buf_4_writer_2_bap_mat_on_sta_file = String::from("; The path to the input file to compute the base alignment probability matrices on structural alignment") + &output_file_header;
-  let mut buf_4_writer_2_bpip_mat_file_1 = String::from("; The path to the input file to compute the base pair indel matrices") + &output_file_header;
-  let mut buf_4_writer_2_bpip_mat_file_2 = buf_4_writer_2_bpip_mat_file_1.clone();
+  let mut buf_4_writer_2_bpap_mat_file = format!("; The STRAP program version {}.\n; The path to the input file to compute the base pair alignment probability matrices (= BPAPMs)", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the 2 IDs of 2 RNA sequences. The row next to this row is with the BPAPM between these 2 sequences.";
+  let mut buf_4_writer_2_bap_mat_on_sta_file = format!("; The STRAP program version {}.\n; The path to the input file to compute the base alignment probability matrices (= BAPMs) on STructural Alignment (= STA)", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the 2 IDs of 2 RNA sequences. The row next to this row is with the BAPM between these 2 sequences on STA.";
+  let mut buf_4_writer_2_bpip_mat_file_1 = format!("; The STRAP program version {}.\n; The path to the input file to compute the base pair indel probability matrices (= BPIPMs) for the 1st RNA sequences", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the 2 IDs of 2 RNA sequences. The row next to this row is with the BPIPM for the 1st RNA sequence of these 2 sequences between these 2 sequences.";
+  let mut buf_4_writer_2_bpip_mat_file_2 = format!("; The STRAP program version {}.\n; The path to the input file to compute the base pair indel probability matrices (= BPIPMs) for the 2nd RNA sequences", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the 2 IDs of 2 RNA sequences. The row next to this row is with the BPIPM for the 2nd RNA sequence of these 2 sequences between these 2 sequences.";
   for (rna_id_pair, stapmq) in &stapmqs_with_rna_id_pairs {
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k, l), &bpap) in stapmq.base_pair_align_prob_mat.iter() {
