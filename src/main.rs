@@ -28,18 +28,18 @@ type FastaRecord = (FastaId, Seq);
 type FastaRecords = Vec<FastaRecord>;
 type LstapmqsWithRnaIdPairs = HashMap<RnaIdPair, LogStapmq, Hasher>;
 
-const DEFAULT_BMS: SaScore = 0.1;
-const DEFAULT_BMMS: SaScore = -0.1;
-const DEFAULT_BOGP_ON_SA: SaScore = -1.;
-const DEFAULT_BEGP_ON_SA: SaScore = -0.1;
+const DEFAULT_BMS: SaScore = 1.;
+const DEFAULT_BMMS: SaScore = -1.;
+const DEFAULT_BOGP_ON_SA: SaScore = -3.;
+const DEFAULT_BEGP_ON_SA: SaScore = -1.;
 lazy_static! {
-  static ref DEFAULT_LOG_NH_BPP: StaScore = {(0.01 as StaScore).log2()};
-  static ref DEFAULT_LOG_NH_BAP: StaScore = *DEFAULT_LOG_NH_BPP;
+  static ref DEFAULT_LOG_NH_BPP: StaScore = {(0.5 as StaScore).log2()};
+  static ref DEFAULT_LOG_NH_BAP: StaScore = {(0.06 as StaScore).log2()};
   static ref DEFAULT_SCALE_PARAM_4_BPA_SCORE: StaScore = - *DEFAULT_LOG_NH_BPP * 2.;
-  static ref DEFAULT_BOGP_ON_STA: StaScore = {(0.00_001 as StaScore).log2()};
-  static ref DEFAULT_BEGP_ON_STA: StaScore = *DEFAULT_LOG_NH_BPP;
-  static ref DEFAULT_LOGP: StaScore = *DEFAULT_BOGP_ON_STA;
-  static ref DEFAULT_LEGP: StaScore = *DEFAULT_BEGP_ON_STA;
+  static ref DEFAULT_BOGP_ON_STA: StaScore = {(0.95 as StaScore).log2()};
+  static ref DEFAULT_BEGP_ON_STA: StaScore = {(0.95 as StaScore).log2()};
+  static ref DEFAULT_LOGP: StaScore = {(0.1 as StaScore).log2()};
+  static ref DEFAULT_LEGP: StaScore = {(0.3 as StaScore).log2()};
 }
 const DEFAULT_OFFSET_BPA_SCORE: StaScore = 0.5;
 const DEFAULT_MIN_BPP: Prob = 0.01;
@@ -152,7 +152,6 @@ fn main() {
   } else {
     DEFAULT_MIN_BPP
   };
-  let min_lbpp = min_bpp.log2();
   let min_bap = if opts.opt_present("min_base_align_prob") {
     opts.opt_str("min_base_align_prob").expect("Failed to get a minimum base alignment probability from command arguments.").parse().expect("Failed to parse a minimum base alignment probability.")
   } else {
@@ -302,16 +301,13 @@ fn main() {
         let ref ref_2_lbpp_mat_pairs_with_rna_id_pairs = lbpp_mat_pairs_with_rna_id_pairs;
         scope.execute(move || {
           *lbpp_mat = pct_of_lbpp_mat(ref_2_lbpp_mat_pairs_with_rna_id_pairs, rna_id, num_of_fasta_records);
-          if i < num_of_times_of_improvements_of_stapmqs {
-            *lbpp_mat = remove_little_lbpps_from_sparse_lbpp_mat(lbpp_mat, min_lbpp);
-          }
         });
       }
       if i < num_of_times_of_improvements_of_stapmqs {
         for (rna_id_pair, lbap_mat) in lbap_mats_with_rna_id_pairs.iter_mut() {
           let ref ref_2_lbap_mat = lstapmqs_with_rna_id_pairs_from_pct[rna_id_pair].log_bap_mat;
           scope.execute(move || {
-            *lbap_mat = remove_little_lbaps_from_sparse_lbap_mat(ref_2_lbap_mat, min_lbap);
+            *lbap_mat = convert_log_base_of_sparse_lbap_mat(ref_2_lbap_mat);
           });
         }
       }
@@ -355,12 +351,12 @@ fn main() {
       buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, bap));
     }
     buf_4_writer_2_bap_mat_on_sta_file.push_str(&buf_4_rna_id_pair);
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id_pair.0);
+    let mut buf_4_rna_id = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), &bpip) in stapmq.base_pair_indel_prob_mat_1.iter() {
       buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpip));
     }
     buf_4_writer_2_bpip_mat_file_1.push_str(&buf_4_rna_id);
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id_pair.1);
+    let mut buf_4_rna_id = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), &bpip) in stapmq.bpip_mat_2.iter() {
       buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpip));
     }

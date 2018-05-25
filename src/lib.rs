@@ -1076,7 +1076,7 @@ pub fn get_sparse_lbap_mat(lbap_mat: &LogProbMat, min_lbap: LogProb) -> SparseLo
   let lbap_mat_dims = (lbap_mat.len(), lbap_mat[0].len());
   for i in 0 .. lbap_mat_dims.0 {
     for j in 0 .. lbap_mat_dims.1 {
-      let lbap = get_valid_log_prob(lbap_mat[i][j]) - LN_2;
+      let lbap = get_valid_log_prob(lbap_mat[i][j] / LN_2);
       if lbap >= min_lbap && lbap > NEG_INFINITY {
         sparse_lbap_mat.insert((i + 1, j + 1), lbap);
       }
@@ -1088,6 +1088,11 @@ pub fn get_sparse_lbap_mat(lbap_mat: &LogProbMat, min_lbap: LogProb) -> SparseLo
 #[inline]
 pub fn remove_little_lbaps_from_sparse_lbap_mat(lbap_mat: &SparseLogProbMat, min_lbap: LogProb) -> SparseLogProbMat {
   lbap_mat.iter().filter(|&(_, &lbap)| {lbap >= min_lbap && lbap > NEG_INFINITY}).map(|(pos_pair, &lbap)| {(*pos_pair, lbap)}).collect::<SparseLogProbMat>()
+}
+
+#[inline]
+pub fn convert_log_base_of_sparse_lbap_mat(lbap_mat: &SparseLogProbMat) -> SparseLogProbMat {
+  lbap_mat.iter().map(|(pos_pair, &lbap)| {(*pos_pair, lbap / LN_2)}).collect::<SparseLogProbMat>()
 }
 
 #[inline]
@@ -1165,7 +1170,7 @@ pub fn get_lbpp_mat_pair(lstapmqs_with_rna_id_pairs: &LstapmqsWithRnaIdPairs, rn
 #[inline]
 pub fn pct_of_lbpp_mat(lbpp_mat_pairs_with_rna_id_pairs: &LogProbMatPairsWithRnaIdPairs, rna_id_1: RnaId, num_of_rnas: usize) -> SparseLogProbMat {
   let mut lbpp_mat = SparseLogProbMat::default();
-  let log_coefficient = -fast_ln((num_of_rnas - 1) as Prob);
+  let log_coefficient = - fast_ln((num_of_rnas - 1) as Prob);
   let mut seqs_of_eps_of_terms_4_log_probs_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
   let mut max_eps_of_terms_4_log_probs_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
   for rna_id_2 in 0 .. num_of_rnas {
@@ -1194,7 +1199,7 @@ pub fn pct_of_lbpp_mat(lbpp_mat_pairs_with_rna_id_pairs: &LogProbMatPairsWithRna
   }
   for (pos_pair, eps_of_terms_4_log_prob) in seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.iter() {
     let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs[pos_pair];
-    let lbpp = get_valid_log_prob(log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)) - LN_2;
+    let lbpp = get_valid_log_prob((log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)) / LN_2);
     lbpp_mat.insert(*pos_pair, lbpp);
   }
   lbpp_mat
