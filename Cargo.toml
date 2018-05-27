@@ -2,7 +2,7 @@
 name = "strap"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruple"
+description = "STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruples"
 
 [dependencies]
 bio-seq-algos = "0.1"

@@ -1,5 +1,5 @@
-# STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruple
-This project provides an iterative-Bayesian-estimation binary for RNA structural-alignment probability matrix quadruples.
+# STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruples
+This project provides the STRAP program, an iterative-Bayesian-estimation binary for RNA structural-alignment probability matrix quadruples.
 
 # Dependencies
 This binary depends on [the ParasoR program](https://github.com/carushi/ParasoR) for estimation of base-pairing probability matrices.
