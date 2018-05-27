@@ -30,20 +30,20 @@ type LstapmqsWithRnaIdPairs = HashMap<RnaIdPair, LogStapmq, Hasher>;
 
 const DEFAULT_BMS: SaScore = 1.;
 const DEFAULT_BMMS: SaScore = -1.;
-const DEFAULT_BOGP_ON_SA: SaScore = -3.;
+const DEFAULT_BOGP_ON_SA: SaScore = -4.;
 const DEFAULT_BEGP_ON_SA: SaScore = -1.;
 lazy_static! {
   static ref DEFAULT_LOG_NH_BPP: StaScore = {(0.5 as StaScore).log2()};
-  static ref DEFAULT_LOG_NH_BAP: StaScore = {(0.06 as StaScore).log2()};
-  static ref DEFAULT_SCALE_PARAM_4_BPA_SCORE: StaScore = - *DEFAULT_LOG_NH_BPP * 2.;
+  static ref DEFAULT_LOG_NH_BAP: StaScore = {(0.5 as StaScore).log2()};
+  static ref DEFAULT_SCALE_PARAM_4_BPA_SCORE: StaScore = - *DEFAULT_LOG_NH_BPP * 1.;
   static ref DEFAULT_BOGP_ON_STA: StaScore = {(0.95 as StaScore).log2()};
   static ref DEFAULT_BEGP_ON_STA: StaScore = {(0.95 as StaScore).log2()};
-  static ref DEFAULT_LOGP: StaScore = {(0.1 as StaScore).log2()};
-  static ref DEFAULT_LEGP: StaScore = {(0.3 as StaScore).log2()};
+  static ref DEFAULT_LOGP: StaScore = {(0.95 as StaScore).log2()};
+  static ref DEFAULT_LEGP: StaScore = {(0.95 as StaScore).log2()};
 }
 const DEFAULT_OFFSET_BPA_SCORE: StaScore = 0.5;
-const DEFAULT_MIN_BPP: Prob = 0.01;
-const DEFAULT_MIN_BAP: Prob = 0.01;
+const DEFAULT_MIN_BPP: Prob = 0.05;
+const DEFAULT_MIN_BAP: Prob = 0.1;
 const DEFAULT_MAX_BP_SPAN: usize = 200;
 const DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS: usize = 5;
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
