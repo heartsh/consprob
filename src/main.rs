@@ -32,10 +32,10 @@ const DEFAULT_BMS: SaScore = 1.;
 const DEFAULT_BMMS: SaScore = -1.;
 const DEFAULT_BOGP_ON_SA: SaScore = -4.;
 const DEFAULT_BEGP_ON_SA: SaScore = -1.;
+const DEFAULT_NH_BPP: StaScore = 0.5;
+const DEFAULT_NH_BAP: StaScore = 0.5;
 lazy_static! {
-  static ref DEFAULT_LOG_NH_BPP: StaScore = {(0.5 as StaScore).log2()};
-  static ref DEFAULT_LOG_NH_BAP: StaScore = {(0.5 as StaScore).log2()};
-  static ref DEFAULT_SCALE_PARAM_4_BPA_SCORE: StaScore = - *DEFAULT_LOG_NH_BPP * 1.;
+  static ref DEFAULT_SCALE_PARAM_4_BPA_SCORE: StaScore = {- DEFAULT_NH_BPP.log2() * 1.};
   static ref DEFAULT_BOGP_ON_STA: StaScore = {(0.95 as StaScore).log2()};
   static ref DEFAULT_BEGP_ON_STA: StaScore = {(0.95 as StaScore).log2()};
   static ref DEFAULT_LOGP: StaScore = {(0.95 as StaScore).log2()};
@@ -63,8 +63,8 @@ fn main() {
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
   opts.optopt("", "base_match_score", &format!("A base match score (Uses {} by default)", DEFAULT_BMS), "FLOAT");
   opts.optopt("", "base_mismatch_score", &format!("A base mismatch score (Uses {} by default)", DEFAULT_BMMS), "FLOAT");
-  opts.optopt("", "log_null_hypothesis_base_pairing_prob", &format!("The logarithm Base-Pairing Probability (= BPP) on a null hypothesis (Uses {} by default)", *DEFAULT_LOG_NH_BPP), "FLOAT");
-  opts.optopt("", "log_null_hypothesis_base_align_prob", &format!("The logarithm base alignment probability (= BAP) on a null hypothesis (Uses {} by default)", *DEFAULT_LOG_NH_BAP), "FLOAT");
+  opts.optopt("", "null_hypothesis_base_pairing_prob", &format!("The Base-Pairing Probability (= BPP) on a null hypothesis (Uses {} by default)", DEFAULT_NH_BPP), "FLOAT");
+  opts.optopt("", "null_hypothesis_base_align_prob", &format!("The base alignment probability (= BAP) on a null hypothesis (Uses {} by default)", DEFAULT_NH_BAP), "FLOAT");
   opts.optopt("", "scale_param_4_base_pair_align_score", &format!("A scale parameter for a base pair alignment score (Uses {} by default)", *DEFAULT_SCALE_PARAM_4_BPA_SCORE), "FLOAT");
   opts.optopt("", "offset_base_pair_align_score", &format!("An offset base pair alignment score (Uses {} by default)", DEFAULT_OFFSET_BPA_SCORE), "FLOAT");
   opts.optopt("", "base_opening_gap_penalty_on_sa", &format!("A base opening gap penalty on sequence alignment (= SA) (Uses {} by default)", DEFAULT_BOGP_ON_SA), "FLOAT");
@@ -76,7 +76,7 @@ fn main() {
   opts.optopt("", "min_base_pairing_prob", &format!("A minimum BPP (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "min_base_align_prob", &format!("A minimum BAP (Uses {} by default)", DEFAULT_MIN_BAP), "FLOAT");
   opts.optopt("", "max_base_pairing_span", &format!("A maximum base-pairing span (Uses {} by default)", DEFAULT_MAX_BP_SPAN), "FLOAT");
-  opts.optopt("", "num_of_times_of_improvements_of_stapmqs", &format!("The number of times of the improvements of structural-alignment probability quadruples (Uses {} by default)", DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS), "UINT");
+  opts.optopt("", "num_of_times_of_improvements_of_struct_align_prob_mat_quadruples", &format!("The number of times of the improvements of structural-alignment probability quadruples (Uses {} by default)", DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
   let opts = match opts.parse(&args[1 ..]) {
@@ -107,16 +107,16 @@ fn main() {
   } else {
     DEFAULT_BEGP_ON_SA
   };
-  let log_nh_bpp = if opts.opt_present("log_null_hypothesis_base_pairing_prob") {
-    opts.opt_str("log_null_hypothesis_base_pairing_prob").expect("Failed to get the logarithm base-pairing probability on a null hypothesis from command arguments.").parse().expect("Failed to parse the logarithm base-pairing probability on a null hypothesis.")
+  let log_nh_bpp = if opts.opt_present("null_hypothesis_base_pairing_prob") {
+    opts.opt_str("null_hypothesis_base_pairing_prob").expect("Failed to get the base-pairing probability on a null hypothesis from command arguments.").parse().expect("Failed to parse the base-pairing probability on a null hypothesis.")
   } else {
-    *DEFAULT_LOG_NH_BPP
-  };
-  let log_nh_bap = if opts.opt_present("log_null_hypothesis_base_align_prob") {
-    opts.opt_str("log_null_hypothesis_base_align_prob").expect("Failed to get the logarithm base alignment probability on a null hypothesis from command arguments.").parse().expect("Failed to parse the logarithm base alignment probability on a null hypothesis.")
+    DEFAULT_NH_BPP
+  }.log2();
+  let log_nh_bap = if opts.opt_present("null_hypothesis_base_align_prob") {
+    opts.opt_str("null_hypothesis_base_align_prob").expect("Failed to get the base alignment probability on a null hypothesis from command arguments.").parse().expect("Failed to parse the base alignment probability on a null hypothesis.")
   } else {
-    *DEFAULT_LOG_NH_BAP
-  };
+    DEFAULT_NH_BAP
+  }.log2();
   let scale_param_4_bpa_score = if opts.opt_present("scale_param_4_base_pair_align_score") {
     opts.opt_str("scale_param_4_base_pair_align_score").expect("Failed to get a scale parameter for a base pair alignment score from command arguments.").parse().expect("Failed to parse a scale parameter for a base pair alignment score.")
   } else {
@@ -163,8 +163,8 @@ fn main() {
   } else {
     DEFAULT_MAX_BP_SPAN
   };
-  let num_of_times_of_improvements_of_stapmqs = if opts.opt_present("num_of_times_of_improvements_of_stapmqs") {
-    opts.opt_str("num_of_times_of_improvements_of_stapmqs").expect("Failed to get the number of times of the improvements of structural-alignment probability quadruples from command arguments.").parse().expect("Failed to parse the number of times of the improvements of structural-alignment probability quadruples.")
+  let num_of_times_of_improvements_of_stapmqs = if opts.opt_present("num_of_times_of_improvements_of_struct_align_prob_mat_quadruples") {
+    opts.opt_str("num_of_times_of_improvements_of_struct_align_prob_mat_quadruples").expect("Failed to get the number of times of the improvements of structural-alignment probability quadruples from command arguments.").parse().expect("Failed to parse the number of times of the improvements of structural-alignment probability quadruples.")
   } else {
     DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS
   };
