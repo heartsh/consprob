@@ -52,7 +52,7 @@ def main():
     + colored.green("p >= %.0e, " % (0.1 ** 12))
     + colored.cyan("p >= %.0e, " % (0.1 ** 15))
     + colored.blue("p < %.0e" % (0.1 ** 15))
-    + colored.black(" where p is the product of the BAPs\nfor the base pairs and unaligned base probabilities for the bases aligned with base gaps in a\ncolor-coded column")
+    + colored.black(" where p is the product of the BAPs\nfor the base pairs and unaligned-base probabilities for the bases aligned with base gaps in a\ncolor-coded column")
   )
 
 if __name__ == "__main__":

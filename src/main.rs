@@ -178,7 +178,7 @@ fn main() {
   for fasta_record in fasta_file_reader.records() {
     let fasta_record = fasta_record.expect("Failed to read a FASTA record.");
     let seq = unsafe {from_utf8_unchecked(fasta_record.seq()).to_uppercase().as_bytes().iter().filter(|&&base| {is_rna_base(base)}).map(|&base| {base}).collect()};
-    fasta_records.push((String::from(fasta_record.id().expect("Failed to get the ID of a FASTA record.")), seq));
+    fasta_records.push((String::from(fasta_record.id()), seq));
   }
   let num_of_fasta_records = fasta_records.len();
   let mut lbpp_mats = vec![SparseLogProbMat::default(); num_of_fasta_records];

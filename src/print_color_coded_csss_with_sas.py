@@ -39,7 +39,7 @@ def main():
   sa_file_path = asset_dir_path + "/sampled_trnas/ref_sa.aln"
   sa = AlignIO.read(sa_file_path, "clustal")
   sa_len = sa.get_alignment_length()
-  css_file_path = asset_dir_path + "/sampled_trnas/css_from_ref_sa.sth"
+  css_file_path = asset_dir_path + "/sampled_trnas/ref_css.sth"
   css_string = utils.get_css_string(css_file_path)
   css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)

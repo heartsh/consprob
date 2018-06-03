@@ -38,7 +38,7 @@ def get_bap_mats(bap_mat_file_path, seq_lens):
     for string in lines[i + 1].strip().split(" "):
       substrings = string.split(",")
       (j, k, bap) = (int(substrings[0]), int(substrings[1]), float(substrings[2]))
-      if bap >= 0.01:
+      if bap >= 0.001:
         bap_mat[j, k] = bap
     bap_mats[rna_id_pair] = bap_mat
   return bap_mats
@@ -58,19 +58,19 @@ def print_color_coded_sa(sa, bap_mats_on_sa, uabp_seq_pairs, nums_of_gaps_in_fro
           if bap > 0:
             sum_of_log_probs += log(bap, 2)
           else:
-            sum_of_log_probs += log(0.01, 2)
+            sum_of_log_probs += log(0.001, 2)
         elif char_1 != "-" and char_2 == "-":
           uabp = uabp_seq_pairs[(j, k)][0][pos_without_gaps_1]
           if uabp > 0:
             sum_of_log_probs += log(uabp, 2)
           else:
-            sum_of_log_probs += log(0.01, 2)
+            sum_of_log_probs += log(0.001, 2)
         elif char_1 == "-" and char_2 != "-":
           uabp = uabp_seq_pairs[(j, k)][1][pos_without_gaps_2]
           if uabp > 0:
             sum_of_log_probs += log(uabp, 2)
           else:
-            sum_of_log_probs += log(0.01, 2)
+            sum_of_log_probs += log(0.001, 2)
     for j in range(0, num_of_records):
       char = sa[j].seq[i].upper()
       color_coded_char = colored.blue(char)
@@ -120,7 +120,7 @@ def get_unaligned_base_prob_seq_pairs(bap_mats, num_of_records, seq_lens):
               max_ep_of_term_4_log_rob = lbap
         if len(eps_of_terms_4_log_prob) > 0:
           uabp = 1 - 2 ** logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)
-          if uabp > 0.01:
+          if uabp > 0.001:
             uabp_seq_pairs[(i, j)][0][k] = uabp
       for k in range(0, seq_len_2):
         eps_of_terms_4_log_prob = []
@@ -134,7 +134,7 @@ def get_unaligned_base_prob_seq_pairs(bap_mats, num_of_records, seq_lens):
               max_ep_of_term_4_log_prob = lbap
         if len(eps_of_terms_4_log_prob) > 0:
           uabp = 1 - 2 ** logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)
-          if uabp > 0.01:
+          if uabp > 0.001:
             uabp_seq_pairs[(i, j)][1][k] = uabp
   return uabp_seq_pairs
 
@@ -175,7 +175,7 @@ def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_i
         if bpap > 0:
           sum_of_lbpaps += log(bpap, 2)
         else:
-          sum_of_lbpaps += 4 * log(0.01, 2)
+          sum_of_lbpaps += 4 * log(0.001, 2)
     for k in range(0, num_of_records + 1):
       for l in (i, j):
         char = colored.clean(color_coded_css_with_sa[k][l])
@@ -226,7 +226,7 @@ def get_bpp_mats(bpp_mat_file_path, seq_lens):
     for string in lines[i + 1].strip().split(" "):
       substrings = string.split(",")
       (j, k, bpp) = (int(substrings[0]), int(substrings[1]), float(substrings[2]))
-      if bpp >= 0.01:
+      if bpp >= 0.001:
         bpp_mat[j, k] = bpp
     bpp_mats[rna_id] = bpp_mat
   return bpp_mats
