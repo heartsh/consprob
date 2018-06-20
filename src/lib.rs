@@ -1066,11 +1066,6 @@ pub fn pct_of_lbap_mat(lbap_mats_with_rna_id_pairs: &LogProbMatsWithRnaIdPairs, 
 }
 
 #[inline]
-pub fn remove_little_lbpps_from_sparse_lbpp_mat(lbpp_mat: &SparseLogProbMat, min_lbpp: LogProb) -> SparseLogProbMat {
-  lbpp_mat.iter().filter(|&(_, &lbpp)| {lbpp >= min_lbpp && lbpp > NEG_INFINITY}).map(|(pos_pair, &lbpp)| {(*pos_pair, lbpp)}).collect::<SparseLogProbMat>()
-}
-
-#[inline]
 pub fn get_sparse_lbap_mat(lbap_mat: &LogProbMat, min_lbap: LogProb) -> SparseLogProbMat {
   let mut sparse_lbap_mat = SparseLogProbMat::default();
   let lbap_mat_dims = (lbap_mat.len(), lbap_mat[0].len());
@@ -1083,11 +1078,6 @@ pub fn get_sparse_lbap_mat(lbap_mat: &LogProbMat, min_lbap: LogProb) -> SparseLo
     }
   }
   sparse_lbap_mat
-}
-
-#[inline]
-pub fn remove_little_lbaps_from_sparse_lbap_mat(lbap_mat: &SparseLogProbMat, min_lbap: LogProb) -> SparseLogProbMat {
-  lbap_mat.iter().filter(|&(_, &lbap)| {lbap >= min_lbap && lbap > NEG_INFINITY}).map(|(pos_pair, &lbap)| {(*pos_pair, lbap)}).collect::<SparseLogProbMat>()
 }
 
 #[inline]
@@ -1168,41 +1158,34 @@ pub fn get_lbpp_mat_pair(lstapmqs_with_rna_id_pairs: &LstapmqsWithRnaIdPairs, rn
 }
 
 #[inline]
-pub fn pct_of_lbpp_mat(lbpp_mat_pairs_with_rna_id_pairs: &LogProbMatPairsWithRnaIdPairs, rna_id_1: RnaId, num_of_rnas: usize) -> SparseLogProbMat {
-  let mut lbpp_mat = SparseLogProbMat::default();
-  let log_coefficient = - fast_ln((num_of_rnas - 1) as Prob);
+pub fn pct_of_lbpp_mat(lbpp_mat: &mut SparseLogProbMat, lbpp_mat_pairs_with_rna_id_pairs: &LogProbMatPairsWithRnaIdPairs, rna_id_1: RnaId, num_of_rnas: usize) {
+  let log_coefficient = - fast_ln(num_of_rnas as Prob);
   let mut seqs_of_eps_of_terms_4_log_probs_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
   let mut max_eps_of_terms_4_log_probs_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
+  for (pos_pair, &lbpp) in lbpp_mat.iter() {
+    seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, vec![lbpp]);
+    max_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, lbpp);
+  }
   for rna_id_2 in 0 .. num_of_rnas {
     if rna_id_1 == rna_id_2 {continue;}
     let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
     let ref lbpp_mat_pair = lbpp_mat_pairs_with_rna_id_pairs[&rna_id_pair];
     for (pos_pair, &lbpp) in if rna_id_1 < rna_id_2 {lbpp_mat_pair.0.iter()} else {lbpp_mat_pair.1.iter()} {
-      let max_ep_of_term_4_log_prob_exists = match max_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(&pos_pair) {
-        Some(_) => {true},
-        None => {false},
-      };
-      if max_ep_of_term_4_log_prob_exists {
+      if lbpp.is_finite() {
         let eps_of_terms_4_log_prob = seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
-        if lbpp.is_finite() {
-          eps_of_terms_4_log_prob.push(lbpp);
-          let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
-          if lbpp > *max_ep_of_term_4_log_prob {
-            *max_ep_of_term_4_log_prob = lbpp;
-          }
+        eps_of_terms_4_log_prob.push(lbpp);
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+        if lbpp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lbpp;
         }
-      } else {
-        seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, vec![lbpp]);
-        max_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, lbpp);
       }
     }
   }
   for (pos_pair, eps_of_terms_4_log_prob) in seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.iter() {
     let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs[pos_pair];
     let lbpp = get_valid_log_prob((log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)) / LN_2);
-    lbpp_mat.insert(*pos_pair, lbpp);
+    *lbpp_mat.get_mut(pos_pair).expect("Failed to get an element of a hash map.") = lbpp;
   }
-  lbpp_mat
 }
 
 #[inline]

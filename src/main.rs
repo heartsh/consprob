@@ -43,8 +43,8 @@ lazy_static! {
 }
 const DEFAULT_OFFSET_BPA_SCORE: StaScore = 0.5;
 const DEFAULT_MIN_BPP: Prob = 0.05;
-const DEFAULT_MIN_BAP: Prob = 0.1;
-const DEFAULT_MAX_BP_SPAN: usize = 200;
+const DEFAULT_MIN_BAP: Prob = 0.2;
+const DEFAULT_MAX_BP_SPAN: usize = 0;
 const DEFAULT_NUM_OF_TIMES_OF_IMPROVEMENTS_OF_STAPMQS: usize = 5;
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 const BAP_MAT_ON_SA_FILE_NAME: &'static str = "bap_mats_on_sa.dat";
@@ -53,7 +53,7 @@ const BAP_MAT_ON_STA_FILE_NAME: &'static str = "bap_mats_on_sta.dat";
 const BPIP_MAT_FILE_NAME_1: &'static str = "bpip_mats_1.dat";
 const BPIP_MAT_FILE_NAME_2: &'static str = "bpip_mats_2.dat";
 const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
-const VERSION: &'static str = "0.1";
+const VERSION: &'static str = "0.1.0";
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -243,7 +243,7 @@ fn main() {
     for (rna_id_pair, lbap_mat) in lbap_mats_with_rna_id_pairs_from_pct.iter_mut() {
       let ref ref_2_lbap_mats_with_rna_id_pairs = lbap_mats_with_rna_id_pairs;
       scope.execute(move || {
-        *lbap_mat = remove_little_lbaps_from_sparse_lbap_mat(&pct_of_lbap_mat(ref_2_lbap_mats_with_rna_id_pairs, rna_id_pair, num_of_fasta_records), min_lbap);
+        *lbap_mat = pct_of_lbap_mat(ref_2_lbap_mats_with_rna_id_pairs, rna_id_pair, num_of_fasta_records);
       });
     }
   });
@@ -300,7 +300,7 @@ fn main() {
       for (rna_id, lbpp_mat) in lbpp_mats.iter_mut().enumerate() {
         let ref ref_2_lbpp_mat_pairs_with_rna_id_pairs = lbpp_mat_pairs_with_rna_id_pairs;
         scope.execute(move || {
-          *lbpp_mat = pct_of_lbpp_mat(ref_2_lbpp_mat_pairs_with_rna_id_pairs, rna_id, num_of_fasta_records);
+          pct_of_lbpp_mat(lbpp_mat, ref_2_lbpp_mat_pairs_with_rna_id_pairs, rna_id, num_of_fasta_records);
         });
       }
       if i < num_of_times_of_improvements_of_stapmqs {
