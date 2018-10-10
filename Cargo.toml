@@ -1,12 +1,14 @@
 [package]
-name = "strap"
+name = "stem"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "STRAP Program, Iterative-Bayesian-estimation Program for RNA Structural-alignment Probability Matrix Quadruples"
+description = "STEM Program, Program for Approximate Expectation-maximization of RNA Structural-alignment Posterior Probabilities"
 
 [dependencies]
-bio-seq-algos = "0.1"
-rna-algos = "0.1"
+# bio-seq-algos = "0.1"
+# bio-seq-algos = {path = "../bio-seq-algos"}
+# rna-algos = "0.1"
+rna-algos = {path = "../rna-algos"}
 itertools = "0.7"
 lazy_static = "0.1"
 time = "0.1"
@@ -17,4 +19,4 @@ num_cpus = "1.0"
 
 [lib]
 path = "src/lib.rs"
-name = "strap"
+name = "stem"
