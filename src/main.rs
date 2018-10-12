@@ -50,7 +50,7 @@ fn main() {
   opts.reqopt("i", "input_file_path", "The path to an input FASTA file containing RNA sequences", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
-  opts.optopt("", "gap_num", &format!("A gap number for setting a minimum gap-number; the gap number plus the difference of 2 RNA sequences is a minimum gap number (Uses {} by default)", DEFAULT_GAP_NUM), "UINT");
+  opts.optopt("", "gap_num", &format!("A gap number for setting a maximum gap-number; the gap number plus the difference of 2 RNA sequences is a maximum gap number (Uses {} by default)", DEFAULT_GAP_NUM), "UINT");
   opts.optopt("", "max_base_pairing_span", &format!("A maximum base-pairing span (Uses {} by default)", DEFAULT_MAX_BP_SPAN), "FLOAT");
   opts.optopt("", "num_of_times_of_expect_max_iter", &format!("The number of times of an expectation-maximization iteration (Uses {} by default)", DEFAULT_NUM_OF_TIMES_OF_EXPECT_MAX_ITER), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
@@ -236,37 +236,29 @@ fn main() {
   let mut buf_4_writer_2_rgp_mat_file_2 = buf_4_writer_2_rgp_mat_file_1.clone();
   for (rna_id_pair, stapmt) in &stapmts_with_rna_id_pairs {
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    let seq_len_pair = (stapmt.base_align_prob_mat.len() - 2, stapmt.base_align_prob_mat[0].len() - 2);
-    for (i, baps) in stapmt.base_align_prob_mat.iter().enumerate() {
-      if i == 0 || i == seq_len_pair.0 + 1 {continue;}
-      for (j, &bap) in baps.iter().enumerate() {
-        if j == 0 || j == seq_len_pair.1 + 1 {continue;}
-        buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, bap));
-      }
+    for (&(i, j), bap) in stapmt.base_align_prob_mat.iter() {
+      buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, bap));
     }
     buf_4_writer_2_bap_mat_file.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    for (i, &ogp) in stapmt.opening_gap_prob_mat_1.iter().enumerate() {
-      if i == 0 || i == seq_len_pair.0 + 1 {continue;}
-      buf_4_rna_id_pair.push_str(&format!("{},{} ", i - 1, ogp));
+    let seq_len_pair = (fasta_records[rna_id_pair.0].seq.len(), fasta_records[rna_id_pair.1].seq.len());
+    for i in 0 .. seq_len_pair.0 {
+      buf_4_rna_id_pair.push_str(&format!("{},{} ", i, stapmt.opening_gap_prob_mat_1[i + 1]));
     }
     buf_4_writer_2_ogp_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    for (i, &ogp) in stapmt.ogp_mat_2.iter().enumerate() {
-      if i == 0 || i == seq_len_pair.1 + 1 {continue;}
-      buf_4_rna_id_pair.push_str(&format!("{},{} ", i - 1, ogp));
+    for i in 0 .. seq_len_pair.1 {
+      buf_4_rna_id_pair.push_str(&format!("{},{} ", i, stapmt.ogp_mat_2[i + 1]));
     }
     buf_4_writer_2_ogp_mat_file_2.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    for (i, &egp) in stapmt.extending_gap_prob_mat_1.iter().enumerate() {
-      if i == 0 || i == seq_len_pair.0 + 1 {continue;}
-      buf_4_rna_id_pair.push_str(&format!("{},{} ", i - 1, egp));
+    for i in 0 .. seq_len_pair.0 {
+      buf_4_rna_id_pair.push_str(&format!("{},{} ", i, stapmt.extending_gap_prob_mat_1[i + 1]));
     }
     buf_4_writer_2_egp_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
-    for (i, &egp) in stapmt.egp_mat_2.iter().enumerate() {
-      if i == 0 || i == seq_len_pair.1 + 1 {continue;}
-      buf_4_rna_id_pair.push_str(&format!("{},{} ", i - 1, egp));
+    for i in 0 .. seq_len_pair.1 {
+      buf_4_rna_id_pair.push_str(&format!("{},{} ", i, stapmt.egp_mat_2[i + 1]));
     }
     buf_4_writer_2_egp_mat_file_2.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
@@ -277,61 +269,51 @@ fn main() {
     buf_4_writer_2_bpap_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k, l), &bpap) in stapmt.bpap_mat_2.iter() {
-      if i == 0 || j == seq_len_pair.0 + 1 || k == 0 || l == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{},{} ", i - 1, j - 1, k - 1, l - 1, bpap));
     }
     buf_4_writer_2_bpap_mat_file_2.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k, l), &bpap) in stapmt.bpap_mat_3.iter() {
-      if i == 0 || j == seq_len_pair.0 + 1 || k == 0 || l == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{},{} ", i - 1, j - 1, k - 1, l - 1, bpap));
     }
     buf_4_writer_2_bpap_mat_file_3.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), &ogpp) in stapmt.opening_gap_pair_prob_mat_1.iter() {
-      if i == 0 || j == seq_len_pair.0 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, ogpp));
     }
     buf_4_writer_2_ogpp_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), &ogpp) in stapmt.ogpp_mat_2.iter() {
-      if i == 0 || j == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, ogpp));
     }
     buf_4_writer_2_ogpp_mat_file_2.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), &egpp) in stapmt.extending_gap_pair_prob_mat_1.iter() {
-      if i == 0 || j == seq_len_pair.0 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, egpp));
     }
     buf_4_writer_2_egpp_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), &egpp) in stapmt.egpp_mat_2.iter() {
-      if i == 0 || j == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{} ", i - 1, j - 1, egpp));
     }
     buf_4_writer_2_egpp_mat_file_2.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k), &lgp) in stapmt.left_gap_prob_mat_1.iter() {
-      if i == 0 || j == seq_len_pair.0 + 1 || k == 0 || k == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{} ", i - 1, j - 1, k - 1, lgp));
     }
     buf_4_writer_2_lgp_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k), &lgp) in stapmt.lgp_mat_2.iter() {
-      if i == 0 || i == seq_len_pair.0 + 1 || j == 0 || k == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{} ", i - 1, j - 1, k - 1, lgp));
     }
     buf_4_writer_2_lgp_mat_file_2.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k), &rgp) in stapmt.right_gap_prob_mat_1.iter() {
-      if i == 0 || j == seq_len_pair.0 + 1 || k == 0 || k == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{} ", i - 1, j - 1, k - 1, rgp));
     }
     buf_4_writer_2_rgp_mat_file_1.push_str(&buf_4_rna_id_pair);
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j, k), &rgp) in stapmt.rgp_mat_2.iter() {
-      if i == 0 || i == seq_len_pair.0 + 1 || j == 0 || k == seq_len_pair.1 + 1 {continue;}
       buf_4_rna_id_pair.push_str(&format!("{},{},{},{} ", i - 1, j - 1, k - 1, rgp));
     }
     buf_4_writer_2_rgp_mat_file_2.push_str(&buf_4_rna_id_pair);
@@ -402,9 +384,9 @@ fn main() {
   let mut writer_2_nbpp_mat_file = BufWriter::new(File::create(nbpp_mat_file_path).expect("Failed to create an output file."));
   for (rna_id, lnbpp_mat) in lnbpp_mats.iter().enumerate() {
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &lnbpp) in lnbpp_mat.iter().enumerate() {
-      if i == 0 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, lnbpp.exp()));
+    let seq_len = fasta_records[rna_id].seq.len();
+    for i in 0 .. seq_len {
+      buf_4_rna_id.push_str(&format!("{},{} ", i, lnbpp_mat[i + 1].exp()));
     }
     buf_4_writer_2_nbpp_mat_file.push_str(&buf_4_rna_id);
   }

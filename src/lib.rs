@@ -20,7 +20,7 @@ pub type SparseProbMat = HashMap<PosPair, Prob, Hasher>;
 pub type Prob3dMat = HashMap<PosTriple, Prob, Hasher>;
 pub type Prob4dMat = HashMap<PosQuadruple, Prob, Hasher>;
 pub struct Stapmt {
-  pub base_align_prob_mat: ProbMat,
+  pub base_align_prob_mat: SparseProbMat,
   pub opening_gap_prob_mat_1: Probs,
   pub ogp_mat_2: Probs,
   pub extending_gap_prob_mat_1: Probs,
@@ -46,7 +46,7 @@ pub type LogProb3dMat = HashMap<PosTriple, LogProb, Hasher>;
 pub type LogProb4dMat = HashMap<PosQuadruple, LogProb, Hasher>;
 #[derive(Clone)]
 pub struct LogStapmt {
-  pub lbap_mat: LogProbMat,
+  pub lbap_mat: SparseLogProbMat,
   pub logp_mat_1: LogProbs,
   pub logp_mat_2: LogProbs,
   pub legp_mat_1: LogProbs,
@@ -130,7 +130,7 @@ impl LogStapmt {
     let log_prob_3d_mat = LogProb3dMat::default();
     let log_prob_4d_mat = LogProb4dMat::default();
     LogStapmt {
-      lbap_mat: vec![vec![NEG_INFINITY; seq_len_pair.1 + 2]; seq_len_pair.0 + 2],
+      lbap_mat: log_prob_mat.clone(),
       logp_mat_1: log_prob_seq_pair.0.clone(),
       logp_mat_2: log_prob_seq_pair.1.clone(),
       legp_mat_1: log_prob_seq_pair.0.clone(),
@@ -158,7 +158,7 @@ impl LogStapmt {
     let log_prob_3d_mat = LogProb3dMat::default();
     let log_prob_4d_mat = LogProb4dMat::default();
     LogStapmt {
-      lbap_mat: LogProbMat::new(),
+      lbap_mat: log_prob_mat.clone(),
       logp_mat_1: log_probs.clone(),
       logp_mat_2: log_probs.clone(),
       legp_mat_1: log_probs.clone(),
@@ -223,9 +223,10 @@ impl StaFeParams {
       sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_1[i + 1] = lbp;
       for j in 0 .. seq_len_pair.1 {
         let pos_pair = (i + 1, j + 1);
+        if get_min_gap_num_1(&pos_pair) > max_gap_num {continue;}
         let base_pair = (base, seq_pair.1[j]);
-        sta_fe_params.lstapmt.lbap_mat[pos_pair.0][pos_pair.1] = STEM_PARAMS.lbaps_with_base_pairs[&base_pair];
-        sta_fe_params.lstapmt_on_random_assump.lbap_mat[pos_pair.0][pos_pair.1] = STEM_PARAMS.lbps_with_bases[&base_pair.0] + STEM_PARAMS.lbps_with_bases[&base_pair.1];
+        sta_fe_params.lstapmt.lbap_mat.insert(pos_pair, STEM_PARAMS.lbaps_with_base_pairs[&base_pair]);
+        sta_fe_params.lstapmt_on_random_assump.lbap_mat.insert(pos_pair, STEM_PARAMS.lbps_with_bases[&base_pair.0] + STEM_PARAMS.lbps_with_bases[&base_pair.1]);
       }
       for j in i + 1 .. seq_len_pair.0 {
         let pos_pair = (i + 1, j + 1);
@@ -244,12 +245,18 @@ impl StaFeParams {
           let base_triple = (base_pair.0, base_pair.1, seq_pair.1[k]);
           if STEM_PARAMS.llgps_with_base_triples.contains_key(&base_triple) && lbpp_mat_pair.0.contains_key(&pos_pair) {
             let sum_of_lbp_triple = STEM_PARAMS.lbps_with_bases[&base_triple.0] + STEM_PARAMS.lbps_with_bases[&base_triple.1] + STEM_PARAMS.lbps_with_bases[&base_triple.2];
-            sta_fe_params.lstapmt.llgp_mat_1.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
-            sta_fe_params.lstapmt_on_random_assump.llgp_mat_1.insert(pos_triple, sum_of_lbp_triple);
-            sta_fe_params.lstapmt.lrgp_mat_1.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
-            sta_fe_params.lstapmt_on_random_assump.lrgp_mat_1.insert(pos_triple, sum_of_lbp_triple);
+            if get_min_gap_num_1(&(j, k)) <= max_gap_num {
+              sta_fe_params.lstapmt.llgp_mat_1.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
+              sta_fe_params.lstapmt_on_random_assump.llgp_mat_1.insert(pos_triple, sum_of_lbp_triple);
+            }
+            if get_min_gap_num_1(&(i, k)) <= max_gap_num {
+              sta_fe_params.lstapmt.lrgp_mat_1.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
+              sta_fe_params.lstapmt_on_random_assump.lrgp_mat_1.insert(pos_triple, sum_of_lbp_triple);
+            }
           }
+          if get_min_gap_num_1(&(i, k)) > max_gap_num {continue;}
           for l in k + 1 .. seq_len_pair.1 {
+            if get_min_gap_num_1(&(j, l)) > max_gap_num {continue;}
             let pos_pair_2 = (pos_triple.2, l + 1);
             let pos_quadruple = (pos_pair.0, pos_pair.1, pos_pair_2.0, pos_pair_2.1);
             if get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
@@ -283,8 +290,9 @@ impl StaFeParams {
       sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_2[i + 1] = lbp;
       for j in i + 1 .. seq_len_pair.1 {
         let pos_pair = (i + 1, j + 1);
+        if !lbpp_mat_pair.1.contains_key(&pos_pair) {continue;}
         let base_pair = (seq_pair.1[i], seq_pair.1[j]);
-        if STEM_PARAMS.logpps_with_base_pairs.contains_key(&base_pair) && lbpp_mat_pair.1.contains_key(&pos_pair) {
+        if STEM_PARAMS.logpps_with_base_pairs.contains_key(&base_pair) {
           let sum_of_lbp_pair = STEM_PARAMS.lbps_with_bases[&base_pair.0] + STEM_PARAMS.lbps_with_bases[&base_pair.1];
           sta_fe_params.lstapmt.logpp_mat_2.insert(pos_pair, STEM_PARAMS.logpps_with_base_pairs[&base_pair]);
           sta_fe_params.lstapmt_on_random_assump.logpp_mat_2.insert(pos_pair, sum_of_lbp_pair);
@@ -296,12 +304,16 @@ impl StaFeParams {
         for k in 0 .. seq_len_pair.0 {
           let pos_triple = (k + 1, pos_pair.0, pos_pair.1);
           let base_triple = (seq_pair.0[k], base_pair.0, base_pair.1);
-          if STEM_PARAMS.llgps_with_base_triples.contains_key(&base_triple) && lbpp_mat_pair.1.contains_key(&pos_pair) {
+          if STEM_PARAMS.llgps_with_base_triples.contains_key(&base_triple) {
             let sum_of_lbp_triple = STEM_PARAMS.lbps_with_bases[&base_triple.0] + STEM_PARAMS.lbps_with_bases[&base_triple.1] + STEM_PARAMS.lbps_with_bases[&base_triple.2];
-            sta_fe_params.lstapmt.llgp_mat_2.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
-            sta_fe_params.lstapmt_on_random_assump.llgp_mat_2.insert(pos_triple, sum_of_lbp_triple);
-            sta_fe_params.lstapmt.lrgp_mat_2.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
-            sta_fe_params.lstapmt_on_random_assump.lrgp_mat_2.insert(pos_triple, sum_of_lbp_triple);
+            if get_min_gap_num_1(&(k, j)) <= max_gap_num {
+              sta_fe_params.lstapmt.llgp_mat_2.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
+              sta_fe_params.lstapmt_on_random_assump.llgp_mat_2.insert(pos_triple, sum_of_lbp_triple);
+            }
+            if get_min_gap_num_1(&(k, i)) <= max_gap_num {
+              sta_fe_params.lstapmt.lrgp_mat_2.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
+              sta_fe_params.lstapmt_on_random_assump.lrgp_mat_2.insert(pos_triple, sum_of_lbp_triple);
+            }
           }
         }
       }
@@ -371,7 +383,7 @@ pub fn io_algo_4_rna_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaF
 #[inline]
 fn get_stapmt(lstapmt: &LogStapmt) -> Stapmt {
   Stapmt {
-    base_align_prob_mat: lstapmt.lbap_mat.iter().map(|lbaps| {lbaps.iter().map(|&lbap| lbap.exp()).collect()}).collect(),
+    base_align_prob_mat: lstapmt.lbap_mat.iter().map(|(pos_pair, &lbap)| (*pos_pair, lbap.exp())).collect(),
     opening_gap_prob_mat_1: lstapmt.logp_mat_1.iter().map(|&logp| logp.exp()).collect(),
     ogp_mat_2: lstapmt.logp_mat_2.iter().map(|&logp| logp.exp()).collect(),
     extending_gap_prob_mat_1: lstapmt.legp_mat_1.iter().map(|&legp| legp.exp()).collect(),
@@ -405,7 +417,7 @@ pub fn get_log_sta_ppf_4d_mats(seq_len_pair: &(usize, usize), sta_fe_params: &St
         for k in 0 .. seq_len_pair.1 + 3 - substr_len_2 {
           let l = k + substr_len_2 - 1;
           let pos_quadruple = (i, j, k, l);
-          if !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
+          if get_min_gap_num_1(&(i, k)) > max_gap_num || get_min_gap_num_1(&(j, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
           let log_sta_pf = get_log_sta_forward_ppf_mats(&pos_quadruple, sta_fe_params, &log_sta_ppf_mats, max_gap_num).log_ppf_mat_1[&(j - 1, l - 1)];
           if !log_sta_pf.is_finite() {continue;}
           if sta_fe_params.lstapmt.lbpap_mat_1.contains_key(&pos_quadruple) {
@@ -471,6 +483,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
   for n in i .. j {
     for p in k .. l {
       let pos_pair_1 = (n, p);
+      if get_min_gap_num_1(&pos_pair_1) > max_gap_num || get_min_gap_num(&(i, n, k, p)) > max_gap_num {continue;}
       if n == i && p == k {
         log_sta_ppf_mats.log_ppf_mat_4_bas.insert(pos_pair_1, 0.);
         log_sta_ppf_mats.log_ppf_mat_1.insert(pos_pair_1, 0.);
@@ -483,7 +496,6 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         log_sta_ppf_mats.log_ppf_mat_4_gaps_1.insert(pos_pair_1, NEG_INFINITY);
         log_sta_ppf_mats.log_ppf_mat_4_gaps_2.insert(pos_pair_1, NEG_INFINITY);
       } else {
-        if get_min_gap_num(&(i, n, k, p)) > max_gap_num {continue;}
         if n == i || p == k {
           log_sta_ppf_mats.log_ppf_mat_4_bas.insert(pos_pair_1, NEG_INFINITY);
         } else {
@@ -496,7 +508,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
               let pos_pair = (m - 1, o - 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
@@ -559,7 +571,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (n - 1, p);
             max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair_2] + get_og_lor_1(n, sta_fe_params);
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -571,7 +583,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (m - 1, o - 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
@@ -606,7 +618,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (n, p - 1);
             max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair_2] + get_og_lor_2(p, sta_fe_params);
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -618,7 +630,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (m - 1, o - 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair];
@@ -653,7 +665,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (n - 1, p);
             max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair_2] + get_eg_lor_1(n, sta_fe_params);
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -665,7 +677,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (m - 1, o - 1);
               if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple) {
                 let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple];
@@ -689,7 +701,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (n, p - 1);
             max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair_2] + get_eg_lor_2(p, sta_fe_params);
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -701,7 +713,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (m - 1, o - 1);
               if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple) {
                 let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple];
@@ -729,7 +741,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
             let og_lor = get_og_lor_1(n, sta_fe_params);
             let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2] + og_lor;
             if ep_of_term_4_log_pf.is_finite() {
@@ -749,7 +761,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (m - 1, o - 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
@@ -797,7 +809,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
             let og_lor = get_og_lor_2(p, sta_fe_params);
             let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2] + og_lor;
             if ep_of_term_4_log_pf.is_finite() {
@@ -817,7 +829,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           for m in i + 1 .. n {
             for o in k + 1 .. p {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (m - 1, o - 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
@@ -912,7 +924,7 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
 
 #[inline]
 fn get_ba_log_odds_ratio(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.lbap_mat[pos_pair.0][pos_pair.1] - sta_fe_params.lstapmt_on_random_assump.lbap_mat[pos_pair.0][pos_pair.1]
+  sta_fe_params.lstapmt.lbap_mat[pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbap_mat[pos_pair]
 }
 
 #[inline]
@@ -1058,8 +1070,8 @@ fn get_rg_lor_2(pos_triple: &PosTriple, sta_fe_params: &StaFeParams) -> StaFreeE
 #[inline]
 fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, max_gap_num: usize) -> LogStapmt {
   let mut lstapmt = LogStapmt::new(seq_len_pair);
-  let mut mat_of_seqs_of_eps_of_terms_4_log_probs = vec![vec![EpsOfTerms4LogProb::new(); seq_len_pair.1 + 2]; seq_len_pair.0 + 2];
-  let mut mat_of_min_eps_of_terms_4_log_probs = vec![vec![INFINITY; seq_len_pair.1 + 2]; seq_len_pair.0 + 2];
+  let mut seqs_of_eps_of_terms_4_lbaps_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
+  let mut min_eps_of_terms_4_lbaps_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
   let mut seqs_of_eps_of_terms_4_logps_1 = vec![EpsOfTerms4LogProb::new(); seq_len_pair.0 + 2];
   let mut min_eps_of_terms_4_logps_1 = vec![INFINITY; seq_len_pair.0 + 2];
   let mut seqs_of_eps_of_terms_4_logps_2 = vec![EpsOfTerms4LogProb::new(); seq_len_pair.1 + 2];
@@ -1074,8 +1086,8 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
   let mut min_eps_of_terms_4_lbpaps_with_pos_quadruples_2 = min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
   let mut seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
   let mut min_eps_of_terms_4_lbpaps_with_pos_quadruples_3 = min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
-  let mut seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1 = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
-  let mut min_eps_of_terms_4_logpps_with_pos_pairs_1 = EpsOfTerms4LogProbsWithPosPairs::default();
+  let mut seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1 = seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.clone();
+  let mut min_eps_of_terms_4_logpps_with_pos_pairs_1 = min_eps_of_terms_4_lbaps_with_pos_pairs.clone();
   let mut seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2 = seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
   let mut min_eps_of_terms_4_logpps_with_pos_pairs_2 = min_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
   let mut seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1 = seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
@@ -1114,8 +1126,8 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
         let j = i + substr_len_1 - 1;
         for k in 0 .. seq_len_pair.1 + 3 - substr_len_2 {
           let l = k + substr_len_2 - 1;
+          if get_min_gap_num_1(&(i, k)) > max_gap_num || get_min_gap_num_1(&(j, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
           let pos_quadruple = (i, j, k, l);
-          if !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
           if pos_quadruple == pseudo_pos_quadruple {
             lstapmt.lbpap_mat_1.insert(pos_quadruple, 0.);
           } else {
@@ -1206,16 +1218,21 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
             let log_sta_backward_ppf_mats = get_log_sta_backward_ppf_mats(&pos_quadruple, sta_fe_params, &log_sta_ppf_4d_mats, max_gap_num);
             for n in i + 1 .. j {
               for p in k + 1 .. l {
-                if get_min_gap_num(&(i, n, k, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num {continue;}
+                let pos_pair = (n, p);
+                if get_min_gap_num_1(&pos_pair) > max_gap_num || get_min_gap_num(&(i, n, k, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num {continue;}
+                if !min_eps_of_terms_4_lbaps_with_pos_pairs.contains_key(&pos_pair) {
+                  seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.insert(pos_pair, EpsOfTerms4LogProb::new());
+                  min_eps_of_terms_4_lbaps_with_pos_pairs.insert(pos_pair, INFINITY);
+                }
                 let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(n - 1, p - 1)] + get_ba_log_odds_ratio(&(n, p), sta_fe_params) + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
                 if ep_of_term_4_log_prob.is_finite() {
-                  mat_of_seqs_of_eps_of_terms_4_log_probs[n][p].push(ep_of_term_4_log_prob);
-                  let ref mut min_ep_of_term_4_log_prob = mat_of_min_eps_of_terms_4_log_probs[n][p];
+                  seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                  let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
                   if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
                     *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                   }
                 }
-                if get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
+                if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
                   let og_lor = get_og_lor_1(n, sta_fe_params);
                   let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_2[&(n - 1, p)] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
                   if ep_of_term_4_log_prob.is_finite() {
@@ -1234,7 +1251,7 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
                     }
                   }
                 }
-                if get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
+                if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
                   let og_lor = get_og_lor_2(p, sta_fe_params);
                   let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_3[&(n, p - 1)] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
                   if ep_of_term_4_log_prob.is_finite() {
@@ -1253,7 +1270,7 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
                     }
                   }
                 }
-                if get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
+                if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
                   let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_1[&(n - 1, p)] + get_eg_lor_1(n, sta_fe_params) + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
                   if ep_of_term_4_log_prob.is_finite() {
                     seqs_of_eps_of_terms_4_legps_1[n].push(ep_of_term_4_log_prob);
@@ -1263,7 +1280,7 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
                     }
                   }
                 }
-                if get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
+                if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
                   let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_2[&(n, p - 1)] + get_eg_lor_2(p, sta_fe_params) + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
                   if ep_of_term_4_log_prob.is_finite() {
                     seqs_of_eps_of_terms_4_legps_2[p].push(ep_of_term_4_log_prob);
@@ -1276,11 +1293,12 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
               }
             }
             for m in i + 1 .. j {
-              for n in m + 1 .. j {
-                for o in k + 1 .. l {
+              for o in k + 1 .. l {
+                if get_min_gap_num_1(&(m, o)) > max_gap_num {continue;}
+                for n in m + 1 .. j {
                   for p in o + 1 .. l {
                     let pos_quadruple = (m, n, o, p);
-                    if get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
+                    if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
                     if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple) {
                       if !min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
                         seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.insert(pos_quadruple, EpsOfTerms4LogProb::new());
@@ -1472,23 +1490,25 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
   }
   for i in 0 .. seq_len_pair.0 + 2 {
     for j in 0 .. seq_len_pair.1 + 2 {
-      let min_ep_of_term_4_log_prob = mat_of_min_eps_of_terms_4_log_probs[i][j];
-      let lbap = if min_ep_of_term_4_log_prob.is_finite() {
-        logsumexp(&mat_of_seqs_of_eps_of_terms_4_log_probs[i][j][..], min_ep_of_term_4_log_prob)
-      } else {
-        NEG_INFINITY
-      };
-      if lbap.is_finite() {
-        lstapmt.lbap_mat[i][j] = lbap;
-        seqs_of_eps_of_terms_4_lnbpps_1[i].push(lbap);
-        let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
-        if lbap < *min_ep_of_term_4_log_prob {
-          *min_ep_of_term_4_log_prob = lbap;
-        }
-        seqs_of_eps_of_terms_4_lnbpps_2[j].push(lbap);
-        let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[j];
-        if lbap < *min_ep_of_term_4_log_prob {
-          *min_ep_of_term_4_log_prob = lbap;
+      let pos_pair = (i, j);
+      if get_min_gap_num_1(&pos_pair) > max_gap_num {continue;}
+      if min_eps_of_terms_4_lbaps_with_pos_pairs.contains_key(&pos_pair) {
+        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbaps_with_pos_pairs[&pos_pair];
+        if min_ep_of_term_4_log_prob.is_finite() {
+          let lbap = logsumexp(&seqs_of_eps_of_terms_4_lbaps_with_pos_pairs[&pos_pair][..], min_ep_of_term_4_log_prob);
+          if lbap.is_finite() {
+            lstapmt.lbap_mat.insert(pos_pair, lbap);
+            seqs_of_eps_of_terms_4_lnbpps_1[i].push(lbap);
+            let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
+            if lbap < *min_ep_of_term_4_log_prob {
+              *min_ep_of_term_4_log_prob = lbap;
+            }
+            seqs_of_eps_of_terms_4_lnbpps_2[j].push(lbap);
+            let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[j];
+            if lbap < *min_ep_of_term_4_log_prob {
+              *min_ep_of_term_4_log_prob = lbap;
+            }
+          }
         }
       }
     }
@@ -1739,6 +1759,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
   let mut log_sta_ppf_mats = LogStaPpfMats::new();
   for m in (i + 1 .. j + 1).rev() {
     for o in (k + 1 .. l + 1).rev() {
+      if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(m, j, o, l)) > max_gap_num {continue;}
       let pos_pair_1 = (m, o);
       if m == j && o == l {
         log_sta_ppf_mats.log_ppf_mat_4_bas.insert(pos_pair_1, 0.);
@@ -1752,7 +1773,6 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         log_sta_ppf_mats.log_ppf_mat_4_gaps_1.insert(pos_pair_1, NEG_INFINITY);
         log_sta_ppf_mats.log_ppf_mat_4_gaps_2.insert(pos_pair_1, NEG_INFINITY);
       } else {
-        if get_min_gap_num(&(m, j, o, l)) > max_gap_num {continue;}
         if m == j || o == l {
           log_sta_ppf_mats.log_ppf_mat_4_bas.insert(pos_pair_1, NEG_INFINITY);
         } else {
@@ -1765,7 +1785,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
               let pos_pair = (n + 1, p + 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
@@ -1828,7 +1848,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(m + 1, o)) <= max_gap_num && get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (m + 1, o);
             max_ep_of_term_4_log_pf = get_og_lor_1(m, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_2[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -1840,7 +1860,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (n + 1, p + 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
@@ -1875,7 +1895,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(m, o + 1)) <= max_gap_num && get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (m, o + 1);
             max_ep_of_term_4_log_pf = get_og_lor_2(o, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_3[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -1887,7 +1907,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (n + 1, p + 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair];
@@ -1922,7 +1942,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(m + 1, o)) <= max_gap_num && get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (m + 1, o);
             max_ep_of_term_4_log_pf = get_eg_lor_1(m, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -1934,7 +1954,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (n + 1, p + 1);
               if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple) {
                 let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple] + log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair];
@@ -1958,7 +1978,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(m, o + 1)) <= max_gap_num && get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
             let pos_pair_2 = (m, o + 1);
             max_ep_of_term_4_log_pf = get_eg_lor_2(o, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
@@ -1970,7 +1990,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (n + 1, p + 1);
               if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple) {
                 let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple] + log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair];
@@ -1998,7 +2018,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(m + 1, o)) <= max_gap_num && get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
             let og_lor = get_og_lor_1(m, sta_fe_params);
             let ep_of_term_4_log_pf = og_lor + log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2];
             if ep_of_term_4_log_pf.is_finite() {
@@ -2018,7 +2038,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (n + 1, p + 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
@@ -2066,7 +2086,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
+          if get_min_gap_num_1(&(m, o + 1)) <= max_gap_num && get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
             let og_lor = get_og_lor_2(o, sta_fe_params);
             let ep_of_term_4_log_pf = og_lor + log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2];
             if ep_of_term_4_log_pf.is_finite() {
@@ -2086,7 +2106,7 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           for n in m + 1 .. j {
             for p in o + 1 .. l {
               let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
               let pos_pair = (n + 1, p + 1);
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
@@ -2210,36 +2230,30 @@ pub fn prob_cons_transformation_of_lstapmt(lstapmts_with_rna_id_pairs: &Lstapmts
       *lbpap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob);
     }
   }
-  for (i, lbaps) in lstapmt.lbap_mat.iter_mut().enumerate() {
-    for (j, lbap) in lbaps.iter_mut().enumerate() {
-      let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
-      let mut min_ep_of_term_4_log_prob = *lbap;
-      if min_ep_of_term_4_log_prob.is_finite() {
-        eps_of_terms_4_log_prob.push(min_ep_of_term_4_log_prob);
-      }
-      for rna_id in 0 .. num_of_rnas {
-        if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
-        for (k, lbaps_1) in lstapmts_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].lbap_mat.iter().enumerate() {
-          for (l, lbap_1) in lbaps_1.iter().enumerate() {
-            if (rna_id_pair.0 < rna_id && k != i) || (rna_id_pair.0 > rna_id && l != i) {continue;}
-            for (k, lbaps_2) in lstapmts_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].lbap_mat.iter().enumerate() {
-              for (l, lbap_2) in lbaps_2.iter().enumerate() {
-                if (rna_id_pair.1 < rna_id && k != j) || (rna_id_pair.1 > rna_id && l != j) {continue;}
-                let ep_of_term_4_log_prob = lbap_1 + lbap_2;
-                if ep_of_term_4_log_prob.is_finite() {
-                  eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
-                  if ep_of_term_4_log_prob < min_ep_of_term_4_log_prob {
-                    min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                  }
-                }
-              }
+  for (&(i, j), lbap) in lstapmt.lbap_mat.iter_mut() {
+    let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+    let mut min_ep_of_term_4_log_prob = *lbap;
+    if min_ep_of_term_4_log_prob.is_finite() {
+      eps_of_terms_4_log_prob.push(min_ep_of_term_4_log_prob);
+    }
+    for rna_id in 0 .. num_of_rnas {
+      if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
+      for (&(k, l), lbap_1) in lstapmts_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].lbap_mat.iter() {
+        if (rna_id_pair.0 < rna_id && k != i) || (rna_id_pair.0 > rna_id && l != i) {continue;}
+        for (&(k, l), lbap_2) in lstapmts_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].lbap_mat.iter() {
+          if (rna_id_pair.1 < rna_id && k != j) || (rna_id_pair.1 > rna_id && l != j) {continue;}
+          let ep_of_term_4_log_prob = lbap_1 + lbap_2;
+          if ep_of_term_4_log_prob.is_finite() {
+            eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
+            if ep_of_term_4_log_prob < min_ep_of_term_4_log_prob {
+              min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
             }
           }
         }
       }
-      if eps_of_terms_4_log_prob.len() > 0 {
-        *lbap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob);
-      }
+    }
+    if eps_of_terms_4_log_prob.len() > 0 {
+      *lbap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob);
     }
   }
   lstapmt
@@ -2365,8 +2379,6 @@ pub fn get_lbpp_mat(seq: SeqSlice, max_bp_span: usize) -> SparseLogProbMat {
 #[inline]
 pub fn get_lnbpp_mat(lbpp_mat: &SparseLogProbMat, seq_len: usize) -> LogProbs {
   let mut lnbpp_mat = vec![NEG_INFINITY; seq_len + 2];
-  /* lnbpp_mat[0] = NEG_INFINITY;
-  lnbpp_mat[seq_len + 1] = NEG_INFINITY; */
   for i in 0 .. seq_len + 2 {
     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
     let mut min_ep_of_term_4_log_prob = INFINITY;
@@ -2410,7 +2422,12 @@ pub fn get_seq_len_diff(seq_len_pair: &(usize, usize)) -> usize {
 }
 
 #[inline]
+fn get_min_gap_num_1(pos_pair: &PosPair) -> usize {
+  get_seq_len_diff(pos_pair)
+}
+
+#[inline]
 fn get_min_gap_num(pos_quadruple: &PosQuadruple) -> usize {
-  let substr_len_pair = ((pos_quadruple.1 as isize - pos_quadruple.0 as isize).abs(), (pos_quadruple.3 as isize - pos_quadruple.2 as isize).abs());
-  (substr_len_pair.0 - substr_len_pair.1).abs() as usize
+  let substr_len_pair = (pos_quadruple.1 - pos_quadruple.0, pos_quadruple.3 - pos_quadruple.2);
+  get_seq_len_diff(&substr_len_pair)
 }

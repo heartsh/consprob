@@ -18,7 +18,7 @@ struct Sta {
   pub seq_align: Sa,
 }
 type Stas = Vec<Sta>;
-type StaEventCount = f64;
+type StaEventCount = Prob;
 type BaCounts = HashMap<BasePair, StaEventCount, Hasher>;
 type GapCounts = HashMap<Base, StaEventCount, Hasher>;
 type BpaCounts = HashMap<BaseQuadruple, StaEventCount, Hasher>;
@@ -133,7 +133,6 @@ fn main() {
       }
     }
   }
-  println!("{}.", stas.len());
   let mut sta_event_count_sets = StaEventCountSets::new(sta_event_pseudo_count);
   for sta in &stas {
     let num_of_sa_rows = sta.seq_align.len();
