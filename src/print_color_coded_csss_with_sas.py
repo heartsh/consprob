@@ -23,7 +23,7 @@ def main():
   css_string = utils.get_css_string(css_file_path)
   css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
-  bpap_mat_file_path = asset_dir_path + "/sampled_trnas/bpap_mats.dat"
+  bpap_mat_file_path = asset_dir_path + "/sampled_trnas/bpap_mats_1.dat"
   bpap_mats = utils.get_bpap_mats(bpap_mat_file_path, seq_lens)
   print(colored.black("(A)"))
   utils.print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
@@ -51,7 +51,7 @@ def main():
     + colored.green("p >= %.0e, " % (0.1 ** 82))
     + colored.cyan("p >= %.0e, " % (0.1 ** 90))
     + colored.blue("p < %.0e" % (0.1 ** 90))
-    + colored.black(" where p is the product of the BPAPs\nfor the base quadruples in a color-coded column-pair")
+    + colored.black(" where p is the product of the STAPs\nfor the base quadruples in a color-coded column-pair")
   )
 
 if __name__ == "__main__":
