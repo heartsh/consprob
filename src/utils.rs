@@ -22,7 +22,8 @@ pub struct StemParams {
   pub lbps_with_bases: LogBaseProbsWithBases,
 }
 
-pub const SEQ_ALPHABET: [Base; 4] = [A, C, G, U];
+pub const PSEUDO_BASE: Base = '$' as Base;
+pub const SEQ_ALPHABET: [Base; 5] = [A, C, G, U, PSEUDO_BASE];
 lazy_static! {
   pub static ref BA_ALPHABET: Vec<BasePair> = {
     let mut ba_alphabet = Vec::new();

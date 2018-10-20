@@ -115,6 +115,7 @@ type EpsOfTerms4LogProbsWithPosQuadruples = HashMap<PosQuadruple, ExpPartOfTerm4
 type Arg = String;
 pub type Args = Vec<Arg>;
 pub type FastaId = String;
+#[derive(Clone)]
 pub struct FastaRecord {
   pub fasta_id: FastaId,
   pub seq: Seq,
@@ -190,10 +191,9 @@ impl StaFeParams {
       lstapmt_on_random_assump: lstapmt,
     }
   }
-  pub fn new(rna_id_pair: &RnaIdPair, fasta_records: &FastaRecords, gap_num: usize, lbpp_mats: &LogProbMats, lnbpp_mats: &LogProbSeqs) -> StaFeParams {
+  pub fn new(rna_id_pair: &RnaIdPair, fasta_records: &FastaRecords, max_gap_num: usize, lbpp_mats: &LogProbMats, lnbpp_mats: &LogProbSeqs) -> StaFeParams {
     let seq_pair = (&fasta_records[rna_id_pair.0].seq[..], &fasta_records[rna_id_pair.1].seq[..]);
     let seq_len_pair = (seq_pair.0.len(), seq_pair.1.len());
-    let max_gap_num = get_seq_len_diff(&seq_len_pair) + gap_num;
     let lstapmt = LogStapmt::new(&seq_len_pair);
     let mut sta_fe_params = StaFeParams {
       lstapmt: lstapmt.clone(),
@@ -2360,9 +2360,7 @@ pub fn get_lbpp_mat(seq: SeqSlice, max_bp_span: usize) -> SparseLogProbMat {
   let arg = max_bp_span.to_string();
   let args = unsafe {["-f", from_utf8_unchecked(seq), "--pre", "--constraint", &arg]};
   let parasor_output = unsafe {String::from_utf8_unchecked(run_command(PARASOR_COMMAND, &args, "Failed to run the ParasoR program.").stdout)};
-  let seq_len = seq.len();
   let mut lbpp_mat = SparseLogProbMat::default();
-  lbpp_mat.insert((0, seq_len + 1), 0.);
   for line in parasor_output.lines().filter(|line| {!line.starts_with("#")}) {
     let strings = line.trim().splitn(4, '\t').collect::<Vec<&str>>();
     let bpp = strings[3].parse::<Prob>().expect("Failed to parse a string.");
@@ -2378,11 +2376,11 @@ pub fn get_lbpp_mat(seq: SeqSlice, max_bp_span: usize) -> SparseLogProbMat {
 
 #[inline]
 pub fn get_lnbpp_mat(lbpp_mat: &SparseLogProbMat, seq_len: usize) -> LogProbs {
-  let mut lnbpp_mat = vec![NEG_INFINITY; seq_len + 2];
-  for i in 0 .. seq_len + 2 {
+  let mut lnbpp_mat = vec![NEG_INFINITY; seq_len];
+  for i in 1 .. seq_len + 1 {
     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
     let mut min_ep_of_term_4_log_prob = INFINITY;
-    for j in 0 .. seq_len + 2 {
+    for j in 1 .. seq_len + 1 {
       if j == i {continue;}
       let pos_pair = if j < i {(j, i)} else {(i, j)};
       if lbpp_mat.contains_key(&pos_pair) {
@@ -2395,7 +2393,7 @@ pub fn get_lnbpp_mat(lbpp_mat: &SparseLogProbMat, seq_len: usize) -> LogProbs {
         }
       }
     }
-    lnbpp_mat[i] = (1. - logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob).exp()).ln();
+    lnbpp_mat[i - 1] = (1. - logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob).exp()).ln();
   }
   lnbpp_mat
 }
@@ -2430,4 +2428,9 @@ fn get_min_gap_num_1(pos_pair: &PosPair) -> usize {
 fn get_min_gap_num(pos_quadruple: &PosQuadruple) -> usize {
   let substr_len_pair = (pos_quadruple.1 - pos_quadruple.0, pos_quadruple.3 - pos_quadruple.2);
   get_seq_len_diff(&substr_len_pair)
+}
+
+#[inline]
+pub fn append_pseudo_bases(seq: &mut Seq, num_of_pseudo_bases: usize) {
+  seq.append(&mut vec![PSEUDO_BASE; num_of_pseudo_bases]);
 }
