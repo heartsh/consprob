@@ -13,6 +13,5 @@ def main():
   get_bpp_heatmaps.main()
   print_color_coded_sss.main()
 
-
 if __name__ == "__main__":
   main()

@@ -925,26 +925,32 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
 #[inline]
 fn get_ba_log_odds_ratio(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
   sta_fe_params.lstapmt.lbap_mat[pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbap_mat[pos_pair]
+  + get_nbp_lor_1(pos_pair.0, sta_fe_params)
+  + get_nbp_lor_2(pos_pair.1, sta_fe_params)
 }
 
 #[inline]
 fn get_og_lor_1(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
   sta_fe_params.lstapmt.logp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.logp_mat_1[pos]
+  + get_nbp_lor_1(pos, sta_fe_params)
 }
 
 #[inline]
 fn get_og_lor_2(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
   sta_fe_params.lstapmt.logp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.logp_mat_2[pos]
+  + get_nbp_lor_2(pos, sta_fe_params)
 }
 
 #[inline]
 fn get_eg_lor_1(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
   sta_fe_params.lstapmt.legp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.legp_mat_1[pos]
+  + get_nbp_lor_1(pos, sta_fe_params)
 }
 
 #[inline]
 fn get_eg_lor_2(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
   sta_fe_params.lstapmt.legp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.legp_mat_2[pos]
+  + get_nbp_lor_2(pos, sta_fe_params)
 }
 
 #[inline]

@@ -19,7 +19,7 @@ use itertools::multizip;
 type NumOfThreads = u32;
 
 const DEFAULT_MIN_BPP: Prob = 0.001;
-const DEFAULT_MAX_GAP_NUM: usize = 3;
+const DEFAULT_MAX_GAP_NUM: usize = 0;
 const DEFAULT_MAX_BP_SPAN: usize = 0;
 const DEFAULT_NUM_OF_TIMES_OF_EXPECT_MAX_ITER: usize = 1;
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
