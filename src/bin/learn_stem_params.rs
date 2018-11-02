@@ -24,7 +24,9 @@ type GapCounts = HashMap<Base, StaEventCount, Hasher>;
 type BpaCounts = HashMap<BaseQuadruple, StaEventCount, Hasher>;
 type GpCounts = BaCounts;
 type SideGapCounts = HashMap<BaseTriple, StaEventCount, Hasher>;
-type BaseCounts = HashMap<Base, StaEventCount, Hasher>;
+// type BaseCounts = HashMap<Base, StaEventCount, Hasher>;
+type BpCounts = HashMap<BasePair, StaEventCount, Hasher>;
+type NbpCounts = HashMap<Base, StaEventCount, Hasher>;
 struct StaEventCountSets {
   pub ba_counts: BaCounts,
   pub og_counts: GapCounts,
@@ -35,9 +37,12 @@ struct StaEventCountSets {
   pub egp_counts: GpCounts,
   pub lg_counts: SideGapCounts,
   pub rg_counts: SideGapCounts,
-  pub base_counts: BaseCounts,
+  // pub base_counts: BaseCounts,
+  pub bp_counts: BpCounts,
+  pub nbp_counts: NbpCounts,
 }
 
+const PSEUDO_BASE: Base = '$' as Base;
 const CSS_REPLACEMENT_PATTERN_CHARS: &'static str = "[{<>}],_-:";
 const CSS_REPLACEMENT_DEST_CHARS: &'static str = "((()))....";
 const BP_LEFT_BRACKET: char = '(';
@@ -46,6 +51,7 @@ const GAP: Base = '-' as Base;
 const DEFAULT_STA_EVENT_PSEUDO_COUNT: StaEventCount = 0.;
 const BPP: Prob = 0.9;
 const NBPP: Prob = 0.1;
+const MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS: Prob = 0.65;
 
 impl Sta {
   pub fn new() -> Sta {
@@ -76,10 +82,12 @@ impl StaEventCountSets {
       bpa_counts_1: bpa_counts_1,
       bpa_counts_2: bpa_counts_2,
       ogp_counts: gap_pair_counts.clone(),
-      egp_counts: gap_pair_counts,
+      egp_counts: gap_pair_counts.clone(),
       lg_counts: side_gap_counts.clone(),
       rg_counts: side_gap_counts,
-      base_counts: SEQ_ALPHABET.iter().map(|&base| {(base, sta_event_pseudo_count)}).collect(),
+      // base_counts: SEQ_ALPHABET.iter().map(|&base| {(base, sta_event_pseudo_count)}).collect(),
+      bp_counts: gap_pair_counts,
+      nbp_counts: SEQ_ALPHABET.iter().map(|&base| {(base, sta_event_pseudo_count)}).collect(),
     }
   }
 }
@@ -108,25 +116,28 @@ fn main() {
   let reader_2_sta_file = BufReader::new(File::open(input_file_path).expect("Failed to read an input file."));
   let mut stas = Stas::new();
   let mut sta = Sta::new();
-  let mut is_sa_valid = true;
+  let mut is_sta_valid = true;
   for line in reader_2_sta_file.lines() {
     let line = line.expect("Failed to get a line.");
     if line.is_empty() || line == "# STOCKHOLM 1.0" {
       continue;
     } else if line == "//" {
-      if is_sa_valid {
+      if is_sta_valid {
         stas.push(sta);
       }
       sta = Sta::new();
-      is_sa_valid = true;
+      is_sta_valid = true;
     } else if line.starts_with("#=GC SS_cons") {
-      sta.cons_second_struct = get_css(&convert_css_str(&(String::from("(") + line.split_whitespace().skip(2).next().expect("Failed to split a string.") + ")")));
+      let sta_prof = line.split_whitespace().skip(2).next().expect("Failed to split a string.");
+      let indel_freq_relative_2_all_prof_freqs = sta_prof.chars().filter(|&prof_char| prof_char == '.').count() as Prob / sta_prof.len() as Prob;
+      is_sta_valid = (indel_freq_relative_2_all_prof_freqs <= MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS) & is_sta_valid;
+      sta.cons_second_struct = get_css(&convert_css_str(&(String::from("(") + sta_prof + ")")));
     } else {
-      if is_sa_valid {
+      if is_sta_valid {
         let mut sa_mem = vec![PSEUDO_BASE];
         let temp_sa_mem = line.split_whitespace().skip(1).next().expect("Failed to split a string.").as_bytes();
-        is_sa_valid = temp_sa_mem.iter().fold(true, |acc, &base| {acc & (is_rna_base(base) || base == GAP)});
-        if is_sa_valid {
+        is_sta_valid = temp_sa_mem.iter().fold(true, |acc, &base| {acc & (is_rna_base(base) || base == GAP)}) & is_sta_valid;
+        if is_sta_valid {
           sa_mem.extend(temp_sa_mem);
           sa_mem.push(PSEUDO_BASE);
           sta.seq_align.push(sa_mem);
@@ -153,7 +164,7 @@ fn main() {
                 let front_base_1 = sta.seq_align[n][m - 1];
                 let behind_base_1 = sta.seq_align[n][m + 1];
                 if base_1 != GAP {
-                  *sta_event_count_sets.base_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
+                  *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
                 }
                 for o in n + 1 .. num_of_sa_rows {
                   let base_2 = sta.seq_align[o][m];
@@ -192,11 +203,14 @@ fn main() {
               let base_2 = sta.seq_align[m][l];
               let front_base_2 = sta.seq_align[m][l - 1];
               let behind_base_2 = sta.seq_align[m][l + 1];
-              if base_1 != GAP {
-                *sta_event_count_sets.base_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
-              }
-              if base_2 != GAP {
-                *sta_event_count_sets.base_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += 1.;
+              if base_1 != GAP && base_2 != GAP && sta_event_count_sets.bp_counts.contains_key(&(base_1, base_2)) {
+                *sta_event_count_sets.bp_counts.get_mut(&(base_1, base_2)).expect("Failed to get an element from a hash map.") += BPP;
+                *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += NBPP;
+                *sta_event_count_sets.nbp_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += NBPP;
+              } else if base_1 != GAP {
+                *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
+              } else if base_2 != GAP {
+                *sta_event_count_sets.nbp_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += 1.;
               }
               for n in m + 1 .. num_of_sa_rows {
                 let base_3 = sta.seq_align[n][k];
@@ -409,7 +423,7 @@ fn main() {
               let front_base_1 = sta.seq_align[n][m - 1];
               let behind_base_1 = sta.seq_align[n][m + 1];
               if base_1 != GAP {
-                *sta_event_count_sets.base_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
+                *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
               }
               for o in n + 1 .. num_of_sa_rows {
                 let base_2 = sta.seq_align[o][m];
@@ -448,7 +462,7 @@ fn main() {
               let front_base_1 = sta.seq_align[n][m - 1];
               let behind_base_1 = sta.seq_align[n][m + 1];
               if base_1 != GAP {
-                *sta_event_count_sets.base_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
+                *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
               }
               for o in n + 1 .. num_of_sa_rows {
                 let base_2 = sta.seq_align[o][m];
@@ -504,23 +518,26 @@ fn main() {
   stem_params.legpps_with_base_pairs = sta_event_count_sets.egp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
   stem_params.llgps_with_base_triples = sta_event_count_sets.lg_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
   stem_params.lrgps_with_base_triples = sta_event_count_sets.rg_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  let count_of_all_bases = sta_event_count_sets.base_counts.values().fold(0., |acc, &count| {acc + count});
-  stem_params.lbps_with_bases = sta_event_count_sets.base_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bases).ln())}).collect();
+  // let count_of_all_bases = sta_event_count_sets.base_counts.values().fold(0., |acc, &count| {acc + count});
+  let count_of_all_bps_and_nbps = sta_event_count_sets.bp_counts.values().fold(0., |acc, &count| {acc + count}) + sta_event_count_sets.nbp_counts.values().fold(0., |acc, &count| {acc + count});
+  // stem_params.lbps_with_bases = sta_event_count_sets.base_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bases).ln())}).collect();
+  stem_params.lbpps_with_base_pairs = sta_event_count_sets.bp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bps_and_nbps).ln())}).collect();
+  stem_params.lnbpps_with_bases = sta_event_count_sets.nbp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bps_and_nbps).ln())}).collect();
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).expect("Failed to create an output file."));
   let mut buf_4_writer_2_output_file = String::from("use utils::*;\nlazy_static! {\n  pub static ref STEM_PARAMS: StemParams = {\n    StemParams {\n      lbaps_with_base_pairs: [");
   for (base_pair, &lbap) in &stem_params.lbaps_with_base_pairs {
-    buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", get_base_str(base_pair.0), get_base_str(base_pair.1), if base_pair.0 == PSEUDO_BASE || base_pair.1 == PSEUDO_BASE {0.} else {lbap});
+    buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.0 as char, base_pair.1 as char, lbap);
     if base_pair.0 != base_pair.1 {
-      buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", get_base_str(base_pair.1), get_base_str(base_pair.0), if base_pair.1 == PSEUDO_BASE || base_pair.0 == PSEUDO_BASE {0.} else {lbap});
+      buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.1 as char, base_pair.0 as char, lbap);
     }
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      logps_with_bases: [";
   for (&base, &logp) in &stem_params.logps_with_bases {
-    buf_4_writer_2_output_file += &format!("({}, {:e}), ", get_base_str(base), if base == PSEUDO_BASE {0.} else {logp});
+    buf_4_writer_2_output_file += &format!("({}, {:e}), ", base as char, logp);
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      legps_with_bases: [";
   for (&base, &legp) in &stem_params.legps_with_bases {
-    buf_4_writer_2_output_file += &format!("({}, {:e}), ", get_base_str(base), if base == PSEUDO_BASE {0.} else {legp});
+    buf_4_writer_2_output_file += &format!("({}, {:e}), ", base as char, legp);
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpaps_with_base_quadruples_1: [";
   for (base_quadruple, &lbpap) in &stem_params.lbpaps_with_base_quadruples_1 {
@@ -531,7 +548,7 @@ fn main() {
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpaps_with_base_quadruples_2: [";
   for (base_quadruple, &lbpap) in &stem_params.lbpaps_with_base_quadruples_2 {
-    buf_4_writer_2_output_file += &format!("(({}, {}, {}, {}), {:e}), ", base_quadruple.0 as char, base_quadruple.1 as char, get_base_str(base_quadruple.2), get_base_str(base_quadruple.3), if base_quadruple.2 == PSEUDO_BASE || base_quadruple.3 == PSEUDO_BASE {0.} else {lbpap});
+    buf_4_writer_2_output_file += &format!("(({}, {}, {}, {}), {:e}), ", base_quadruple.0 as char, base_quadruple.1 as char, base_quadruple.2 as char, base_quadruple.3 as char, lbpap);
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      logpps_with_base_pairs: [";
   for (base_pair, &logpp) in &stem_params.logpps_with_base_pairs {
@@ -543,15 +560,22 @@ fn main() {
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      llgps_with_base_triples: [";
   for (base_triple, &llgp) in &stem_params.llgps_with_base_triples {
-    buf_4_writer_2_output_file += &format!("(({}, {}, {}), {:e}), ", base_triple.0 as char, base_triple.1 as char, get_base_str(base_triple.2), if base_triple.2 == PSEUDO_BASE {0.} else {llgp});
+    buf_4_writer_2_output_file += &format!("(({}, {}, {}), {:e}), ", base_triple.0 as char, base_triple.1 as char, base_triple.2 as char, llgp);
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lrgps_with_base_triples: [";
   for (base_triple, &lrgp) in &stem_params.lrgps_with_base_triples {
-    buf_4_writer_2_output_file += &format!("(({}, {}, {}), {:e}), ", base_triple.0 as char, base_triple.1 as char, get_base_str(base_triple.2), if base_triple.2 == PSEUDO_BASE {0.} else {lrgp});
+    buf_4_writer_2_output_file += &format!("(({}, {}, {}), {:e}), ", base_triple.0 as char, base_triple.1 as char, base_triple.2 as char, lrgp);
   }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbps_with_bases: [";
-  for (&base, &lbp) in &stem_params.lbps_with_bases {
+  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpps_with_base_pairs: [";
+  /* for (&base, &lbp) in &stem_params.lbps_with_bases {
     buf_4_writer_2_output_file += &format!("({}, {:e}), ", get_base_str(base), if base == PSEUDO_BASE {0.} else {lbp});
+  } */
+  for (base_pair, &lbpp) in &stem_params.lbpps_with_base_pairs {
+    buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.0 as char, base_pair.1 as char, lbpp);
+  }
+  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lnbpps_with_bases: [";
+  for (&base, &lnbpp) in &stem_params.lnbpps_with_bases {
+    buf_4_writer_2_output_file += &format!("({}, {:e}), ", base as char, lnbpp);
   }
   buf_4_writer_2_output_file += "].iter().cloned().collect(),\n    }\n  };\n}";
   let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
@@ -643,20 +667,5 @@ fn get_ordered_base_quadruple(base_quadruple: &BaseQuadruple) -> BaseQuadruple {
     } else {
       ordered_base_quadruple
     }
-  }
-}
-
-#[inline]
-fn get_base_str<'a>(base: Base) -> &'a str {
-  if base == A {
-    "A"
-  } else if base == C {
-    "C"
-  } else if base == G {
-    "G"
-  } else if base == U {
-    "U"
-  } else {
-    "PSEUDO_BASE"
   }
 }

@@ -214,66 +214,66 @@ impl StaFeParams {
     let lnbpp_mat_pair = (&lnbpp_mats[rna_id_pair.0], &lnbpp_mats[rna_id_pair.1]);
     for i in 0 .. seq_len_pair.0 {
       let base = seq_pair.0[i];
-      let lbp = STEM_PARAMS.lbps_with_bases[&base];
+      let lnbpp = STEM_PARAMS.lnbpps_with_bases[&base];
       sta_fe_params.lstapmt.logp_mat_1[i + 1] = STEM_PARAMS.logps_with_bases[&base];
-      sta_fe_params.lstapmt_on_random_assump.logp_mat_1[i + 1] = lbp;
+      sta_fe_params.lstapmt_on_random_assump.logp_mat_1[i + 1] = lnbpp;
       sta_fe_params.lstapmt.legp_mat_1[i + 1] = STEM_PARAMS.legps_with_bases[&base];
-      sta_fe_params.lstapmt_on_random_assump.legp_mat_1[i + 1] = lbp;
+      sta_fe_params.lstapmt_on_random_assump.legp_mat_1[i + 1] = lnbpp;
       sta_fe_params.lstapmt.lnbpp_mat_1[i + 1] = lnbpp_mat_pair.0[i + 1];
-      sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_1[i + 1] = lbp;
+      sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_1[i + 1] = lnbpp;
       for j in 0 .. seq_len_pair.1 {
         let pos_pair = (i + 1, j + 1);
-        if get_min_gap_num_1(&pos_pair) > max_gap_num {continue;}
+        if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
         let base_pair = (base, seq_pair.1[j]);
         sta_fe_params.lstapmt.lbap_mat.insert(pos_pair, STEM_PARAMS.lbaps_with_base_pairs[&base_pair]);
-        sta_fe_params.lstapmt_on_random_assump.lbap_mat.insert(pos_pair, STEM_PARAMS.lbps_with_bases[&base_pair.0] + STEM_PARAMS.lbps_with_bases[&base_pair.1]);
+        sta_fe_params.lstapmt_on_random_assump.lbap_mat.insert(pos_pair, lnbpp + STEM_PARAMS.lnbpps_with_bases[&base_pair.1]);
       }
       for j in i + 1 .. seq_len_pair.0 {
         let pos_pair = (i + 1, j + 1);
         let base_pair = (base, seq_pair.0[j]);
-        if STEM_PARAMS.logpps_with_base_pairs.contains_key(&base_pair) && lbpp_mat_pair.0.contains_key(&pos_pair) {
-          let sum_of_lbp_pair = STEM_PARAMS.lbps_with_bases[&base_pair.0] + STEM_PARAMS.lbps_with_bases[&base_pair.1];
+        if lbpp_mat_pair.0.contains_key(&pos_pair) {
+          let lbpp = STEM_PARAMS.lbpps_with_base_pairs[&base_pair];
           sta_fe_params.lstapmt.logpp_mat_1.insert(pos_pair, STEM_PARAMS.logpps_with_base_pairs[&base_pair]);
-          sta_fe_params.lstapmt_on_random_assump.logpp_mat_1.insert(pos_pair, sum_of_lbp_pair);
+          sta_fe_params.lstapmt_on_random_assump.logpp_mat_1.insert(pos_pair, lbpp);
           sta_fe_params.lstapmt.legpp_mat_1.insert(pos_pair, STEM_PARAMS.legpps_with_base_pairs[&base_pair]);
-          sta_fe_params.lstapmt_on_random_assump.legpp_mat_1.insert(pos_pair, sum_of_lbp_pair);
+          sta_fe_params.lstapmt_on_random_assump.legpp_mat_1.insert(pos_pair, lbpp);
           sta_fe_params.lstapmt.lbpp_mat_1.insert(pos_pair, lbpp_mat_pair.0[&pos_pair]);
-          sta_fe_params.lstapmt_on_random_assump.lbpp_mat_1.insert(pos_pair, sum_of_lbp_pair);
+          sta_fe_params.lstapmt_on_random_assump.lbpp_mat_1.insert(pos_pair, lbpp);
         }
         for k in 0 .. seq_len_pair.1 {
           let pos_triple = (pos_pair.0, pos_pair.1, k + 1);
           let base_triple = (base_pair.0, base_pair.1, seq_pair.1[k]);
-          if STEM_PARAMS.llgps_with_base_triples.contains_key(&base_triple) && lbpp_mat_pair.0.contains_key(&pos_pair) {
-            let sum_of_lbp_triple = STEM_PARAMS.lbps_with_bases[&base_triple.0] + STEM_PARAMS.lbps_with_bases[&base_triple.1] + STEM_PARAMS.lbps_with_bases[&base_triple.2];
-            if get_min_gap_num_1(&(j, k)) <= max_gap_num {
+          if lbpp_mat_pair.0.contains_key(&pos_pair) {
+            let sum_of_log_prob_pair = STEM_PARAMS.lbpps_with_base_pairs[&base_pair] + STEM_PARAMS.lnbpps_with_bases[&base_triple.2];
+            if is_min_gap_ok_1(&(j, k), &pseudo_pos_quadruple, max_gap_num) {
               sta_fe_params.lstapmt.llgp_mat_1.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
-              sta_fe_params.lstapmt_on_random_assump.llgp_mat_1.insert(pos_triple, sum_of_lbp_triple);
+              sta_fe_params.lstapmt_on_random_assump.llgp_mat_1.insert(pos_triple, sum_of_log_prob_pair);
             }
-            if get_min_gap_num_1(&(i, k)) <= max_gap_num {
+            if is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num) {
               sta_fe_params.lstapmt.lrgp_mat_1.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
-              sta_fe_params.lstapmt_on_random_assump.lrgp_mat_1.insert(pos_triple, sum_of_lbp_triple);
+              sta_fe_params.lstapmt_on_random_assump.lrgp_mat_1.insert(pos_triple, sum_of_log_prob_pair);
             }
           }
-          if get_min_gap_num_1(&(i, k)) > max_gap_num {continue;}
+          if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num) {continue;}
           for l in k + 1 .. seq_len_pair.1 {
-            if get_min_gap_num_1(&(j, l)) > max_gap_num {continue;}
+            if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num) {continue;}
             let pos_pair_2 = (pos_triple.2, l + 1);
             let pos_quadruple = (pos_pair.0, pos_pair.1, pos_pair_2.0, pos_pair_2.1);
-            if get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+            if !is_min_gap_ok_2(&pos_quadruple, max_gap_num) {continue;}
             let base_quadruple_1 = (base_triple.0, base_triple.1, base_triple.2, seq_pair.1[l]);
             let base_quadruple_2 = (base_quadruple_1.2, base_quadruple_1.3, base_quadruple_1.0, base_quadruple_1.1);
-            let sum_of_lbp_quadruple = STEM_PARAMS.lbps_with_bases[&base_quadruple_1.0] + STEM_PARAMS.lbps_with_bases[&base_quadruple_1.1] + STEM_PARAMS.lbps_with_bases[&base_quadruple_1.2] + STEM_PARAMS.lbps_with_bases[&base_quadruple_1.3];
-            if STEM_PARAMS.lbpaps_with_base_quadruples_1.contains_key(&base_quadruple_1) && lbpp_mat_pair.0.contains_key(&pos_pair) && lbpp_mat_pair.1.contains_key(&pos_pair_2) {
+            let base_pair_2 = (base_quadruple_1.2, base_quadruple_1.3);
+            if lbpp_mat_pair.0.contains_key(&pos_pair) && lbpp_mat_pair.1.contains_key(&pos_pair_2) {
               sta_fe_params.lstapmt.lbpap_mat_1.insert(pos_quadruple, STEM_PARAMS.lbpaps_with_base_quadruples_1[&base_quadruple_1]);
-              sta_fe_params.lstapmt_on_random_assump.lbpap_mat_1.insert(pos_quadruple, sum_of_lbp_quadruple);
+              sta_fe_params.lstapmt_on_random_assump.lbpap_mat_1.insert(pos_quadruple, STEM_PARAMS.lbpps_with_base_pairs[&base_pair] + STEM_PARAMS.lbpps_with_base_pairs[&base_pair_2]);
             }
-            if STEM_PARAMS.lbpaps_with_base_quadruples_2.contains_key(&base_quadruple_2) && lbpp_mat_pair.1.contains_key(&pos_pair_2) {
+            if lbpp_mat_pair.1.contains_key(&pos_pair_2) {
               sta_fe_params.lstapmt.lbpap_mat_2.insert(pos_quadruple, STEM_PARAMS.lbpaps_with_base_quadruples_2[&base_quadruple_2]);
-              sta_fe_params.lstapmt_on_random_assump.lbpap_mat_2.insert(pos_quadruple, sum_of_lbp_quadruple);
+              sta_fe_params.lstapmt_on_random_assump.lbpap_mat_2.insert(pos_quadruple, STEM_PARAMS.lbpps_with_base_pairs[&base_pair_2] + STEM_PARAMS.lnbpps_with_bases[&base_quadruple_1.0] + STEM_PARAMS.lnbpps_with_bases[&base_quadruple_1.1]);
             }
-            if STEM_PARAMS.lbpaps_with_base_quadruples_2.contains_key(&base_quadruple_1) && lbpp_mat_pair.0.contains_key(&pos_pair) {
+            if lbpp_mat_pair.0.contains_key(&pos_pair) {
               sta_fe_params.lstapmt.lbpap_mat_3.insert(pos_quadruple, STEM_PARAMS.lbpaps_with_base_quadruples_2[&base_quadruple_1]);
-              sta_fe_params.lstapmt_on_random_assump.lbpap_mat_3.insert(pos_quadruple, sum_of_lbp_quadruple);
+              sta_fe_params.lstapmt_on_random_assump.lbpap_mat_3.insert(pos_quadruple, STEM_PARAMS.lbpps_with_base_pairs[&base_pair] + STEM_PARAMS.lnbpps_with_bases[&base_quadruple_1.2] + STEM_PARAMS.lnbpps_with_bases[&base_quadruple_1.3]);
             }
           }
         }
@@ -282,38 +282,34 @@ impl StaFeParams {
     for i in 0 .. seq_len_pair.1 {
       let base = seq_pair.1[i];
       sta_fe_params.lstapmt.logp_mat_2[i + 1] = STEM_PARAMS.logps_with_bases[&base];
-      let lbp = STEM_PARAMS.lbps_with_bases[&base];
-      sta_fe_params.lstapmt_on_random_assump.logp_mat_2[i + 1] = lbp;
+      let lnbpp = STEM_PARAMS.lnbpps_with_bases[&base];
+      sta_fe_params.lstapmt_on_random_assump.logp_mat_2[i + 1] = lnbpp;
       sta_fe_params.lstapmt.legp_mat_2[i + 1] = STEM_PARAMS.legps_with_bases[&base];
-      sta_fe_params.lstapmt_on_random_assump.legp_mat_2[i + 1] = lbp;
+      sta_fe_params.lstapmt_on_random_assump.legp_mat_2[i + 1] = lnbpp;
       sta_fe_params.lstapmt.lnbpp_mat_2[i + 1] = lnbpp_mat_pair.1[i + 1];
-      sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_2[i + 1] = lbp;
+      sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_2[i + 1] = lnbpp;
       for j in i + 1 .. seq_len_pair.1 {
         let pos_pair = (i + 1, j + 1);
         if !lbpp_mat_pair.1.contains_key(&pos_pair) {continue;}
         let base_pair = (seq_pair.1[i], seq_pair.1[j]);
-        if STEM_PARAMS.logpps_with_base_pairs.contains_key(&base_pair) {
-          let sum_of_lbp_pair = STEM_PARAMS.lbps_with_bases[&base_pair.0] + STEM_PARAMS.lbps_with_bases[&base_pair.1];
-          sta_fe_params.lstapmt.logpp_mat_2.insert(pos_pair, STEM_PARAMS.logpps_with_base_pairs[&base_pair]);
-          sta_fe_params.lstapmt_on_random_assump.logpp_mat_2.insert(pos_pair, sum_of_lbp_pair);
-          sta_fe_params.lstapmt.legpp_mat_2.insert(pos_pair, STEM_PARAMS.legpps_with_base_pairs[&base_pair]);
-          sta_fe_params.lstapmt_on_random_assump.legpp_mat_2.insert(pos_pair, sum_of_lbp_pair);
-          sta_fe_params.lstapmt.lbpp_mat_2.insert(pos_pair, lbpp_mat_pair.1[&pos_pair]);
-          sta_fe_params.lstapmt_on_random_assump.lbpp_mat_2.insert(pos_pair, sum_of_lbp_pair);
-        }
+        let lbpp = STEM_PARAMS.lbpps_with_base_pairs[&base_pair];
+        sta_fe_params.lstapmt.logpp_mat_2.insert(pos_pair, STEM_PARAMS.logpps_with_base_pairs[&base_pair]);
+        sta_fe_params.lstapmt_on_random_assump.logpp_mat_2.insert(pos_pair, lbpp);
+        sta_fe_params.lstapmt.legpp_mat_2.insert(pos_pair, STEM_PARAMS.legpps_with_base_pairs[&base_pair]);
+        sta_fe_params.lstapmt_on_random_assump.legpp_mat_2.insert(pos_pair, lbpp);
+        sta_fe_params.lstapmt.lbpp_mat_2.insert(pos_pair, lbpp_mat_pair.1[&pos_pair]);
+        sta_fe_params.lstapmt_on_random_assump.lbpp_mat_2.insert(pos_pair, lbpp);
         for k in 0 .. seq_len_pair.0 {
           let pos_triple = (k + 1, pos_pair.0, pos_pair.1);
-          let base_triple = (seq_pair.0[k], base_pair.0, base_pair.1);
-          if STEM_PARAMS.llgps_with_base_triples.contains_key(&base_triple) {
-            let sum_of_lbp_triple = STEM_PARAMS.lbps_with_bases[&base_triple.0] + STEM_PARAMS.lbps_with_bases[&base_triple.1] + STEM_PARAMS.lbps_with_bases[&base_triple.2];
-            if get_min_gap_num_1(&(k, j)) <= max_gap_num {
-              sta_fe_params.lstapmt.llgp_mat_2.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
-              sta_fe_params.lstapmt_on_random_assump.llgp_mat_2.insert(pos_triple, sum_of_lbp_triple);
-            }
-            if get_min_gap_num_1(&(k, i)) <= max_gap_num {
-              sta_fe_params.lstapmt.lrgp_mat_2.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
-              sta_fe_params.lstapmt_on_random_assump.lrgp_mat_2.insert(pos_triple, sum_of_lbp_triple);
-            }
+          let base_triple = (base_pair.0, base_pair.1, seq_pair.0[k]);
+          let sum_of_log_prob_pair = STEM_PARAMS.lnbpps_with_bases[&base_triple.0] + STEM_PARAMS.lbpps_with_base_pairs[&base_pair];
+          if is_min_gap_ok_1(&(k, j), &pseudo_pos_quadruple, max_gap_num) {
+            sta_fe_params.lstapmt.llgp_mat_2.insert(pos_triple, STEM_PARAMS.llgps_with_base_triples[&base_triple]);
+            sta_fe_params.lstapmt_on_random_assump.llgp_mat_2.insert(pos_triple, sum_of_log_prob_pair);
+          }
+          if is_min_gap_ok_1(&(k, i), &pseudo_pos_quadruple, max_gap_num) {
+            sta_fe_params.lstapmt.lrgp_mat_2.insert(pos_triple, STEM_PARAMS.lrgps_with_base_triples[&base_triple]);
+            sta_fe_params.lstapmt_on_random_assump.lrgp_mat_2.insert(pos_triple, sum_of_log_prob_pair);
           }
         }
       }
@@ -369,15 +365,15 @@ impl FastaRecord {
 }
 
 #[inline]
-pub fn io_algo_4_rna_stapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_gap_num: usize) -> Stapmt {
-  let lstapmt = io_algo_4_rna_lstapmt(seq_len_pair, sta_fe_params, max_gap_num);
+pub fn io_algo_4_rna_stapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb, max_gap_num: usize) -> Stapmt {
+  let lstapmt = io_algo_4_rna_lstapmt(seq_len_pair, sta_fe_params, sta_fe_scale_param, max_gap_num);
   get_stapmt(&lstapmt)
 }
 
 #[inline]
-pub fn io_algo_4_rna_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_gap_num: usize) -> LogStapmt {
-  let log_sta_ppf_mats = get_log_sta_ppf_4d_mats(seq_len_pair, sta_fe_params, max_gap_num);
-  get_lstapmt(seq_len_pair, sta_fe_params, &log_sta_ppf_mats, max_gap_num)
+pub fn io_algo_4_rna_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb, max_gap_num: usize) -> LogStapmt {
+  let log_sta_ppf_mats = get_log_sta_ppf_4d_mats(seq_len_pair, sta_fe_params, sta_fe_scale_param, max_gap_num);
+  get_lstapmt(seq_len_pair, sta_fe_params, &log_sta_ppf_mats, sta_fe_scale_param, max_gap_num)
 }
 
 #[inline]
@@ -407,8 +403,9 @@ fn get_stapmt(lstapmt: &LogStapmt) -> Stapmt {
 }
 
 #[inline]
-pub fn get_log_sta_ppf_4d_mats(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_gap_num: usize) -> LogStaPpf4dMats {
+pub fn get_log_sta_ppf_4d_mats(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb, max_gap_num: usize) -> LogStaPpf4dMats {
   let mut log_sta_ppf_mats = LogStaPpf4dMats::new();
+  let pseudo_pos_quadruple = (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1);
   for substr_len_1 in 2 .. seq_len_pair.0 + 3 {
     for substr_len_2 in 2 .. seq_len_pair.1 + 3 {
       if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) > max_gap_num {continue;}
@@ -417,57 +414,57 @@ pub fn get_log_sta_ppf_4d_mats(seq_len_pair: &(usize, usize), sta_fe_params: &St
         for k in 0 .. seq_len_pair.1 + 3 - substr_len_2 {
           let l = k + substr_len_2 - 1;
           let pos_quadruple = (i, j, k, l);
-          if get_min_gap_num_1(&(i, k)) > max_gap_num || get_min_gap_num_1(&(j, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
-          let log_sta_pf = get_log_sta_forward_ppf_mats(&pos_quadruple, sta_fe_params, &log_sta_ppf_mats, max_gap_num).log_ppf_mat_1[&(j - 1, l - 1)];
+          if !(is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num)) || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
+          let log_sta_pf = get_log_sta_forward_ppf_mats(&pos_quadruple, &pseudo_pos_quadruple, sta_fe_params, &log_sta_ppf_mats, sta_fe_scale_param, max_gap_num).log_ppf_mat_1[&(j - 1, l - 1)];
           if !log_sta_pf.is_finite() {continue;}
           if sta_fe_params.lstapmt.lbpap_mat_1.contains_key(&pos_quadruple) {
-            log_sta_ppf_mats.log_ppf_mat_4_bpas_1.insert(pos_quadruple, get_bpa_lor_1(&pos_quadruple, sta_fe_params) + log_sta_pf);
+            log_sta_ppf_mats.log_ppf_mat_4_bpas_1.insert(pos_quadruple, get_bpa_lor_1(&pos_quadruple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           if sta_fe_params.lstapmt.lbpap_mat_2.contains_key(&pos_quadruple) {
-            log_sta_ppf_mats.log_ppf_mat_4_bpas_2.insert(pos_quadruple, get_bpa_lor_2(&pos_quadruple, sta_fe_params) + log_sta_pf);
+            log_sta_ppf_mats.log_ppf_mat_4_bpas_2.insert(pos_quadruple, get_bpa_lor_2(&pos_quadruple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           if sta_fe_params.lstapmt.lbpap_mat_3.contains_key(&pos_quadruple) {
-            log_sta_ppf_mats.log_ppf_mat_4_bpas_3.insert(pos_quadruple, get_bpa_lor_3(&pos_quadruple, sta_fe_params) + log_sta_pf);
+            log_sta_ppf_mats.log_ppf_mat_4_bpas_3.insert(pos_quadruple, get_bpa_lor_3(&pos_quadruple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_pair = (i, j);
           let pos_quadruple = (i, j, k + 1, l - 1);
-          if sta_fe_params.lstapmt.logpp_mat_1.contains_key(&pos_pair) {
-            log_sta_ppf_mats.log_ppf_mat_4_ogps_1.insert(pos_quadruple, get_ogp_lor_1(&pos_pair, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.logpp_mat_1.contains_key(&pos_pair) && is_min_gap_ok_1(&(i, k + 1), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&(j, l - 1), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_ogps_1.insert(pos_quadruple, get_ogp_lor_1(&pos_pair, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_pair = (k, l);
           let pos_quadruple = (i + 1, j - 1, k, l);
-          if sta_fe_params.lstapmt.logpp_mat_2.contains_key(&pos_pair) {
-            log_sta_ppf_mats.log_ppf_mat_4_ogps_2.insert(pos_quadruple, get_ogp_lor_2(&pos_pair, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.logpp_mat_2.contains_key(&pos_pair) && is_min_gap_ok_1(&(i + 1, k), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&(j - 1, l), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_ogps_2.insert(pos_quadruple, get_ogp_lor_2(&pos_pair, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_pair = (i, j);
           let pos_quadruple = (i, j, k + 1, l - 1);
-          if sta_fe_params.lstapmt.legpp_mat_1.contains_key(&pos_pair) {
-            log_sta_ppf_mats.log_ppf_mat_4_egps_1.insert(pos_quadruple, get_egp_lor_1(&pos_pair, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.legpp_mat_1.contains_key(&pos_pair) && is_min_gap_ok_1(&(i, k + 1), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&(j, l - 1), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_egps_1.insert(pos_quadruple, get_egp_lor_1(&pos_pair, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_pair = (k, l);
           let pos_quadruple = (i + 1, j - 1, k, l);
-          if sta_fe_params.lstapmt.legpp_mat_2.contains_key(&pos_pair) {
-            log_sta_ppf_mats.log_ppf_mat_4_egps_2.insert(pos_quadruple, get_egp_lor_2(&pos_pair, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.legpp_mat_2.contains_key(&pos_pair) && is_min_gap_ok_1(&(i + 1, k), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&(j - 1, l), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_egps_2.insert(pos_quadruple, get_egp_lor_2(&pos_pair, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_triple = (i, j, l);
           let pos_quadruple = (i, j, k + 1, l);
-          if sta_fe_params.lstapmt.llgp_mat_1.contains_key(&pos_triple) {
-            log_sta_ppf_mats.log_ppf_mat_4_lgs_1.insert(pos_quadruple, get_lg_lor_1(&pos_triple, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.llgp_mat_1.contains_key(&pos_triple) && is_min_gap_ok_1(&(i, k + 1), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_lgs_1.insert(pos_quadruple, get_lg_lor_1(&pos_triple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_triple = (j, k, l);
           let pos_quadruple = (i + 1, j, k, l);
-          if sta_fe_params.lstapmt.llgp_mat_2.contains_key(&pos_triple) {
-            log_sta_ppf_mats.log_ppf_mat_4_lgs_2.insert(pos_quadruple, get_lg_lor_2(&pos_triple, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.llgp_mat_2.contains_key(&pos_triple) && is_min_gap_ok_1(&(i + 1, k), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_lgs_2.insert(pos_quadruple, get_lg_lor_2(&pos_triple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_triple = (i, j, k);
           let pos_quadruple = (i, j, k, l - 1);
-          if sta_fe_params.lstapmt.lrgp_mat_1.contains_key(&pos_triple) {
-            log_sta_ppf_mats.log_ppf_mat_4_rgs_1.insert(pos_quadruple, get_rg_lor_1(&pos_triple, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.lrgp_mat_1.contains_key(&pos_triple) && is_min_gap_ok_1(&(j, l - 1), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_rgs_1.insert(pos_quadruple, get_rg_lor_1(&pos_triple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
           let pos_triple = (i, k, l);
           let pos_quadruple = (i, j - 1, k, l);
-          if sta_fe_params.lstapmt.lrgp_mat_2.contains_key(&pos_triple) {
-            log_sta_ppf_mats.log_ppf_mat_4_rgs_2.insert(pos_quadruple, get_rg_lor_2(&pos_triple, sta_fe_params) + log_sta_pf);
+          if sta_fe_params.lstapmt.lrgp_mat_2.contains_key(&pos_triple) && is_min_gap_ok_1(&(j - 1, l), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple, max_gap_num) {
+            log_sta_ppf_mats.log_ppf_mat_4_rgs_2.insert(pos_quadruple, get_rg_lor_2(&pos_triple, sta_fe_params, sta_fe_scale_param) + log_sta_pf);
           }
         }
       }
@@ -477,13 +474,13 @@ pub fn get_log_sta_ppf_4d_mats(seq_len_pair: &(usize, usize), sta_fe_params: &St
 }
 
 #[inline]
-fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, max_gap_num: usize) -> LogStaPpfMats {
+fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, pseudo_pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, sta_fe_scale_param: LogProb, max_gap_num: usize) -> LogStaPpfMats {
   let &(i, j, k, l) = pos_quadruple;
   let mut log_sta_ppf_mats = LogStaPpfMats::new();
   for n in i .. j {
     for p in k .. l {
       let pos_pair_1 = (n, p);
-      if get_min_gap_num_1(&pos_pair_1) > max_gap_num || get_min_gap_num(&(i, n, k, p)) > max_gap_num {continue;}
+      if !(is_min_gap_ok_1(&pos_pair_1, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_1, pos_quadruple, max_gap_num)) {continue;}
       if n == i && p == k {
         log_sta_ppf_mats.log_ppf_mat_4_bas.insert(pos_pair_1, 0.);
         log_sta_ppf_mats.log_ppf_mat_1.insert(pos_pair_1, 0.);
@@ -501,20 +498,20 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let pos_pair_2 = (n - 1, p - 1);
-          let mut max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair_2] + get_ba_log_odds_ratio(&pos_pair_1, sta_fe_params);
+          let mut max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair_2] + get_ba_log_odds_ratio(&pos_pair_1, sta_fe_params, sta_fe_scale_param);
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
               let log_sta_pf_3 = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -522,8 +519,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -531,8 +528,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -540,8 +537,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -549,8 +546,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_3 + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_3 + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -571,9 +568,9 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (n - 1, p);
-            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair_2] + get_og_lor_1(n, sta_fe_params);
+          let pos_pair_2 = (n - 1, p);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair_2] + get_og_lor_1(n, sta_fe_params, sta_fe_scale_param);
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -582,13 +579,13 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -596,8 +593,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -618,9 +615,9 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (n, p - 1);
-            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair_2] + get_og_lor_2(p, sta_fe_params);
+          let pos_pair_2 = (n, p - 1);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair_2] + get_og_lor_2(p, sta_fe_params, sta_fe_scale_param);
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -629,13 +626,13 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -643,8 +640,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -665,9 +662,9 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (n - 1, p);
-            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair_2] + get_eg_lor_1(n, sta_fe_params);
+          let pos_pair_2 = (n - 1, p);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair_2] + get_eg_lor_1(n, sta_fe_params, sta_fe_scale_param);
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -676,11 +673,11 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple];
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -701,9 +698,9 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (n, p - 1);
-            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair_2] + get_eg_lor_2(p, sta_fe_params);
+          let pos_pair_2 = (n, p - 1);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair_2] + get_eg_lor_2(p, sta_fe_params, sta_fe_scale_param);
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -712,11 +709,11 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple];
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -741,8 +738,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
-            let og_lor = get_og_lor_1(n, sta_fe_params);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, pos_quadruple, max_gap_num) {
+            let og_lor = get_og_lor_1(n, sta_fe_params, sta_fe_scale_param);
             let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2] + og_lor;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -760,14 +757,14 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
               let log_sta_pf_3 = log_sta_ppf_mats.log_ppf_mat_4_ogs_2[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -775,8 +772,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple) {
-                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple_2) {
+                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple_2];
                 let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_pf_4_ogp;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -809,8 +806,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
-            let og_lor = get_og_lor_2(p, sta_fe_params);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, pos_quadruple, max_gap_num) {
+            let og_lor = get_og_lor_2(p, sta_fe_params, sta_fe_scale_param);
             let ep_of_term_4_log_pf = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2] + og_lor;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -828,14 +825,14 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
           }
           for m in i + 1 .. n {
             for o in k + 1 .. p {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (m - 1, o - 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
               let log_sta_pf_3 = log_sta_ppf_mats.log_ppf_mat_4_ogs_1[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_pf_1 + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple_2];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -843,8 +840,8 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple) {
-                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple_2) {
+                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple_2];
                 let ep_of_term_4_log_pf = log_sta_pf_2 + log_sta_pf_4_ogp;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -923,208 +920,306 @@ fn get_log_sta_forward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &St
 }
 
 #[inline]
-fn get_ba_log_odds_ratio(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.lbap_mat[pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbap_mat[pos_pair]
-  + get_nbp_lor_1(pos_pair.0, sta_fe_params)
-  + get_nbp_lor_2(pos_pair.1, sta_fe_params)
+fn get_ba_log_odds_ratio(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lbap_mat[pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbap_mat[pos_pair])
+  + get_nbp_lor_1(pos_pair.0, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_2(pos_pair.1, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_og_lor_1(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.logp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.logp_mat_1[pos]
-  + get_nbp_lor_1(pos, sta_fe_params)
+fn get_og_lor_1(pos: Pos, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.logp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.logp_mat_1[pos])
+  + get_nbp_lor_1(pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_og_lor_2(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.logp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.logp_mat_2[pos]
-  + get_nbp_lor_2(pos, sta_fe_params)
+fn get_og_lor_2(pos: Pos, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.logp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.logp_mat_2[pos])
+  + get_nbp_lor_2(pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_eg_lor_1(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.legp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.legp_mat_1[pos]
-  + get_nbp_lor_1(pos, sta_fe_params)
+fn get_eg_lor_1(pos: Pos, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.legp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.legp_mat_1[pos])
+  + get_nbp_lor_1(pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_eg_lor_2(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.legp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.legp_mat_2[pos]
-  + get_nbp_lor_2(pos, sta_fe_params)
+fn get_eg_lor_2(pos: Pos, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.legp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.legp_mat_2[pos])
+  + get_nbp_lor_2(pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_bp_lor_1(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.lbpp_mat_1[&pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbpp_mat_1[&pos_pair]
+fn get_bp_lor_1(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lbpp_mat_1[&pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbpp_mat_1[&pos_pair])
 }
 
 #[inline]
-fn get_bp_lor_2(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.lbpp_mat_2[&pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbpp_mat_2[&pos_pair]
+fn get_bp_lor_2(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lbpp_mat_2[&pos_pair] - sta_fe_params.lstapmt_on_random_assump.lbpp_mat_2[&pos_pair])
 }
 
 #[inline]
-fn get_nbp_lor_1(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.lnbpp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_1[pos]
+fn get_nbp_lor_1(pos: Pos, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lnbpp_mat_1[pos] - sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_1[pos])
 }
 
 #[inline]
-fn get_nbp_lor_2(pos: Pos, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.lnbpp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_2[pos]
+fn get_nbp_lor_2(pos: Pos, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lnbpp_mat_2[pos] - sta_fe_params.lstapmt_on_random_assump.lnbpp_mat_2[pos])
 }
 
 #[inline]
-fn get_bpa_lor_1(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_bpa_lor_1(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let bp_pos_pair_1 = (pos_quadruple.0, pos_quadruple.1);
   let bp_pos_pair_2 = (pos_quadruple.2, pos_quadruple.3);
-  sta_fe_params.lstapmt.lbpap_mat_1[pos_quadruple]
-  - sta_fe_params.lstapmt_on_random_assump.lbpap_mat_1[pos_quadruple]
-  + get_bp_lor_1(&bp_pos_pair_1, sta_fe_params)
-  + get_bp_lor_2(&bp_pos_pair_2, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lbpap_mat_1[pos_quadruple]
+  - sta_fe_params.lstapmt_on_random_assump.lbpap_mat_1[pos_quadruple])
+  + get_bp_lor_1(&bp_pos_pair_1, sta_fe_params, sta_fe_scale_param)
+  + get_bp_lor_2(&bp_pos_pair_2, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_bpa_lor_2(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_bpa_lor_2(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let nbp_pos_pair = (pos_quadruple.0, pos_quadruple.1);
   let bp_pos_pair = (pos_quadruple.2, pos_quadruple.3);
-  sta_fe_params.lstapmt.lbpap_mat_2[pos_quadruple]
-  - sta_fe_params.lstapmt_on_random_assump.lbpap_mat_2[pos_quadruple]
-  + get_nbp_lor_1(nbp_pos_pair.0, sta_fe_params)
-  + get_nbp_lor_1(nbp_pos_pair.1, sta_fe_params)
-  + get_bp_lor_2(&bp_pos_pair, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lbpap_mat_2[pos_quadruple]
+  - sta_fe_params.lstapmt_on_random_assump.lbpap_mat_2[pos_quadruple])
+  + get_nbp_lor_1(nbp_pos_pair.0, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_1(nbp_pos_pair.1, sta_fe_params, sta_fe_scale_param)
+  + get_bp_lor_2(&bp_pos_pair, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_bpa_lor_3(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_bpa_lor_3(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let bp_pos_pair = (pos_quadruple.0, pos_quadruple.1);
   let nbp_pos_pair = (pos_quadruple.2, pos_quadruple.3);
-  sta_fe_params.lstapmt.lbpap_mat_3[pos_quadruple]
-  - sta_fe_params.lstapmt_on_random_assump.lbpap_mat_3[pos_quadruple]
-  + get_bp_lor_1(&bp_pos_pair, sta_fe_params)
-  + get_nbp_lor_2(nbp_pos_pair.0, sta_fe_params)
-  + get_nbp_lor_2(nbp_pos_pair.1, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lbpap_mat_3[pos_quadruple]
+  - sta_fe_params.lstapmt_on_random_assump.lbpap_mat_3[pos_quadruple])
+  + get_bp_lor_1(&bp_pos_pair, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_2(nbp_pos_pair.0, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_2(nbp_pos_pair.1, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_ogp_lor_1(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.logpp_mat_1[pos_pair]
-  - sta_fe_params.lstapmt_on_random_assump.logpp_mat_1[pos_pair]
-  + get_bp_lor_1(&pos_pair, sta_fe_params)
+fn get_ogp_lor_1(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.logpp_mat_1[pos_pair]
+  - sta_fe_params.lstapmt_on_random_assump.logpp_mat_1[pos_pair])
+  + get_bp_lor_1(&pos_pair, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_ogp_lor_2(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.logpp_mat_2[pos_pair]
-  - sta_fe_params.lstapmt_on_random_assump.logpp_mat_2[pos_pair]
-  + get_bp_lor_2(&pos_pair, sta_fe_params)
+fn get_ogp_lor_2(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.logpp_mat_2[pos_pair]
+  - sta_fe_params.lstapmt_on_random_assump.logpp_mat_2[pos_pair])
+  + get_bp_lor_2(&pos_pair, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_egp_lor_1(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.legpp_mat_1[pos_pair]
-  - sta_fe_params.lstapmt_on_random_assump.legpp_mat_1[pos_pair]
-  + get_bp_lor_1(&pos_pair, sta_fe_params)
+fn get_egp_lor_1(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.legpp_mat_1[pos_pair]
+  - sta_fe_params.lstapmt_on_random_assump.legpp_mat_1[pos_pair])
+  + get_bp_lor_1(&pos_pair, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_egp_lor_2(pos_pair: &PosPair, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
-  sta_fe_params.lstapmt.legpp_mat_2[pos_pair]
-  - sta_fe_params.lstapmt_on_random_assump.legpp_mat_2[pos_pair]
-  + get_bp_lor_2(&pos_pair, sta_fe_params)
+fn get_egp_lor_2(pos_pair: &PosPair, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
+  sta_fe_scale_param * (sta_fe_params.lstapmt.legpp_mat_2[pos_pair]
+  - sta_fe_params.lstapmt_on_random_assump.legpp_mat_2[pos_pair])
+  + get_bp_lor_2(&pos_pair, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_lg_lor_1(pos_triple: &PosTriple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_lg_lor_1(pos_triple: &PosTriple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let bp_pos_pair = (pos_triple.0, pos_triple.1);
   let nbp_pos = pos_triple.2;
-  sta_fe_params.lstapmt.llgp_mat_1[pos_triple]
-  - sta_fe_params.lstapmt_on_random_assump.llgp_mat_1[pos_triple]
-  + get_bp_lor_1(&bp_pos_pair, sta_fe_params)
-  + get_nbp_lor_2(nbp_pos, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.llgp_mat_1[pos_triple]
+  - sta_fe_params.lstapmt_on_random_assump.llgp_mat_1[pos_triple])
+  + get_bp_lor_1(&bp_pos_pair, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_2(nbp_pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_lg_lor_2(pos_triple: &PosTriple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_lg_lor_2(pos_triple: &PosTriple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let bp_pos_pair = (pos_triple.1, pos_triple.2);
   let nbp_pos = pos_triple.0;
-  sta_fe_params.lstapmt.llgp_mat_2[pos_triple]
-  - sta_fe_params.lstapmt_on_random_assump.llgp_mat_2[pos_triple]
-  + get_bp_lor_2(&bp_pos_pair, sta_fe_params)
-  + get_nbp_lor_1(nbp_pos, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.llgp_mat_2[pos_triple]
+  - sta_fe_params.lstapmt_on_random_assump.llgp_mat_2[pos_triple])
+  + get_bp_lor_2(&bp_pos_pair, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_1(nbp_pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_rg_lor_1(pos_triple: &PosTriple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_rg_lor_1(pos_triple: &PosTriple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let bp_pos_pair = (pos_triple.0, pos_triple.1);
   let nbp_pos = pos_triple.2;
-  sta_fe_params.lstapmt.lrgp_mat_1[pos_triple]
-  - sta_fe_params.lstapmt_on_random_assump.lrgp_mat_1[pos_triple]
-  + get_bp_lor_1(&bp_pos_pair, sta_fe_params)
-  + get_nbp_lor_2(nbp_pos, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lrgp_mat_1[pos_triple]
+  - sta_fe_params.lstapmt_on_random_assump.lrgp_mat_1[pos_triple])
+  + get_bp_lor_1(&bp_pos_pair, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_2(nbp_pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_rg_lor_2(pos_triple: &PosTriple, sta_fe_params: &StaFeParams) -> StaFreeEnergy {
+fn get_rg_lor_2(pos_triple: &PosTriple, sta_fe_params: &StaFeParams, sta_fe_scale_param: LogProb) -> StaFreeEnergy {
   let bp_pos_pair = (pos_triple.1, pos_triple.2);
   let nbp_pos = pos_triple.0;
-  sta_fe_params.lstapmt.lrgp_mat_2[pos_triple]
-  - sta_fe_params.lstapmt_on_random_assump.lrgp_mat_2[pos_triple]
-  + get_bp_lor_2(&bp_pos_pair, sta_fe_params)
-  + get_nbp_lor_1(nbp_pos, sta_fe_params)
+  sta_fe_scale_param * (sta_fe_params.lstapmt.lrgp_mat_2[pos_triple]
+  - sta_fe_params.lstapmt_on_random_assump.lrgp_mat_2[pos_triple])
+  + get_bp_lor_2(&bp_pos_pair, sta_fe_params, sta_fe_scale_param)
+  + get_nbp_lor_1(nbp_pos, sta_fe_params, sta_fe_scale_param)
 }
 
 #[inline]
-fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, max_gap_num: usize) -> LogStapmt {
+fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, sta_fe_scale_param: LogProb, max_gap_num: usize) -> LogStapmt {
   let mut lstapmt = LogStapmt::new(seq_len_pair);
   let mut seqs_of_eps_of_terms_4_lbaps_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
-  let mut min_eps_of_terms_4_lbaps_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
+  let mut max_eps_of_terms_4_lbaps_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
   let mut seqs_of_eps_of_terms_4_logps_1 = vec![EpsOfTerms4LogProb::new(); seq_len_pair.0 + 2];
-  let mut min_eps_of_terms_4_logps_1 = vec![INFINITY; seq_len_pair.0 + 2];
+  let mut max_eps_of_terms_4_logps_1 = vec![NEG_INFINITY; seq_len_pair.0 + 2];
   let mut seqs_of_eps_of_terms_4_logps_2 = vec![EpsOfTerms4LogProb::new(); seq_len_pair.1 + 2];
-  let mut min_eps_of_terms_4_logps_2 = vec![INFINITY; seq_len_pair.1 + 2];
+  let mut max_eps_of_terms_4_logps_2 = vec![NEG_INFINITY; seq_len_pair.1 + 2];
   let mut seqs_of_eps_of_terms_4_legps_1 = seqs_of_eps_of_terms_4_logps_1.clone();
-  let mut min_eps_of_terms_4_legps_1 = min_eps_of_terms_4_logps_1.clone();
+  let mut max_eps_of_terms_4_legps_1 = max_eps_of_terms_4_logps_1.clone();
   let mut seqs_of_eps_of_terms_4_legps_2 = seqs_of_eps_of_terms_4_logps_2.clone();
-  let mut min_eps_of_terms_4_legps_2 = min_eps_of_terms_4_logps_2.clone();
+  let mut max_eps_of_terms_4_legps_2 = max_eps_of_terms_4_logps_2.clone();
   let mut seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1 = SeqsOfEpsOfTerms4LogProbsWithPosQuadruples::default();
-  let mut min_eps_of_terms_4_lbpaps_with_pos_quadruples_1 = EpsOfTerms4LogProbsWithPosQuadruples::default();
+  let mut max_eps_of_terms_4_lbpaps_with_pos_quadruples_1 = EpsOfTerms4LogProbsWithPosQuadruples::default();
   let mut seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
-  let mut min_eps_of_terms_4_lbpaps_with_pos_quadruples_2 = min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_lbpaps_with_pos_quadruples_2 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
   let mut seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
-  let mut min_eps_of_terms_4_lbpaps_with_pos_quadruples_3 = min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_lbpaps_with_pos_quadruples_3 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_1 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_logpps_with_pos_quadruples_1 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_2 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_logpps_with_pos_quadruples_2 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_1 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_legpps_with_pos_quadruples_1 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_2 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_legpps_with_pos_quadruples_2 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_1 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_llgps_with_pos_quadruples_1 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_2 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_llgps_with_pos_quadruples_2 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_1 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_lrgps_with_pos_quadruples_1 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_2 = seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
+  let mut max_eps_of_terms_4_lrgps_with_pos_quadruples_2 = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.clone();
   let mut seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1 = seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.clone();
-  let mut min_eps_of_terms_4_logpps_with_pos_pairs_1 = min_eps_of_terms_4_lbaps_with_pos_pairs.clone();
+  let mut max_eps_of_terms_4_logpps_with_pos_pairs_1 = max_eps_of_terms_4_lbaps_with_pos_pairs.clone();
   let mut seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2 = seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
-  let mut min_eps_of_terms_4_logpps_with_pos_pairs_2 = min_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
+  let mut max_eps_of_terms_4_logpps_with_pos_pairs_2 = max_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
   let mut seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1 = seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
-  let mut min_eps_of_terms_4_legpps_with_pos_pairs_1 = min_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
+  let mut max_eps_of_terms_4_legpps_with_pos_pairs_1 = max_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
   let mut seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2 = seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
-  let mut min_eps_of_terms_4_legpps_with_pos_pairs_2 = min_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
+  let mut max_eps_of_terms_4_legpps_with_pos_pairs_2 = max_eps_of_terms_4_logpps_with_pos_pairs_1.clone();
   let mut seqs_of_eps_of_terms_4_llgps_with_pos_triples_1 = SeqsOfEpsOfTerms4LogProbsWithPosTriples::default();
-  let mut min_eps_of_terms_4_llgps_with_pos_triples_1 = EpsOfTerms4LogProbsWithPosTriples::default();
+  let mut max_eps_of_terms_4_llgps_with_pos_triples_1 = EpsOfTerms4LogProbsWithPosTriples::default();
   let mut seqs_of_eps_of_terms_4_llgps_with_pos_triples_2 = seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.clone();
-  let mut min_eps_of_terms_4_llgps_with_pos_triples_2 = min_eps_of_terms_4_llgps_with_pos_triples_1.clone();
+  let mut max_eps_of_terms_4_llgps_with_pos_triples_2 = max_eps_of_terms_4_llgps_with_pos_triples_1.clone();
   let mut seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1 = seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.clone();
-  let mut min_eps_of_terms_4_lrgps_with_pos_triples_1 = min_eps_of_terms_4_llgps_with_pos_triples_1.clone();
+  let mut max_eps_of_terms_4_lrgps_with_pos_triples_1 = max_eps_of_terms_4_llgps_with_pos_triples_1.clone();
   let mut seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2 = seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.clone();
-  let mut min_eps_of_terms_4_lrgps_with_pos_triples_2 = min_eps_of_terms_4_llgps_with_pos_triples_1.clone();
-  let mut seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1 = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
-  let mut min_eps_of_terms_4_lbpps_with_pos_pairs_1 = EpsOfTerms4LogProbsWithPosPairs::default();
+  let mut max_eps_of_terms_4_lrgps_with_pos_triples_2 = max_eps_of_terms_4_llgps_with_pos_triples_1.clone();
+  let mut seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1 = seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.clone();
+  let mut max_eps_of_terms_4_lbpps_with_pos_pairs_1 = max_eps_of_terms_4_lbaps_with_pos_pairs.clone();
   let mut seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2 = seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.clone();
-  let mut min_eps_of_terms_4_lbpps_with_pos_pairs_2 = min_eps_of_terms_4_lbpps_with_pos_pairs_1.clone();
+  let mut max_eps_of_terms_4_lbpps_with_pos_pairs_2 = max_eps_of_terms_4_lbpps_with_pos_pairs_1.clone();
   let mut seqs_of_eps_of_terms_4_lnbpps_1 = vec![EpsOfTerms4LogProb::new(); seq_len_pair.0 + 2];
-  let mut min_eps_of_terms_4_lnbpps_1 = vec![INFINITY; seq_len_pair.0 + 2];
+  let mut max_eps_of_terms_4_lnbpps_1 = vec![NEG_INFINITY; seq_len_pair.0 + 2];
   let mut seqs_of_eps_of_terms_4_lnbpps_2 = vec![EpsOfTerms4LogProb::new(); seq_len_pair.1 + 2];
-  let mut min_eps_of_terms_4_lnbpps_2 = vec![INFINITY; seq_len_pair.1 + 2];
-  let pseudo_pos_quadruple = (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1);
+  let mut max_eps_of_terms_4_lnbpps_2 = vec![NEG_INFINITY; seq_len_pair.1 + 2];
+  let mut logpp_mat_1 = LogProb4dMat::default();
+  let mut logpp_mat_2 = logpp_mat_1.clone();
+  let mut legpp_mat_1 = logpp_mat_1.clone();
+  let mut legpp_mat_2 = logpp_mat_1.clone();
+  let mut llgp_mat_1 = logpp_mat_1.clone();
+  let mut llgp_mat_2 = logpp_mat_1.clone();
+  let mut lrgp_mat_1 = logpp_mat_1.clone();
+  let mut lrgp_mat_2 = logpp_mat_1.clone();
+  for pos_pair in sta_fe_params.lstapmt.lbap_mat.keys() {
+    seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.insert(*pos_pair, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lbaps_with_pos_pairs.insert(*pos_pair, NEG_INFINITY);
+  }
+  for pos_quadruple in sta_fe_params.lstapmt.lbpap_mat_1.keys() {
+    seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in sta_fe_params.lstapmt.lbpap_mat_2.keys() {
+    seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lbpaps_with_pos_quadruples_2.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in sta_fe_params.lstapmt.lbpap_mat_3.keys() {
+    seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lbpaps_with_pos_quadruples_3.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.keys() {
+    seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_1.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_logpps_with_pos_quadruples_1.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.keys() {
+    seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_2.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_logpps_with_pos_quadruples_2.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.keys() {
+    seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_1.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_legpps_with_pos_quadruples_1.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.keys() {
+    seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_2.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_legpps_with_pos_quadruples_2.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.keys() {
+    seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_1.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_llgps_with_pos_quadruples_1.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.keys() {
+    seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_2.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_llgps_with_pos_quadruples_2.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.keys() {
+    seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_1.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lrgps_with_pos_quadruples_1.insert(*pos_quadruple, NEG_INFINITY);
+  }
+  for pos_quadruple in log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.keys() {
+    seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_2.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lrgps_with_pos_quadruples_2.insert(*pos_quadruple, NEG_INFINITY);
+  }
   for pos_pair in sta_fe_params.lstapmt.lbpp_mat_1.keys() {
-    seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.insert(*pos_pair, EpsOfTerms4LogProb::new());
-    min_eps_of_terms_4_lbpps_with_pos_pairs_1.insert(*pos_pair, INFINITY);
+    let eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
+    seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.insert(*pos_pair, eps_of_terms_4_log_prob.clone());
+    max_eps_of_terms_4_lbpps_with_pos_pairs_1.insert(*pos_pair, NEG_INFINITY);
+    seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.insert(*pos_pair, eps_of_terms_4_log_prob.clone());
+    max_eps_of_terms_4_logpps_with_pos_pairs_1.insert(*pos_pair, NEG_INFINITY);
+    seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1.insert(*pos_pair, eps_of_terms_4_log_prob);
+    max_eps_of_terms_4_legpps_with_pos_pairs_1.insert(*pos_pair, NEG_INFINITY);
   }
   for pos_pair in sta_fe_params.lstapmt.lbpp_mat_2.keys() {
+    let eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
     seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.insert(*pos_pair, EpsOfTerms4LogProb::new());
-    min_eps_of_terms_4_lbpps_with_pos_pairs_2.insert(*pos_pair, INFINITY);
+    max_eps_of_terms_4_lbpps_with_pos_pairs_2.insert(*pos_pair, NEG_INFINITY);
+    seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2.insert(*pos_pair, eps_of_terms_4_log_prob.clone());
+    max_eps_of_terms_4_logpps_with_pos_pairs_2.insert(*pos_pair, NEG_INFINITY);
+    seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2.insert(*pos_pair, eps_of_terms_4_log_prob.clone());
+    max_eps_of_terms_4_legpps_with_pos_pairs_2.insert(*pos_pair, NEG_INFINITY);
   }
+  for pos_triple in sta_fe_params.lstapmt.llgp_mat_1.keys() {
+    seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.insert(*pos_triple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_llgps_with_pos_triples_1.insert(*pos_triple, NEG_INFINITY);
+  }
+  for pos_triple in sta_fe_params.lstapmt.llgp_mat_2.keys() {
+    seqs_of_eps_of_terms_4_llgps_with_pos_triples_2.insert(*pos_triple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_llgps_with_pos_triples_2.insert(*pos_triple, NEG_INFINITY);
+  }
+  for pos_triple in sta_fe_params.lstapmt.lrgp_mat_1.keys() {
+    seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1.insert(*pos_triple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lrgps_with_pos_triples_1.insert(*pos_triple, NEG_INFINITY);
+  }
+  for pos_triple in sta_fe_params.lstapmt.lrgp_mat_2.keys() {
+    seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2.insert(*pos_triple, EpsOfTerms4LogProb::new());
+    max_eps_of_terms_4_lrgps_with_pos_triples_2.insert(*pos_triple, NEG_INFINITY);
+  }
+  let pseudo_pos_quadruple = (0, seq_len_pair.0 + 1, 0, seq_len_pair.1 + 1);
   for substr_len_1 in (3 .. seq_len_pair.0 + 3).rev() {
     for substr_len_2 in (3 .. seq_len_pair.1 + 3).rev() {
       if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) > max_gap_num {continue;}
@@ -1132,357 +1227,538 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
         let j = i + substr_len_1 - 1;
         for k in 0 .. seq_len_pair.1 + 3 - substr_len_2 {
           let l = k + substr_len_2 - 1;
-          if get_min_gap_num_1(&(i, k)) > max_gap_num || get_min_gap_num_1(&(j, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(i, j)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(k, l))) {continue;}
           let pos_quadruple = (i, j, k, l);
+          let pos_pair_1 = (i, j);
+          let pos_pair_2 = (k, l);
+          if !(is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num)) || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&pos_pair_1) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&pos_pair_2)) {continue;}
           if pos_quadruple == pseudo_pos_quadruple {
             lstapmt.lbpap_mat_1.insert(pos_quadruple, 0.);
+            lstapmt.lbpp_mat_1.insert(pos_pair_1, 0.);
+            lstapmt.lbpp_mat_2.insert(pos_pair_2, 0.);
           } else {
-            if min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpaps_with_pos_quadruples_1[&pos_quadruple];
-              if min_ep_of_term_4_log_prob.is_finite() {
-                let lbpap = logsumexp(&seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1[&pos_quadruple][..], min_ep_of_term_4_log_prob);
+            if max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let lbpap = logsumexp(&seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1[&pos_quadruple][..], max_ep_of_term_4_log_prob);
                 if lbpap.is_finite() {
                   lstapmt.lbpap_mat_1.insert(pos_quadruple, lbpap);
-                  let pos_pair_1 = (i, j);
-                  let pos_pair_2 = (k, l);
-                  if min_eps_of_terms_4_lbpps_with_pos_pairs_1.contains_key(&pos_pair_1) {
-                    seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.").push(lbpap);
-                    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.");
-                    if lbpap < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = lbpap;
-                    }
+                  seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.").push(lbpap);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.");
+                  if lbpap > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = lbpap;
                   }
-                  if min_eps_of_terms_4_lbpps_with_pos_pairs_2.contains_key(&pos_pair_2) {
-                    seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.").push(lbpap);
-                    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.");
-                    if lbpap < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = lbpap;
-                    }
+                  seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.").push(lbpap);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.");
+                  if lbpap > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = lbpap;
                   }
                 }
               }
             }
-            if min_eps_of_terms_4_lbpaps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpaps_with_pos_quadruples_2[&pos_quadruple];
-              if min_ep_of_term_4_log_prob.is_finite() {
-                let lbpap = logsumexp(&seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2[&pos_quadruple][..], min_ep_of_term_4_log_prob);
+            if max_eps_of_terms_4_lbpaps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpaps_with_pos_quadruples_2[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let lbpap = logsumexp(&seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2[&pos_quadruple][..], max_ep_of_term_4_log_prob);
                 if lbpap.is_finite() {
                   lstapmt.lbpap_mat_2.insert(pos_quadruple, lbpap);
-                  let pos_pair = (k, l);
                   seqs_of_eps_of_terms_4_lnbpps_1[i].push(lbpap);
-                  let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
-                  if lbpap < min_ep_of_term_4_log_prob {
-                    min_eps_of_terms_4_lnbpps_1[i] = lbpap;
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[i];
+                  if lbpap > max_ep_of_term_4_log_prob {
+                    max_eps_of_terms_4_lnbpps_1[i] = lbpap;
                   }
                   seqs_of_eps_of_terms_4_lnbpps_1[j].push(lbpap);
-                  let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[j];
-                  if lbpap < min_ep_of_term_4_log_prob {
-                    min_eps_of_terms_4_lnbpps_1[j] = lbpap;
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[j];
+                  if lbpap > max_ep_of_term_4_log_prob {
+                    max_eps_of_terms_4_lnbpps_1[j] = lbpap;
                   }
-                  if min_eps_of_terms_4_lbpps_with_pos_pairs_2.contains_key(&pos_pair) {
-                    seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(lbpap);
-                    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                    if lbpap < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = lbpap;
-                    }
+                  seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.").push(lbpap);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.");
+                  if lbpap > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = lbpap;
                   }
                 }
               }
             }
-            if min_eps_of_terms_4_lbpaps_with_pos_quadruples_3.contains_key(&pos_quadruple) {
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpaps_with_pos_quadruples_3[&pos_quadruple];
-              if min_ep_of_term_4_log_prob.is_finite() {
-                let lbpap = logsumexp(&seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3[&pos_quadruple][..], min_ep_of_term_4_log_prob);
+            if max_eps_of_terms_4_lbpaps_with_pos_quadruples_3.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpaps_with_pos_quadruples_3[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let lbpap = logsumexp(&seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3[&pos_quadruple][..], max_ep_of_term_4_log_prob);
                 if lbpap.is_finite() {
                   lstapmt.lbpap_mat_3.insert(pos_quadruple, lbpap);
-                  let pos_pair = (i, j);
-                  if min_eps_of_terms_4_lbpps_with_pos_pairs_1.contains_key(&pos_pair) {
-                    seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(lbpap);
-                    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                    if lbpap < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = lbpap;
-                    }
+                  seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.").push(lbpap);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.");
+                  if lbpap > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = lbpap;
                   }
                   seqs_of_eps_of_terms_4_lnbpps_2[k].push(lbpap);
-                  let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[k];
-                  if lbpap < min_ep_of_term_4_log_prob {
-                    min_eps_of_terms_4_lnbpps_2[k] = lbpap;
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[k];
+                  if lbpap > max_ep_of_term_4_log_prob {
+                    max_eps_of_terms_4_lnbpps_2[k] = lbpap;
                   }
                   seqs_of_eps_of_terms_4_lnbpps_2[l].push(lbpap);
-                  let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[l];
-                  if lbpap < min_ep_of_term_4_log_prob {
-                    min_eps_of_terms_4_lnbpps_2[l] = lbpap;
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[l];
+                  if lbpap > max_ep_of_term_4_log_prob {
+                    max_eps_of_terms_4_lnbpps_2[l] = lbpap;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_logpps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_quadruples_1[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let logpp = logsumexp(&seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_1[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if logpp.is_finite() {
+                  logpp_mat_1.insert(pos_quadruple, logpp);
+                  seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.").push(logpp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.");
+                  if logpp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = logpp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_logpps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_quadruples_2[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let logpp = logsumexp(&seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_2[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if logpp.is_finite() {
+                  logpp_mat_2.insert(pos_quadruple, logpp);
+                  seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.").push(logpp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.");
+                  if logpp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = logpp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_legpps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_quadruples_1[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let legpp = logsumexp(&seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_1[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if legpp.is_finite() {
+                  legpp_mat_1.insert(pos_quadruple, legpp);
+                  seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.").push(legpp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_pairs_1.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.");
+                  if legpp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = legpp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_legpps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_quadruples_2[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let legpp = logsumexp(&seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_2[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if legpp.is_finite() {
+                  legpp_mat_2.insert(pos_quadruple, legpp);
+                  seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.").push(legpp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_pairs_2.get_mut(&pos_pair_2).expect("Failed to get an element of a hash map.");
+                  if legpp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = legpp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_llgps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_quadruples_1[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let llgp = logsumexp(&seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_1[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if llgp.is_finite() {
+                  llgp_mat_1.insert(pos_quadruple, llgp);
+                  let pos_triple = (i, j, l);
+                  seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(llgp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
+                  if llgp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = llgp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_llgps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_quadruples_2[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let llgp = logsumexp(&seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_2[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if llgp.is_finite() {
+                  llgp_mat_2.insert(pos_quadruple, llgp);
+                  let pos_triple = (j, k, l);
+                  seqs_of_eps_of_terms_4_llgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(llgp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
+                  if llgp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = llgp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_lrgps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_quadruples_1[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let lrgp = logsumexp(&seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_1[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if lrgp.is_finite() {
+                  lrgp_mat_1.insert(pos_quadruple, lrgp);
+                  let pos_triple = (i, j, k);
+                  seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(lrgp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
+                  if lrgp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = lrgp;
+                  }
+                }
+              }
+            }
+            if max_eps_of_terms_4_lrgps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
+              let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_quadruples_2[&pos_quadruple];
+              if max_ep_of_term_4_log_prob.is_finite() {
+                let lrgp = logsumexp(&seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_2[&pos_quadruple][..], max_ep_of_term_4_log_prob);
+                if lrgp.is_finite() {
+                  lrgp_mat_2.insert(pos_quadruple, lrgp);
+                  let pos_triple = (i, k, l);
+                  seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(lrgp);
+                  let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
+                  if lrgp > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = lrgp;
                   }
                 }
               }
             }
           }
-          if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple) && lstapmt.lbpap_mat_1.contains_key(&pos_quadruple) {
+          let mut eps_of_terms_4_log_coefficient = EpsOfTerms4LogProb::new();
+          let mut max_ep_of_term_4_log_coefficient = NEG_INFINITY;
+          if lstapmt.lbpap_mat_1.contains_key(&pos_quadruple) {
             let log_sta_pf_4_bpa = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple];
             let lbpap = lstapmt.lbpap_mat_1[&pos_quadruple];
-            let log_sta_forward_ppf_mats = get_log_sta_forward_ppf_mats(&pos_quadruple, sta_fe_params, &log_sta_ppf_4d_mats, max_gap_num);
-            let log_sta_backward_ppf_mats = get_log_sta_backward_ppf_mats(&pos_quadruple, sta_fe_params, &log_sta_ppf_4d_mats, max_gap_num);
-            for n in i + 1 .. j {
-              for p in k + 1 .. l {
-                let pos_pair = (n, p);
-                if get_min_gap_num_1(&pos_pair) > max_gap_num || get_min_gap_num(&(i, n, k, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num {continue;}
-                if !min_eps_of_terms_4_lbaps_with_pos_pairs.contains_key(&pos_pair) {
-                  seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.insert(pos_pair, EpsOfTerms4LogProb::new());
-                  min_eps_of_terms_4_lbaps_with_pos_pairs.insert(pos_pair, INFINITY);
+            let ep_of_term_4_log_coefficient = lbpap - log_sta_pf_4_bpa;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          if lstapmt.lbpap_mat_2.contains_key(&pos_quadruple) {
+            let log_sta_pf_4_bpa = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple];
+            let lbpap = lstapmt.lbpap_mat_2[&pos_quadruple];
+            let ep_of_term_4_log_coefficient = lbpap - log_sta_pf_4_bpa;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          if lstapmt.lbpap_mat_3.contains_key(&pos_quadruple) {
+            let log_sta_pf_4_bpa = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple];
+            let lbpap = lstapmt.lbpap_mat_3[&pos_quadruple];
+            let ep_of_term_4_log_coefficient = lbpap - log_sta_pf_4_bpa;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i, j, k + 1, l - 1);
+          if logpp_mat_1.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple_2];
+            let logpp = logpp_mat_1[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = logpp - log_sta_pf_4_ogp;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i + 1, j - 1, k, l);
+          if logpp_mat_2.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple_2];
+            let logpp = logpp_mat_2[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = logpp - log_sta_pf_4_ogp;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i, j, k + 1, l - 1);
+          if legpp_mat_1.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_egp = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple_2];
+            let legpp = legpp_mat_1[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = legpp - log_sta_pf_4_egp;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i + 1, j - 1, k, l);
+          if legpp_mat_2.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_egp = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple_2];
+            let legpp = legpp_mat_2[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = legpp - log_sta_pf_4_egp;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i, j, k + 1, l);
+          if llgp_mat_1.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_lg = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple_2];
+            let llgp = llgp_mat_1[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = llgp - log_sta_pf_4_lg;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i + 1, j, k, l);
+          if llgp_mat_2.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_lg = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple_2];
+            let llgp = llgp_mat_2[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = llgp - log_sta_pf_4_lg;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i, j, k, l - 1);
+          if lrgp_mat_1.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_rg = log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple_2];
+            let lrgp = lrgp_mat_1[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = lrgp - log_sta_pf_4_rg;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let pos_quadruple_2 = (i, j - 1, k, l);
+          if lrgp_mat_2.contains_key(&pos_quadruple_2) {
+            let log_sta_pf_4_rg = log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple_2];
+            let lrgp = lrgp_mat_2[&pos_quadruple_2];
+            let ep_of_term_4_log_coefficient = lrgp - log_sta_pf_4_rg;
+            if ep_of_term_4_log_coefficient.is_finite() {
+              eps_of_terms_4_log_coefficient.push(ep_of_term_4_log_coefficient);
+              if ep_of_term_4_log_coefficient > max_ep_of_term_4_log_coefficient {
+                max_ep_of_term_4_log_coefficient = ep_of_term_4_log_coefficient;
+              }
+            }
+          }
+          let log_coefficient = logsumexp(&eps_of_terms_4_log_coefficient[..], max_ep_of_term_4_log_coefficient);
+          if !log_coefficient.is_finite() {continue;}
+          let log_sta_forward_ppf_mats = get_log_sta_forward_ppf_mats(&pos_quadruple, &pseudo_pos_quadruple, sta_fe_params, &log_sta_ppf_4d_mats, sta_fe_scale_param, max_gap_num);
+          let log_sta_backward_ppf_mats = get_log_sta_backward_ppf_mats(&pos_quadruple, &pseudo_pos_quadruple, sta_fe_params, &log_sta_ppf_4d_mats, sta_fe_scale_param, max_gap_num);
+          for n in i + 1 .. j {
+            for p in k + 1 .. l {
+              let pos_pair = (n, p);
+              if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num)) {continue;}
+              let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(n - 1, p - 1)] + get_ba_log_odds_ratio(&pos_pair, sta_fe_params, sta_fe_scale_param) + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+              if ep_of_term_4_log_prob.is_finite() {
+                seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
+                if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                  *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                 }
-                let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(n - 1, p - 1)] + get_ba_log_odds_ratio(&(n, p), sta_fe_params) + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
+              }
+              let pos_pair = (n - 1, p);
+              if is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) {
+                let og_lor = get_og_lor_1(n, sta_fe_params, sta_fe_scale_param);
+                let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_2[&pos_pair] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
                 if ep_of_term_4_log_prob.is_finite() {
-                  seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                  let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                  if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                    *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                  seqs_of_eps_of_terms_4_logps_1[n].push(ep_of_term_4_log_prob);
+                  let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_logps_1[n];
+                  if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                   }
                 }
-                if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
-                  let og_lor = get_og_lor_1(n, sta_fe_params);
-                  let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_2[&(n - 1, p)] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                  if ep_of_term_4_log_prob.is_finite() {
-                    seqs_of_eps_of_terms_4_logps_1[n].push(ep_of_term_4_log_prob);
-                    let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_logps_1[n];
-                    if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                    }
-                  }
-                  let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(n - 1, p)] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                  if ep_of_term_4_log_prob.is_finite() {
-                    seqs_of_eps_of_terms_4_logps_1[n].push(ep_of_term_4_log_prob);
-                    let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_logps_1[n];
-                    if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                    }
+                let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&pos_pair] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)];
+                if ep_of_term_4_log_prob.is_finite() {
+                  seqs_of_eps_of_terms_4_logps_1[n].push(ep_of_term_4_log_prob);
+                  let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_logps_1[n];
+                  if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                   }
                 }
-                if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
-                  let og_lor = get_og_lor_2(p, sta_fe_params);
-                  let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_3[&(n, p - 1)] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                  if ep_of_term_4_log_prob.is_finite() {
-                    seqs_of_eps_of_terms_4_logps_2[p].push(ep_of_term_4_log_prob);
-                    let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_logps_2[p];
-                    if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                    }
-                  }
-                  let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(n, p - 1)] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                  if ep_of_term_4_log_prob.is_finite() {
-                    seqs_of_eps_of_terms_4_logps_2[p].push(ep_of_term_4_log_prob);
-                    let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_logps_2[p];
-                    if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                    }
+                let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_1[&(n - 1, p)] + get_eg_lor_1(n, sta_fe_params, sta_fe_scale_param) + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)];
+                if ep_of_term_4_log_prob.is_finite() {
+                  seqs_of_eps_of_terms_4_legps_1[n].push(ep_of_term_4_log_prob);
+                  let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_legps_1[n];
+                  if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                   }
                 }
-                if get_min_gap_num_1(&(n - 1, p)) <= max_gap_num && get_min_gap_num(&(i, n - 1, k, p)) <= max_gap_num && max_gap_num >= 1 {
-                  let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_1[&(n - 1, p)] + get_eg_lor_1(n, sta_fe_params) + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                  if ep_of_term_4_log_prob.is_finite() {
-                    seqs_of_eps_of_terms_4_legps_1[n].push(ep_of_term_4_log_prob);
-                    let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_legps_1[n];
-                    if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                    }
+              }
+              let pos_pair = (n, p - 1);
+              if is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) {
+                let og_lor = get_og_lor_2(p, sta_fe_params, sta_fe_scale_param);
+                let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_3[&pos_pair] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                if ep_of_term_4_log_prob.is_finite() {
+                  seqs_of_eps_of_terms_4_logps_2[p].push(ep_of_term_4_log_prob);
+                  let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_logps_2[p];
+                  if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                   }
                 }
-                if get_min_gap_num_1(&(n, p - 1)) <= max_gap_num && get_min_gap_num(&(i, n, k, p - 1)) <= max_gap_num && max_gap_num >= 1 {
-                  let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_2[&(n, p - 1)] + get_eg_lor_2(p, sta_fe_params) + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                  if ep_of_term_4_log_prob.is_finite() {
-                    seqs_of_eps_of_terms_4_legps_2[p].push(ep_of_term_4_log_prob);
-                    let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_legps_2[p];
-                    if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                      *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                    }
+                let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&pos_pair] + og_lor + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)];
+                if ep_of_term_4_log_prob.is_finite() {
+                  seqs_of_eps_of_terms_4_logps_2[p].push(ep_of_term_4_log_prob);
+                  let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_logps_2[p];
+                  if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                  }
+                }
+                let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_2[&(n, p - 1)] + get_eg_lor_2(p, sta_fe_params, sta_fe_scale_param) + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)];
+                if ep_of_term_4_log_prob.is_finite() {
+                  seqs_of_eps_of_terms_4_legps_2[p].push(ep_of_term_4_log_prob);
+                  let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_legps_2[p];
+                  if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                    *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                   }
                 }
               }
             }
-            for m in i + 1 .. j {
-              for o in k + 1 .. l {
-                if get_min_gap_num_1(&(m, o)) > max_gap_num {continue;}
-                for n in m + 1 .. j {
-                  for p in o + 1 .. l {
-                    let pos_quadruple = (m, n, o, p);
-                    if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(i, m, k, o)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple) {
-                      if !min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.contains_key(&pos_quadruple) {
-                        seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.insert(pos_quadruple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.insert(pos_quadruple, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.get_mut(&pos_quadruple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpaps_with_pos_quadruples_1.get_mut(&pos_quadruple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+          }
+          for m in i + 1 .. j {
+            for o in k + 1 .. l {
+              let pos_pair = (m, o);
+              if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num)) {continue;}
+              for n in m + 1 .. j {
+                for p in o + 1 .. l {
+                  let pos_quadruple_2 = (m, n, o, p);
+                  let pos_pair = (n, p);
+                  if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpaps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2.contains_key(&pos_quadruple) {
-                      if !min_eps_of_terms_4_lbpaps_with_pos_quadruples_2.contains_key(&pos_quadruple) {
-                        seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2.insert(pos_quadruple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_lbpaps_with_pos_quadruples_2.insert(pos_quadruple, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2.get_mut(&pos_quadruple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpaps_with_pos_quadruples_2.get_mut(&pos_quadruple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpaps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3.contains_key(&pos_quadruple) {
-                      if !min_eps_of_terms_4_lbpaps_with_pos_quadruples_3.contains_key(&pos_quadruple) {
-                        seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3.insert(pos_quadruple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_lbpaps_with_pos_quadruples_3.insert(pos_quadruple, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3.get_mut(&pos_quadruple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpaps_with_pos_quadruples_3.get_mut(&pos_quadruple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples_3.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpaps_with_pos_quadruples_3.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple) {
-                      let pos_pair = (m, n);
-                      if !min_eps_of_terms_4_logpps_with_pos_pairs_1.contains_key(&pos_pair) {
-                        seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.insert(pos_pair, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_logpps_with_pos_pairs_1.insert(pos_pair, INFINITY);
-                      }
-                      let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple];
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_2[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple_2) {
+                    let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple_2];
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_2[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple) {
-                      let pos_pair = (o, p);
-                      if !min_eps_of_terms_4_logpps_with_pos_pairs_2.contains_key(&pos_pair) {
-                        seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2.insert(pos_pair, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_logpps_with_pos_pairs_2.insert(pos_pair, INFINITY);
-                      }
-                      let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple];
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_3[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple) {
-                      let pos_pair = (m, n);
-                      if !min_eps_of_terms_4_legpps_with_pos_pairs_1.contains_key(&pos_pair) {
-                        seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1.insert(pos_pair, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_legpps_with_pos_pairs_1.insert(pos_pair, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_legpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple_2) {
+                    let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple_2];
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_3[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple) {
-                      let pos_pair = (o, p);
-                      if !min_eps_of_terms_4_legpps_with_pos_pairs_2.contains_key(&pos_pair) {
-                        seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2.insert(pos_pair, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_legpps_with_pos_pairs_2.insert(pos_pair, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_2[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_legpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_pf_4_ogp + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_logpps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple) {
-                      let pos_triple = (m, n, p);
-                      if !min_eps_of_terms_4_llgps_with_pos_triples_1.contains_key(&pos_triple) {
-                        seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.insert(pos_triple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_llgps_with_pos_triples_1.insert(pos_triple, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_2[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_llgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_llgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple) {
-                      let pos_triple = (n, o, p);
-                      if !min_eps_of_terms_4_llgps_with_pos_triples_2.contains_key(&pos_triple) {
-                        seqs_of_eps_of_terms_4_llgps_with_pos_triples_2.insert(pos_triple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_llgps_with_pos_triples_2.insert(pos_triple, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_3[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_llgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_llgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_4_gaps_2[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_4_gaps_2[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_legpps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple) {
-                      let pos_triple = (m, n, o);
-                      if !min_eps_of_terms_4_lrgps_with_pos_triples_1.contains_key(&pos_triple) {
-                        seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1.insert(pos_triple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_lrgps_with_pos_triples_1.insert(pos_triple, INFINITY);
-                      }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_2[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lrgps_with_pos_triples_1.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_2[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
-                    if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple) {
-                      let pos_triple = (m, o, p);
-                      if !min_eps_of_terms_4_lrgps_with_pos_triples_2.contains_key(&pos_triple) {
-                        seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2.insert(pos_triple, EpsOfTerms4LogProb::new());
-                        min_eps_of_terms_4_lrgps_with_pos_triples_2.insert(pos_triple, INFINITY);
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_3[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_1[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_llgps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
-                      let ep_of_term_4_log_prob = lbpap + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple] + log_sta_backward_ppf_mats.log_ppf_mat_3[&(n + 1, p + 1)] - log_sta_pf_4_bpa;
-                      if ep_of_term_4_log_prob.is_finite() {
-                        seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
-                        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lrgps_with_pos_triples_2.get_mut(&pos_triple).expect("Failed to get an element of a hash map.");
-                        if ep_of_term_4_log_prob < *min_ep_of_term_4_log_prob {
-                          *min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
-                        }
+                    }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_2[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_quadruples_1.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+                      }
+                    }
+                  }
+                  if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple_2) {
+                    let ep_of_term_4_log_prob = log_coefficient + log_sta_forward_ppf_mats.log_ppf_mat_1[&(m - 1, o - 1)] + log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple_2] + log_sta_backward_ppf_mats.log_ppf_mat_3[&(n + 1, p + 1)];
+                    if ep_of_term_4_log_prob.is_finite() {
+                      seqs_of_eps_of_terms_4_lrgps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+                      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_quadruples_2.get_mut(&pos_quadruple_2).expect("Failed to get an element of a hash map.");
+                      if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+                        *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
                       }
                     }
                   }
@@ -1494,279 +1770,241 @@ fn get_lstapmt(seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_s
       }
     }
   }
-  for i in 0 .. seq_len_pair.0 + 2 {
-    for j in 0 .. seq_len_pair.1 + 2 {
-      let pos_pair = (i, j);
-      if get_min_gap_num_1(&pos_pair) > max_gap_num {continue;}
-      if min_eps_of_terms_4_lbaps_with_pos_pairs.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbaps_with_pos_pairs[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          let lbap = logsumexp(&seqs_of_eps_of_terms_4_lbaps_with_pos_pairs[&pos_pair][..], min_ep_of_term_4_log_prob);
-          if lbap.is_finite() {
-            lstapmt.lbap_mat.insert(pos_pair, lbap);
-            seqs_of_eps_of_terms_4_lnbpps_1[i].push(lbap);
-            let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
-            if lbap < *min_ep_of_term_4_log_prob {
-              *min_ep_of_term_4_log_prob = lbap;
-            }
-            seqs_of_eps_of_terms_4_lnbpps_2[j].push(lbap);
-            let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[j];
-            if lbap < *min_ep_of_term_4_log_prob {
-              *min_ep_of_term_4_log_prob = lbap;
-            }
-          }
+  for pos_triple in sta_fe_params.lstapmt.llgp_mat_1.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_triples_1[pos_triple];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let llgp = logsumexp(&seqs_of_eps_of_terms_4_llgps_with_pos_triples_1[pos_triple][..], max_ep_of_term_4_log_prob);
+      if llgp.is_finite() {
+        lstapmt.llgp_mat_1.insert(*pos_triple, llgp);
+        let pos_pair = (pos_triple.0, pos_triple.1);
+        seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(llgp);
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
+        if llgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = llgp;
+        }
+        let pos = pos_triple.2;
+        seqs_of_eps_of_terms_4_lnbpps_2[pos].push(llgp);
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[pos];
+        if llgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = llgp;
         }
       }
     }
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logps_1[i];
-    let logp = if min_ep_of_term_4_log_prob.is_finite() {
-      logsumexp(&seqs_of_eps_of_terms_4_logps_1[i][..], min_ep_of_term_4_log_prob)
+  }
+  for pos_triple in sta_fe_params.lstapmt.llgp_mat_2.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_llgps_with_pos_triples_2[pos_triple];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let llgp = logsumexp(&seqs_of_eps_of_terms_4_llgps_with_pos_triples_2[pos_triple][..], max_ep_of_term_4_log_prob);
+      if llgp.is_finite() {
+        lstapmt.llgp_mat_2.insert(*pos_triple, llgp);
+        let pos_pair = (pos_triple.1, pos_triple.2);
+        seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(llgp);
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
+        if llgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = llgp;
+        }
+        let pos = pos_triple.0;
+        seqs_of_eps_of_terms_4_lnbpps_1[pos].push(llgp);
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[pos];
+        if llgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = llgp;
+        }
+      }
+    }
+  }
+  for pos_triple in sta_fe_params.lstapmt.lrgp_mat_1.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_triples_1[pos_triple];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let lrgp = logsumexp(&seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1[pos_triple][..], max_ep_of_term_4_log_prob);
+      if lrgp.is_finite() {
+        lstapmt.lrgp_mat_1.insert(*pos_triple, lrgp);
+        let pos_pair = (pos_triple.0, pos_triple.1);
+        seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(lrgp);
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
+        if lrgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lrgp;
+        }
+        let pos = pos_triple.2;
+        seqs_of_eps_of_terms_4_lnbpps_2[pos].push(lrgp);
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[pos];
+        if lrgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lrgp;
+        }
+      }
+    }
+  }
+  for pos_triple in sta_fe_params.lstapmt.lrgp_mat_2.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lrgps_with_pos_triples_2[pos_triple];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let lrgp = logsumexp(&seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2[pos_triple][..], max_ep_of_term_4_log_prob);
+      if lrgp.is_finite() {
+        lstapmt.lrgp_mat_2.insert(*pos_triple, lrgp);
+        let pos_pair = (pos_triple.1, pos_triple.2);
+        seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(lrgp);
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
+        if lrgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lrgp;
+        }
+        let pos = pos_triple.0;
+        seqs_of_eps_of_terms_4_lnbpps_1[pos].push(lrgp);
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[pos];
+        if lrgp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lrgp;
+        }
+      }
+    }
+  }
+  for pos_pair in sta_fe_params.lstapmt.lbap_mat.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbaps_with_pos_pairs[pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let lbap = logsumexp(&seqs_of_eps_of_terms_4_lbaps_with_pos_pairs[pos_pair][..], max_ep_of_term_4_log_prob);
+      if lbap.is_finite() {
+        lstapmt.lbap_mat.insert(*pos_pair, lbap);
+        let &(i, j) = pos_pair;
+        seqs_of_eps_of_terms_4_lnbpps_1[i].push(lbap);
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[i];
+        if lbap > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lbap;
+        }
+        seqs_of_eps_of_terms_4_lnbpps_2[j].push(lbap);
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[j];
+        if lbap > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lbap;
+        }
+      }
+    }
+  }
+  for i in 0 .. seq_len_pair.0 + 2 {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logps_1[i];
+    let logp = if max_ep_of_term_4_log_prob.is_finite() {
+      logsumexp(&seqs_of_eps_of_terms_4_logps_1[i][..], max_ep_of_term_4_log_prob)
     } else {
       NEG_INFINITY
     };
     if logp.is_finite() {
       lstapmt.logp_mat_1[i] = logp;
       seqs_of_eps_of_terms_4_lnbpps_1[i].push(logp);
-      let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
-      if logp < min_ep_of_term_4_log_prob {
-        min_eps_of_terms_4_lnbpps_1[i]= logp;
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[i];
+      if logp > max_ep_of_term_4_log_prob {
+        max_eps_of_terms_4_lnbpps_1[i]= logp;
       }
     }
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_legps_1[i];
-    let legp = if min_ep_of_term_4_log_prob.is_finite() {
-      logsumexp(&seqs_of_eps_of_terms_4_legps_1[i][..], min_ep_of_term_4_log_prob)
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legps_1[i];
+    let legp = if max_ep_of_term_4_log_prob.is_finite() {
+      logsumexp(&seqs_of_eps_of_terms_4_legps_1[i][..], max_ep_of_term_4_log_prob)
     } else {
       NEG_INFINITY
     };
     if legp.is_finite() {
       lstapmt.legp_mat_1[i] = legp;
       seqs_of_eps_of_terms_4_lnbpps_1[i].push(legp);
-      let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
-      if legp < min_ep_of_term_4_log_prob {
-        min_eps_of_terms_4_lnbpps_1[i] = legp;
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[i];
+      if legp > max_ep_of_term_4_log_prob {
+        max_eps_of_terms_4_lnbpps_1[i] = legp;
       }
+    }
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_1[i];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      lstapmt.lnbpp_mat_1[i] = logsumexp(&seqs_of_eps_of_terms_4_lnbpps_1[i][..], max_ep_of_term_4_log_prob);
     }
   }
   for i in 0 .. seq_len_pair.1 + 2 {
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logps_2[i];
-    let logp = if min_ep_of_term_4_log_prob.is_finite() {
-      logsumexp(&seqs_of_eps_of_terms_4_logps_2[i][..], min_ep_of_term_4_log_prob)
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logps_2[i];
+    let logp = if max_ep_of_term_4_log_prob.is_finite() {
+      logsumexp(&seqs_of_eps_of_terms_4_logps_2[i][..], max_ep_of_term_4_log_prob)
     } else {
       NEG_INFINITY
     };
     if logp.is_finite() {
       lstapmt.logp_mat_2[i] = logp;
       seqs_of_eps_of_terms_4_lnbpps_2[i].push(logp);
-      let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[i];
-      if logp < min_ep_of_term_4_log_prob {
-        min_eps_of_terms_4_lnbpps_2[i] = logp;
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[i];
+      if logp > max_ep_of_term_4_log_prob {
+        max_eps_of_terms_4_lnbpps_2[i] = logp;
       }
     }
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_legps_2[i];
-    let legp = if min_ep_of_term_4_log_prob.is_finite() {
-      logsumexp(&seqs_of_eps_of_terms_4_legps_2[i][..], min_ep_of_term_4_log_prob)
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legps_2[i];
+    let legp = if max_ep_of_term_4_log_prob.is_finite() {
+      logsumexp(&seqs_of_eps_of_terms_4_legps_2[i][..], max_ep_of_term_4_log_prob)
     } else {
       NEG_INFINITY
     };
     if legp.is_finite() {
       lstapmt.legp_mat_2[i] = legp;
       seqs_of_eps_of_terms_4_lnbpps_2[i].push(legp);
-      let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[i];
-      if legp < *min_ep_of_term_4_log_prob {
-        *min_ep_of_term_4_log_prob = legp;
+      let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[i];
+      if legp > *max_ep_of_term_4_log_prob {
+        *max_ep_of_term_4_log_prob = legp;
       }
+    }
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lnbpps_2[i];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      lstapmt.lnbpp_mat_2[i] = logsumexp(&seqs_of_eps_of_terms_4_lnbpps_2[i][..], max_ep_of_term_4_log_prob);
     }
   }
-  for i in 0 .. seq_len_pair.0 + 1 {
-    for j in i + 1 .. seq_len_pair.0 + 2 {
-      let pos_pair = (i, j);
-      for k in 0 .. seq_len_pair.1 + 2 {
-        let pos_triple = (i, j, k);
-        if min_eps_of_terms_4_llgps_with_pos_triples_1.contains_key(&pos_triple) {
-          let min_ep_of_term_4_log_prob = min_eps_of_terms_4_llgps_with_pos_triples_1[&pos_triple];
-          if min_ep_of_term_4_log_prob.is_finite() {
-            let llgp = logsumexp(&seqs_of_eps_of_terms_4_llgps_with_pos_triples_1[&pos_triple][..], min_ep_of_term_4_log_prob);
-            if llgp.is_finite() {
-              lstapmt.llgp_mat_1.insert(pos_triple, llgp);
-              seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(llgp);
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-              if llgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = llgp;
-              }
-              seqs_of_eps_of_terms_4_lnbpps_2[k].push(llgp);
-              let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[k];
-              if llgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = llgp;
-              }
-            }
-          }
-        }
-        if min_eps_of_terms_4_lrgps_with_pos_triples_1.contains_key(&pos_triple) {
-          let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lrgps_with_pos_triples_1[&pos_triple];
-          if min_ep_of_term_4_log_prob.is_finite() {
-            let lrgp = logsumexp(&seqs_of_eps_of_terms_4_lrgps_with_pos_triples_1[&pos_triple][..], min_ep_of_term_4_log_prob);
-            if lrgp.is_finite() {
-              lstapmt.lrgp_mat_1.insert(pos_triple, lrgp);
-              seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(lrgp);
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-              if lrgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = lrgp;
-              }
-              seqs_of_eps_of_terms_4_lnbpps_2[k].push(lrgp);
-              let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[k];
-              if lrgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = lrgp;
-              }
-            }
-          }
-        }
+  for pos_pair in sta_fe_params.lstapmt.lbpp_mat_1.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_pairs_1[pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let logpp = logsumexp(&seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1[pos_pair][..], max_ep_of_term_4_log_prob);
+      lstapmt.logpp_mat_1.insert(*pos_pair, logpp);
+      seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(pos_pair).expect("Failed to get an element of a hash map.").push(logpp);
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+      if logpp > *max_ep_of_term_4_log_prob {
+        *max_ep_of_term_4_log_prob = logpp;
       }
-      if min_eps_of_terms_4_logpps_with_pos_pairs_1.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logpps_with_pos_pairs_1[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          let logpp = logsumexp(&seqs_of_eps_of_terms_4_logpps_with_pos_pairs_1[&pos_pair][..], min_ep_of_term_4_log_prob);
-          if logpp.is_finite() {
-            lstapmt.logpp_mat_1.insert(pos_pair, logpp);
-            seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(logpp);
-            let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-            if logpp < *min_ep_of_term_4_log_prob {
-              *min_ep_of_term_4_log_prob = logpp;
-            }
-          }
-        }
+    }
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_pairs_1[pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let legpp = logsumexp(&seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1[pos_pair][..], max_ep_of_term_4_log_prob);
+      lstapmt.legpp_mat_1.insert(*pos_pair, legpp);
+      seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(pos_pair).expect("Failed to get an element of a hash map.").push(legpp);
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+      if legpp > *max_ep_of_term_4_log_prob {
+        *max_ep_of_term_4_log_prob = legpp;
       }
-      if min_eps_of_terms_4_legpps_with_pos_pairs_1.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_legpps_with_pos_pairs_1[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          let legpp = logsumexp(&seqs_of_eps_of_terms_4_legpps_with_pos_pairs_1[&pos_pair][..], min_ep_of_term_4_log_prob);
-          if legpp.is_finite() {
-            lstapmt.legpp_mat_1.insert(pos_pair, legpp);
-            seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(legpp);
-            let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-            if legpp < *min_ep_of_term_4_log_prob {
-              *min_ep_of_term_4_log_prob = legpp;
-            }
-          }
-        }
-      }
+    }
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_1[pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      lstapmt.lbpp_mat_1.insert(*pos_pair, logsumexp(&seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1[pos_pair][..], max_ep_of_term_4_log_prob));
     }
   }
-  for i in 0 .. seq_len_pair.1 + 1 {
-    for j in i + 1 .. seq_len_pair.1 + 2 {
-      let pos_pair = (i, j);
-      for k in 0 .. seq_len_pair.0 + 2 {
-        let pos_triple = (k, i, j);
-        if min_eps_of_terms_4_llgps_with_pos_triples_2.contains_key(&pos_triple) {
-          let min_ep_of_term_4_log_prob = min_eps_of_terms_4_llgps_with_pos_triples_2[&pos_triple];
-          if min_ep_of_term_4_log_prob.is_finite() {
-            let llgp = logsumexp(&seqs_of_eps_of_terms_4_llgps_with_pos_triples_2[&pos_triple][..], min_ep_of_term_4_log_prob);
-            if llgp.is_finite() {
-              lstapmt.llgp_mat_2.insert(pos_triple, llgp);
-              seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(llgp);
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-              if llgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = llgp;
-              }
-              seqs_of_eps_of_terms_4_lnbpps_1[k].push(llgp);
-              let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[k];
-              if llgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = llgp;
-              }
-            }
-          }
-        }
-        if min_eps_of_terms_4_lrgps_with_pos_triples_2.contains_key(&pos_triple) {
-          let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lrgps_with_pos_triples_2[&pos_triple];
-          if min_ep_of_term_4_log_prob.is_finite() {
-            let lrgp = logsumexp(&seqs_of_eps_of_terms_4_lrgps_with_pos_triples_2[&pos_triple][..], min_ep_of_term_4_log_prob);
-            if lrgp.is_finite() {
-              lstapmt.lrgp_mat_2.insert(pos_triple, lrgp);
-              seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(lrgp);
-              let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-              if lrgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = lrgp;
-              }
-              seqs_of_eps_of_terms_4_lnbpps_1[k].push(lrgp);
-              let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[k];
-              if lrgp < *min_ep_of_term_4_log_prob {
-                *min_ep_of_term_4_log_prob = lrgp;
-              }
-            }
-          }
-        }
-      }
-      let pos_pair = (i, j);
-      if min_eps_of_terms_4_logpps_with_pos_pairs_2.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_logpps_with_pos_pairs_2[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          let logpp = logsumexp(&seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2[&pos_pair][..], min_ep_of_term_4_log_prob);
-          if logpp.is_finite() {
-            lstapmt.logpp_mat_2.insert(pos_pair, logpp);
-            seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(logpp);
-            let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-            if logpp < *min_ep_of_term_4_log_prob {
-              *min_ep_of_term_4_log_prob = logpp;
-            }
-          }
-        }
-      }
-      if min_eps_of_terms_4_legpps_with_pos_pairs_2.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_legpps_with_pos_pairs_2[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          let legpp = logsumexp(&seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2[&pos_pair][..], min_ep_of_term_4_log_prob);
-          if legpp.is_finite() {
-            lstapmt.legpp_mat_2.insert(pos_pair, legpp);
-            seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(legpp);
-            let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
-            if legpp < *min_ep_of_term_4_log_prob {
-              *min_ep_of_term_4_log_prob = legpp;
-            }
-          }
-        }
+  for pos_pair in sta_fe_params.lstapmt.lbpp_mat_2.keys() {
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_logpps_with_pos_pairs_2[pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let logpp = logsumexp(&seqs_of_eps_of_terms_4_logpps_with_pos_pairs_2[pos_pair][..], max_ep_of_term_4_log_prob);
+      lstapmt.logpp_mat_2.insert(*pos_pair, logpp);
+      seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(pos_pair).expect("Failed to get an element of a hash map.").push(logpp);
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+      if logpp > *max_ep_of_term_4_log_prob {
+        *max_ep_of_term_4_log_prob = logpp;
       }
     }
-  }
-  for i in 0 .. seq_len_pair.0 + 2 {
-    for j in i + 1 .. seq_len_pair.0 + 2 {
-      let pos_pair = (i, j);
-      if min_eps_of_terms_4_lbpps_with_pos_pairs_1.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_1[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          lstapmt.lbpp_mat_1.insert(pos_pair, logsumexp(&seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_1[&pos_pair][..], min_ep_of_term_4_log_prob));
-        }
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_legpps_with_pos_pairs_2[pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      let legpp = logsumexp(&seqs_of_eps_of_terms_4_legpps_with_pos_pairs_2[pos_pair][..], max_ep_of_term_4_log_prob);
+      lstapmt.legpp_mat_2.insert(*pos_pair, legpp);
+      seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(pos_pair).expect("Failed to get an element of a hash map.").push(legpp);
+      let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+      if legpp > *max_ep_of_term_4_log_prob {
+        *max_ep_of_term_4_log_prob = legpp;
       }
     }
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_1[i];
-    if min_ep_of_term_4_log_prob.is_finite() {
-      lstapmt.lnbpp_mat_1[i] = logsumexp(&seqs_of_eps_of_terms_4_lnbpps_1[i][..], min_ep_of_term_4_log_prob);
-    }
-  }
-  for i in 0 .. seq_len_pair.1 + 2 {
-    for j in i + 1 .. seq_len_pair.1 + 2 {
-      let pos_pair = (i, j);
-      if min_eps_of_terms_4_lbpps_with_pos_pairs_2.contains_key(&pos_pair) {
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lbpps_with_pos_pairs_2[&pos_pair];
-        if min_ep_of_term_4_log_prob.is_finite() {
-          lstapmt.lbpp_mat_2.insert(pos_pair, logsumexp(&seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2[&pos_pair][..], min_ep_of_term_4_log_prob));
-        }
-      }
-    }
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_lnbpps_2[i];
-    if min_ep_of_term_4_log_prob.is_finite() {
-      lstapmt.lnbpp_mat_2[i] = logsumexp(&seqs_of_eps_of_terms_4_lnbpps_2[i][..], min_ep_of_term_4_log_prob);
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbpps_with_pos_pairs_2[&pos_pair];
+    if max_ep_of_term_4_log_prob.is_finite() {
+      lstapmt.lbpp_mat_2.insert(*pos_pair, logsumexp(&seqs_of_eps_of_terms_4_lbpps_with_pos_pairs_2[pos_pair][..], max_ep_of_term_4_log_prob));
     }
   }
   lstapmt
 }
 
 #[inline]
-fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, max_gap_num: usize) -> LogStaPpfMats {
+fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, pseudo_pos_quadruple: &PosQuadruple, sta_fe_params: &StaFeParams, log_sta_ppf_4d_mats: &LogStaPpf4dMats, sta_fe_scale_param: LogProb, max_gap_num: usize) -> LogStaPpfMats {
   let &(i, j, k, l) = pos_quadruple;
   let mut log_sta_ppf_mats = LogStaPpfMats::new();
   for m in (i + 1 .. j + 1).rev() {
     for o in (k + 1 .. l + 1).rev() {
-      if get_min_gap_num_1(&(m, o)) > max_gap_num || get_min_gap_num(&(m, j, o, l)) > max_gap_num {continue;}
       let pos_pair_1 = (m, o);
+      if !(is_min_gap_ok_1(&pos_pair_1, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_1, &pos_quadruple, max_gap_num)) {continue;}
       if m == j && o == l {
         log_sta_ppf_mats.log_ppf_mat_4_bas.insert(pos_pair_1, 0.);
         log_sta_ppf_mats.log_ppf_mat_1.insert(pos_pair_1, 0.);
@@ -1784,20 +2022,20 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let pos_pair_2 = (m + 1, o + 1);
-          let mut max_ep_of_term_4_log_pf = get_ba_log_odds_ratio(&pos_pair_1, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_1[&pos_pair_2];
+          let mut max_ep_of_term_4_log_pf = get_ba_log_odds_ratio(&pos_pair_1, sta_fe_params, sta_fe_scale_param) + log_sta_ppf_mats.log_ppf_mat_1[&pos_pair_2];
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) || !(sta_fe_params.lstapmt.lbpp_mat_1.contains_key(&(m, n)) || sta_fe_params.lstapmt.lbpp_mat_2.contains_key(&(o, p))) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
               let log_sta_pf_3 = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_1[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1805,8 +2043,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_2[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1814,8 +2052,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_bpas_3[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1823,8 +2061,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple] + log_sta_pf_2;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_1[&pos_quadruple_2] + log_sta_pf_2;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1832,8 +2070,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple] + log_sta_pf_3;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_rgs_2[&pos_quadruple_2] + log_sta_pf_3;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1854,9 +2092,9 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(m + 1, o)) <= max_gap_num && get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (m + 1, o);
-            max_ep_of_term_4_log_pf = get_og_lor_1(m, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_2[&pos_pair_2];
+          let pos_pair_2 = (m + 1, o);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, &pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = get_og_lor_1(m, sta_fe_params, sta_fe_scale_param) + log_sta_ppf_mats.log_ppf_mat_2[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -1865,13 +2103,13 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_2[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple] + log_sta_pf_2;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple_2] + log_sta_pf_2;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1879,8 +2117,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1901,9 +2139,9 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(m, o + 1)) <= max_gap_num && get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (m, o + 1);
-            max_ep_of_term_4_log_pf = get_og_lor_2(o, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_3[&pos_pair_2];
+          let pos_pair_2 = (m, o + 1);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, &pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = get_og_lor_2(o, sta_fe_params, sta_fe_scale_param) + log_sta_ppf_mats.log_ppf_mat_3[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -1912,13 +2150,13 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_3[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple] + log_sta_pf_2;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple_2] + log_sta_pf_2;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1926,8 +2164,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1948,9 +2186,9 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(m + 1, o)) <= max_gap_num && get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (m + 1, o);
-            max_ep_of_term_4_log_pf = get_eg_lor_1(m, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair_2];
+          let pos_pair_2 = (m + 1, o);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, &pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = get_eg_lor_1(m, sta_fe_params, sta_fe_scale_param) + log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -1959,11 +2197,11 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple] + log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair];
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_1[&pos_quadruple_2] + log_sta_ppf_mats.log_ppf_mat_4_gaps_1[&pos_pair];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -1984,9 +2222,9 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
         } else {
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf;
-          if get_min_gap_num_1(&(m, o + 1)) <= max_gap_num && get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
-            let pos_pair_2 = (m, o + 1);
-            max_ep_of_term_4_log_pf = get_eg_lor_2(o, sta_fe_params) + log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair_2];
+          let pos_pair_2 = (m, o + 1);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, &pos_quadruple, max_gap_num) {
+            max_ep_of_term_4_log_pf = get_eg_lor_2(o, sta_fe_params, sta_fe_scale_param) + log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair_2];
             if max_ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
             }
@@ -1995,11 +2233,11 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple] + log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair];
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_egps_2[&pos_quadruple_2] + log_sta_ppf_mats.log_ppf_mat_4_gaps_2[&pos_pair];
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -2024,8 +2262,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num_1(&(m + 1, o)) <= max_gap_num && get_min_gap_num(&(m + 1, j, o, l)) <= max_gap_num && max_gap_num >= 1 {
-            let og_lor = get_og_lor_1(m, sta_fe_params);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, &pos_quadruple, max_gap_num) {
+            let og_lor = get_og_lor_1(m, sta_fe_params, sta_fe_scale_param);
             let ep_of_term_4_log_pf = og_lor + log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2];
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -2043,14 +2281,14 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
               let log_sta_pf_3 = log_sta_ppf_mats.log_ppf_mat_4_ogs_2[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_1[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -2058,8 +2296,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple) {
-                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1.contains_key(&pos_quadruple_2) {
+                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_1[&pos_quadruple_2];
                 let ep_of_term_4_log_pf = log_sta_pf_4_ogp + log_sta_pf_2;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -2092,8 +2330,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           if max_ep_of_term_4_log_pf.is_finite() {
             eps_of_terms_4_log_pf.push(max_ep_of_term_4_log_pf);
           }
-          if get_min_gap_num_1(&(m, o + 1)) <= max_gap_num && get_min_gap_num(&(m, j, o + 1, l)) <= max_gap_num && max_gap_num >= 1 {
-            let og_lor = get_og_lor_2(o, sta_fe_params);
+          if is_min_gap_ok_1(&pos_pair_2, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair_2, &pos_quadruple, max_gap_num) {
+            let og_lor = get_og_lor_2(o, sta_fe_params, sta_fe_scale_param);
             let ep_of_term_4_log_pf = og_lor + log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair_2];
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -2111,14 +2349,14 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
           }
           for n in m + 1 .. j {
             for p in o + 1 .. l {
-              let pos_quadruple = (m, n, o, p);
-              if get_min_gap_num_1(&(n, p)) > max_gap_num || get_min_gap_num(&(n, j, p, l)) > max_gap_num || get_min_gap_num(&pos_quadruple) > max_gap_num {continue;}
+              let pos_quadruple_2 = (m, n, o, p);
               let pos_pair = (n + 1, p + 1);
+              if !(is_min_gap_ok_1(&pos_pair, pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num) && is_min_gap_ok_2(&pos_quadruple_2, max_gap_num)) {continue;}
               let log_sta_pf_1 = log_sta_ppf_mats.log_ppf_mat_1[&pos_pair];
               let log_sta_pf_2 = log_sta_ppf_mats.log_ppf_mat_4_bas[&pos_pair];
               let log_sta_pf_3 = log_sta_ppf_mats.log_ppf_mat_4_ogs_1[&pos_pair];
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple) {
-                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple] + log_sta_pf_1;
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2.contains_key(&pos_quadruple_2) {
+                let ep_of_term_4_log_pf = log_sta_ppf_4d_mats.log_ppf_mat_4_lgs_2[&pos_quadruple_2] + log_sta_pf_1;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                   if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -2126,8 +2364,8 @@ fn get_log_sta_backward_ppf_mats(pos_quadruple: &PosQuadruple, sta_fe_params: &S
                   }
                 }
               }
-              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple) {
-                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple];
+              if log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2.contains_key(&pos_quadruple_2) {
+                let log_sta_pf_4_ogp = log_sta_ppf_4d_mats.log_ppf_mat_4_ogps_2[&pos_quadruple_2];
                 let ep_of_term_4_log_pf = log_sta_pf_4_ogp + log_sta_pf_2;
                 if ep_of_term_4_log_pf.is_finite() {
                   eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -2212,9 +2450,9 @@ pub fn prob_cons_transformation_of_lstapmt(lstapmts_with_rna_id_pairs: &Lstapmts
   for (pos_quadruple, lbpap) in lstapmt.lbpap_mat_1.iter_mut() {
     let (i, j, k, l) = *pos_quadruple;
     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
-    let mut min_ep_of_term_4_log_prob = *lbpap;
-    if min_ep_of_term_4_log_prob.is_finite() {
-      eps_of_terms_4_log_prob.push(min_ep_of_term_4_log_prob);
+    let mut max_ep_of_term_4_log_prob = *lbpap;
+    if max_ep_of_term_4_log_prob.is_finite() {
+      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
     }
     for rna_id in 0 .. num_of_rnas {
       if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
@@ -2225,22 +2463,22 @@ pub fn prob_cons_transformation_of_lstapmt(lstapmts_with_rna_id_pairs: &Lstapmts
           let ep_of_term_4_log_prob = lbpap_1 + lbpap_2;
           if ep_of_term_4_log_prob.is_finite() {
             eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
-            if ep_of_term_4_log_prob < min_ep_of_term_4_log_prob {
-              min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+            if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+              max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
             }
           }
         }
       }
     }
     if eps_of_terms_4_log_prob.len() > 0 {
-      *lbpap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob);
+      *lbpap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
     }
   }
   for (&(i, j), lbap) in lstapmt.lbap_mat.iter_mut() {
     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
-    let mut min_ep_of_term_4_log_prob = *lbap;
-    if min_ep_of_term_4_log_prob.is_finite() {
-      eps_of_terms_4_log_prob.push(min_ep_of_term_4_log_prob);
+    let mut max_ep_of_term_4_log_prob = *lbap;
+    if max_ep_of_term_4_log_prob.is_finite() {
+      eps_of_terms_4_log_prob.push(max_ep_of_term_4_log_prob);
     }
     for rna_id in 0 .. num_of_rnas {
       if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
@@ -2251,15 +2489,15 @@ pub fn prob_cons_transformation_of_lstapmt(lstapmts_with_rna_id_pairs: &Lstapmts
           let ep_of_term_4_log_prob = lbap_1 + lbap_2;
           if ep_of_term_4_log_prob.is_finite() {
             eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
-            if ep_of_term_4_log_prob < min_ep_of_term_4_log_prob {
-              min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+            if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+              max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
             }
           }
         }
       }
     }
     if eps_of_terms_4_log_prob.len() > 0 {
-      *lbap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob);
+      *lbap = log_coefficient + logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob);
     }
   }
   lstapmt
@@ -2269,10 +2507,10 @@ pub fn prob_cons_transformation_of_lstapmt(lstapmts_with_rna_id_pairs: &Lstapmts
 pub fn pct_of_lbpp_mat(lstapmts_with_rna_id_pairs: &LstapmtsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, lbpp_mat: &SparseLogProbMat) -> SparseLogProbMat {
   let log_coefficient = -(num_of_rnas as Prob).ln();
   let mut seqs_of_eps_of_terms_4_log_probs_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
-  let mut min_eps_of_terms_4_log_probs_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
+  let mut max_eps_of_terms_4_log_probs_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
   for (pos_pair, &lbpp) in lbpp_mat.iter() {
     seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, vec![lbpp]);
-    min_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, lbpp);
+    max_eps_of_terms_4_log_probs_with_pos_pairs.insert(*pos_pair, lbpp);
   }
   for rna_id_2 in 0 .. num_of_rnas {
     if rna_id == rna_id_2 {continue;}
@@ -2282,17 +2520,17 @@ pub fn pct_of_lbpp_mat(lstapmts_with_rna_id_pairs: &LstapmtsWithRnaIdPairs, rna_
       if lbpp.is_finite() {
         let eps_of_terms_4_log_prob = seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
         eps_of_terms_4_log_prob.push(lbpp);
-        let min_ep_of_term_4_log_prob = min_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
-        if lbpp < *min_ep_of_term_4_log_prob {
-          *min_ep_of_term_4_log_prob = lbpp;
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+        if lbpp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lbpp;
         }
       }
     }
   }
   let mut lbpp_mat = lbpp_mat.clone();
   for (pos_pair, eps_of_terms_4_log_prob) in seqs_of_eps_of_terms_4_log_probs_with_pos_pairs.iter() {
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_log_probs_with_pos_pairs[pos_pair];
-    let lbpp = log_coefficient + logsumexp(eps_of_terms_4_log_prob, min_ep_of_term_4_log_prob);
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs[pos_pair];
+    let lbpp = log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob);
     *lbpp_mat.get_mut(pos_pair).expect("Failed to get an element of a hash map.") = lbpp;
   }
   lbpp_mat
@@ -2302,11 +2540,11 @@ pub fn pct_of_lbpp_mat(lstapmts_with_rna_id_pairs: &LstapmtsWithRnaIdPairs, rna_
 pub fn pct_of_lnbpp_mat(lstapmts_with_rna_id_pairs: &LstapmtsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, lnbpp_mat: &LogProbs, seq_len: usize) -> LogProbs {
   let log_coefficient = -(num_of_rnas as Prob).ln();
   let mut seqs_of_eps_of_terms_4_log_probs = vec![EpsOfTerms4LogProb::new(); seq_len + 2];
-  let mut min_eps_of_terms_4_log_probs = vec![NEG_INFINITY; seq_len + 2];
+  let mut max_eps_of_terms_4_log_probs = vec![NEG_INFINITY; seq_len + 2];
   for i in 0 .. seq_len + 2 {
     let lnbpp = lnbpp_mat[i];
     seqs_of_eps_of_terms_4_log_probs[i].push(lnbpp);
-    min_eps_of_terms_4_log_probs[i] = lnbpp;
+    max_eps_of_terms_4_log_probs[i] = lnbpp;
   }
   for rna_id_2 in 0 .. num_of_rnas {
     if rna_id == rna_id_2 {continue;}
@@ -2316,17 +2554,17 @@ pub fn pct_of_lnbpp_mat(lstapmts_with_rna_id_pairs: &LstapmtsWithRnaIdPairs, rna
       if lnbpp.is_finite() {
         let ref mut eps_of_terms_4_log_prob = seqs_of_eps_of_terms_4_log_probs[i];
         eps_of_terms_4_log_prob.push(lnbpp);
-        let ref mut min_ep_of_term_4_log_prob = min_eps_of_terms_4_log_probs[i];
-        if lnbpp < *min_ep_of_term_4_log_prob {
-          *min_ep_of_term_4_log_prob = lnbpp;
+        let ref mut max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs[i];
+        if lnbpp > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = lnbpp;
         }
       }
     }
   }
   let mut lnbpp_mat = lnbpp_mat.clone();
   for (i, eps_of_terms_4_log_prob) in seqs_of_eps_of_terms_4_log_probs.iter().enumerate() {
-    let min_ep_of_term_4_log_prob = min_eps_of_terms_4_log_probs[i];
-    lnbpp_mat[i] = log_coefficient + logsumexp(eps_of_terms_4_log_prob, min_ep_of_term_4_log_prob);
+    let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs[i];
+    lnbpp_mat[i] = log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob);
   }
   lnbpp_mat
 }
@@ -2367,6 +2605,8 @@ pub fn get_lbpp_mat(seq: SeqSlice, max_bp_span: usize) -> SparseLogProbMat {
   let args = unsafe {["-f", from_utf8_unchecked(seq), "--pre", "--constraint", &arg]};
   let parasor_output = unsafe {String::from_utf8_unchecked(run_command(PARASOR_COMMAND, &args, "Failed to run the ParasoR program.").stdout)};
   let mut lbpp_mat = SparseLogProbMat::default();
+  let seq_len = seq.len();
+  lbpp_mat.insert((0, seq_len + 1), 0.);
   for line in parasor_output.lines().filter(|line| {!line.starts_with("#")}) {
     let strings = line.trim().splitn(4, '\t').collect::<Vec<&str>>();
     let bpp = strings[3].parse::<Prob>().expect("Failed to parse a string.");
@@ -2382,24 +2622,24 @@ pub fn get_lbpp_mat(seq: SeqSlice, max_bp_span: usize) -> SparseLogProbMat {
 
 #[inline]
 pub fn get_lnbpp_mat(lbpp_mat: &SparseLogProbMat, seq_len: usize) -> LogProbs {
-  let mut lnbpp_mat = vec![NEG_INFINITY; seq_len];
-  for i in 1 .. seq_len + 1 {
+  let mut lnbpp_mat = vec![NEG_INFINITY; seq_len + 2];
+  for i in 0 .. seq_len + 2 {
     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
-    let mut min_ep_of_term_4_log_prob = INFINITY;
-    for j in 1 .. seq_len + 1 {
+    let mut max_ep_of_term_4_log_prob = NEG_INFINITY;
+    for j in 0 .. seq_len + 2 {
       if j == i {continue;}
       let pos_pair = if j < i {(j, i)} else {(i, j)};
       if lbpp_mat.contains_key(&pos_pair) {
         let ep_of_term_4_log_prob = lbpp_mat[&pos_pair];
         if ep_of_term_4_log_prob.is_finite() {
           eps_of_terms_4_log_prob.push(ep_of_term_4_log_prob);
-          if ep_of_term_4_log_prob < min_ep_of_term_4_log_prob {
-            min_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+          if ep_of_term_4_log_prob > max_ep_of_term_4_log_prob {
+            max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
           }
         }
       }
     }
-    lnbpp_mat[i - 1] = (1. - logsumexp(&eps_of_terms_4_log_prob[..], min_ep_of_term_4_log_prob).exp()).ln();
+    lnbpp_mat[i] = (1. - logsumexp(&eps_of_terms_4_log_prob[..], max_ep_of_term_4_log_prob).exp()).ln();
   }
   lnbpp_mat
 }
@@ -2426,17 +2666,28 @@ pub fn get_seq_len_diff(seq_len_pair: &(usize, usize)) -> usize {
 }
 
 #[inline]
-fn get_min_gap_num_1(pos_pair: &PosPair) -> usize {
-  get_seq_len_diff(pos_pair)
+fn is_min_gap_ok_1(pos_pair: &PosPair, pos_quadruple: &PosQuadruple, max_gap_num: usize) -> bool {
+  let min_gap_num_1 = get_min_gap_num(&(pos_quadruple.0, pos_pair.0, pos_quadruple.2, pos_pair.1));
+  let min_gap_num_2 = get_min_gap_num(&(pos_pair.0, pos_quadruple.1, pos_pair.1, pos_quadruple.3));
+  if min_gap_num_1 <= max_gap_num && min_gap_num_2 <= max_gap_num {
+    true
+  } else {
+    false
+  }
+}
+
+#[inline]
+fn is_min_gap_ok_2(pos_quadruple: &PosQuadruple, max_gap_num: usize) -> bool {
+  let min_gap_num = get_min_gap_num(&pos_quadruple);
+  if min_gap_num <= max_gap_num {
+    true
+  } else {
+    false
+  }
 }
 
 #[inline]
 fn get_min_gap_num(pos_quadruple: &PosQuadruple) -> usize {
   let substr_len_pair = (pos_quadruple.1 - pos_quadruple.0, pos_quadruple.3 - pos_quadruple.2);
   get_seq_len_diff(&substr_len_pair)
-}
-
-#[inline]
-pub fn append_pseudo_bases(seq: &mut Seq, num_of_pseudo_bases: usize) {
-  seq.append(&mut vec![PSEUDO_BASE; num_of_pseudo_bases]);
 }

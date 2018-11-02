@@ -7,7 +7,9 @@ type LbpapsWithBaseQuadruples = HashMap<BaseQuadruple, LogProb, Hasher>;
 type LogGpProbsWithBasePairs = LbapsWithBasePairs;
 pub type BaseTriple = (Base, Base, Base);
 type LogSgProbsWithBaseTriples = HashMap<BaseTriple, LogProb, Hasher>;
-type LogBaseProbsWithBases = HashMap<Base, LogProb, Hasher>;
+// type LogBaseProbsWithBases = HashMap<Base, LogProb, Hasher>;
+type LbppsWithBasePairs = HashMap<BasePair, LogProb, Hasher>;
+type LnbppsWithBases = HashMap<Base, LogProb, Hasher>;
 #[derive(Debug)]
 pub struct StemParams {
   pub lbaps_with_base_pairs: LbapsWithBasePairs,
@@ -19,11 +21,12 @@ pub struct StemParams {
   pub legpps_with_base_pairs: LogGpProbsWithBasePairs,
   pub llgps_with_base_triples: LogSgProbsWithBaseTriples,
   pub lrgps_with_base_triples: LogSgProbsWithBaseTriples,
-  pub lbps_with_bases: LogBaseProbsWithBases,
+  // pub lbps_with_bases: LogBaseProbsWithBases,
+  pub lbpps_with_base_pairs: LbppsWithBasePairs,
+  pub lnbpps_with_bases: LnbppsWithBases,
 }
 
-pub const PSEUDO_BASE: Base = '$' as Base;
-pub const SEQ_ALPHABET: [Base; 5] = [A, C, G, U, PSEUDO_BASE];
+pub const SEQ_ALPHABET: [Base; 4] = [A, C, G, U];
 lazy_static! {
   pub static ref BA_ALPHABET: Vec<BasePair> = {
     let mut ba_alphabet = Vec::new();
@@ -81,10 +84,12 @@ impl StemParams {
       lbpaps_with_base_quadruples_1: lbpaps_with_base_quadruples_1,
       lbpaps_with_base_quadruples_2: lbpaps_with_base_quadruples_2,
       logpps_with_base_pairs: lgpps_with_base_pairs.clone(),
-      legpps_with_base_pairs: lgpps_with_base_pairs,
+      legpps_with_base_pairs: lgpps_with_base_pairs.clone(),
       llgps_with_base_triples: lsgps_with_base_triples.clone(),
       lrgps_with_base_triples: lsgps_with_base_triples,
-      lbps_with_bases: SEQ_ALPHABET.iter().map(|&base| {(base, NEG_INFINITY)}).collect(),
+      // lbps_with_bases: SEQ_ALPHABET.iter().map(|&base| {(base, NEG_INFINITY)}).collect(),
+      lbpps_with_base_pairs: lgpps_with_base_pairs,
+      lnbpps_with_bases: SEQ_ALPHABET.iter().map(|&base| {(base, NEG_INFINITY)}).collect(),
     }
   }
 }
