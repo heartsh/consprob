@@ -4,6 +4,7 @@ from matplotlib import pylab
 import numpy
 from math import log
 from clint.textui import colored
+from itertools import combinations
 
 def get_dir_paths():
   current_work_dir_path = os.getcwd()
@@ -163,8 +164,9 @@ def get_ss(ss_string):
 def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len):
   color_coded_css_with_sa = [list(map(colored.black, sa[i].seq.upper())) for i in range(0, num_of_records)]
   color_coded_css_with_sa.append(list(map(colored.black, css_string)))
+  combination_num = len(list(combinations(range(0, num_of_records), 2)))
   for (i, j) in css:
-    sum_of_lbpaps = 0
+    mean_bpap = 0
     for k in range(0, num_of_records):
       pos_without_gaps_1 = i - nums_of_gaps_in_front_of_chars[k][i]
       pos_without_gaps_2 = j - nums_of_gaps_in_front_of_chars[k][j]
@@ -173,20 +175,19 @@ def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_i
         pos_without_gaps_4 = j - nums_of_gaps_in_front_of_chars[l][j]
         bpap = bpap_mats[(k, l)][pos_without_gaps_1][pos_without_gaps_2][pos_without_gaps_3][pos_without_gaps_4]
         if bpap > 0:
-          sum_of_lbpaps += log(bpap, 2)
-        else:
-          sum_of_lbpaps += 4 * log(0.001, 2)
+          mean_bpap += bpap
+    mean_bpap /= combination_num
     for k in range(0, num_of_records + 1):
       for l in (i, j):
         char = colored.clean(color_coded_css_with_sa[k][l])
         color_coded_char = colored.blue(char)
-        if sum_of_lbpaps >= 66 * log(0.1, 2):
+        if mean_bpap >= 0.25:
           color_coded_char = colored.red(char)
-        elif sum_of_lbpaps >= 74 * log(0.1, 2):
+        elif mean_bpap >= 0.25 ** 2:
           color_coded_char = colored.yellow(char)
-        elif sum_of_lbpaps >= 82 * log(0.1, 2):
+        elif mean_bpap >= 0.25 ** 3:
           color_coded_char = colored.green(char)
-        elif sum_of_lbpaps >= 90 * log(0.1, 2):
+        elif mean_bpap >= 0.25 ** 4:
           color_coded_char = colored.cyan(char)
         color_coded_css_with_sa[k][l] = color_coded_char
   for string in color_coded_css_with_sa:

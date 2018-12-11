@@ -1,9 +1,8 @@
-extern crate stem;
 extern crate time;
 
 use stem::*;
 use time::precise_time_s;
-
+use std::process::{Command, Output};
 
 #[test]
 fn test_stem_program() {
@@ -13,4 +12,9 @@ fn test_stem_program() {
   run_command("target/release/stem", &args, "Failed to run the STEM program.");
   let elapsed_time = precise_time_s() - begin;
   println!("The elapsed time for computing the STAPMT of each pair of RNA sequences in the FASTA file \"{}\" = {} [s].", input_fasta_file_path, elapsed_time);
+}
+
+#[inline]
+pub fn run_command(command: &str, args: &[&str], expect: &str) -> Output {
+  Command::new(command).args(args).output().expect(expect)
 }

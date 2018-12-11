@@ -22,35 +22,23 @@ type StaEventCount = Prob;
 type BaCounts = HashMap<BasePair, StaEventCount, Hasher>;
 type GapCounts = HashMap<Base, StaEventCount, Hasher>;
 type BpaCounts = HashMap<BaseQuadruple, StaEventCount, Hasher>;
-type GpCounts = BaCounts;
-type SideGapCounts = HashMap<BaseTriple, StaEventCount, Hasher>;
-// type BaseCounts = HashMap<Base, StaEventCount, Hasher>;
 type BpCounts = HashMap<BasePair, StaEventCount, Hasher>;
 type NbpCounts = HashMap<Base, StaEventCount, Hasher>;
 struct StaEventCountSets {
   pub ba_counts: BaCounts,
   pub og_counts: GapCounts,
   pub eg_counts: GapCounts,
-  pub bpa_counts_1: BpaCounts,
-  pub bpa_counts_2: BpaCounts,
-  pub ogp_counts: GpCounts,
-  pub egp_counts: GpCounts,
-  pub lg_counts: SideGapCounts,
-  pub rg_counts: SideGapCounts,
-  // pub base_counts: BaseCounts,
+  pub bpa_counts: BpaCounts,
   pub bp_counts: BpCounts,
   pub nbp_counts: NbpCounts,
 }
 
-const PSEUDO_BASE: Base = '$' as Base;
 const CSS_REPLACEMENT_PATTERN_CHARS: &'static str = "[{<>}],_-:";
 const CSS_REPLACEMENT_DEST_CHARS: &'static str = "((()))....";
 const BP_LEFT_BRACKET: char = '(';
 const BP_RIGHT_BRACKET: char = ')';
 const GAP: Base = '-' as Base;
 const DEFAULT_STA_EVENT_PSEUDO_COUNT: StaEventCount = 0.;
-const BPP: Prob = 0.9;
-const NBPP: Prob = 0.1;
 const MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS: Prob = 0.65;
 
 impl Sta {
@@ -66,27 +54,13 @@ impl StaEventCountSets {
   pub fn new(sta_event_pseudo_count: StaEventCount) -> StaEventCountSets {
     let ba_counts = BA_ALPHABET.iter().map(|base_pair| {(*base_pair, sta_event_pseudo_count)}).collect();
     let gap_counts: GapCounts = SEQ_ALPHABET.iter().map(|&base| {(base, sta_event_pseudo_count)}).collect();
-    let bpa_counts_1 = BPA_ALPHABET_1.iter().map(|base_quadruple| {(*base_quadruple, sta_event_pseudo_count)}).collect();
-    let bpa_counts_2 = BPA_ALPHABET_2.iter().map(|base_quadruple| {(*base_quadruple, sta_event_pseudo_count)}).collect();
-    let gap_pair_counts: GpCounts = BP_ALPHABET.keys().map(|base_pair| {(*base_pair, sta_event_pseudo_count)}).collect();
-    let mut side_gap_counts = SideGapCounts::default();
-    for &(base_1, base_2) in BP_ALPHABET.keys() {
-      for &base_3 in &SEQ_ALPHABET {
-        side_gap_counts.insert((base_1, base_2, base_3), sta_event_pseudo_count);
-      }
-    }
+    let bpa_counts = BPA_ALPHABET.iter().map(|base_quadruple| {(*base_quadruple, sta_event_pseudo_count)}).collect();
     StaEventCountSets {
       ba_counts: ba_counts,
       og_counts: gap_counts.clone(),
       eg_counts: gap_counts,
-      bpa_counts_1: bpa_counts_1,
-      bpa_counts_2: bpa_counts_2,
-      ogp_counts: gap_pair_counts.clone(),
-      egp_counts: gap_pair_counts.clone(),
-      lg_counts: side_gap_counts.clone(),
-      rg_counts: side_gap_counts,
-      // base_counts: SEQ_ALPHABET.iter().map(|&base| {(base, sta_event_pseudo_count)}).collect(),
-      bp_counts: gap_pair_counts,
+      bpa_counts: bpa_counts,
+      bp_counts: BP_ALPHABET.keys().map(|base_pair| {(*base_pair, sta_event_pseudo_count)}).collect(),
       nbp_counts: SEQ_ALPHABET.iter().map(|&base| {(base, sta_event_pseudo_count)}).collect(),
     }
   }
@@ -175,22 +149,16 @@ fn main() {
                   if base_1 != GAP && base_2 != GAP {
                     *sta_event_count_sets.ba_counts.get_mut(&base_pair).expect("Failed to get an element from a hash map.") += 1.;
                   } else if base_1 != GAP {
-                    if (m == i + 1 || front_base_2 != GAP) && behind_base_2 != GAP {
-                      *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
-                    } else if m != i + 1 && front_base_2 == GAP && behind_base_2 == GAP {
+                    if front_base_2 == GAP && behind_base_2 == GAP {
                       *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                     } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
-                      *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
+                      *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                     }
                   } else if base_2 != GAP {
-                    if (m == i + 1 || front_base_1 != GAP) && behind_base_1 != GAP {
-                      *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
-                    } else if m != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
+                    if front_base_1 == GAP && behind_base_1 == GAP {
                       *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                     } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
-                      *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
+                      *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                     }
                   }
                 }
@@ -198,15 +166,9 @@ fn main() {
             }
             for m in 0 .. num_of_sa_rows {
               let base_1 = sta.seq_align[m][k];
-              let front_base_1 = sta.seq_align[m][k - 1];
-              let behind_base_1 = sta.seq_align[m][k + 1];
               let base_2 = sta.seq_align[m][l];
-              let front_base_2 = sta.seq_align[m][l - 1];
-              let behind_base_2 = sta.seq_align[m][l + 1];
               if base_1 != GAP && base_2 != GAP && sta_event_count_sets.bp_counts.contains_key(&(base_1, base_2)) {
-                *sta_event_count_sets.bp_counts.get_mut(&(base_1, base_2)).expect("Failed to get an element from a hash map.") += BPP;
-                *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += NBPP;
-                *sta_event_count_sets.nbp_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += NBPP;
+                *sta_event_count_sets.bp_counts.get_mut(&(base_1, base_2)).expect("Failed to get an element from a hash map.") += 1.;
               } else if base_1 != GAP {
                 *sta_event_count_sets.nbp_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
               } else if base_2 != GAP {
@@ -214,204 +176,10 @@ fn main() {
               }
               for n in m + 1 .. num_of_sa_rows {
                 let base_3 = sta.seq_align[n][k];
-                let front_base_3 = sta.seq_align[n][k - 1];
-                let behind_base_3 = sta.seq_align[n][k + 1];
                 let base_4 = sta.seq_align[n][l];
-                let front_base_4 = sta.seq_align[n][l - 1];
-                let behind_base_4 = sta.seq_align[n][l + 1];
                 let base_quadruple = get_ordered_base_quadruple(&(base_1, base_2, base_3, base_4));
-                let base_pair_not_being_gap_pair = (base_quadruple.0, base_quadruple.1);
-                let base_pair_not_being_gap_pair = if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {base_pair_not_being_gap_pair} else {(base_quadruple.2, base_quadruple.3)};
-                let base_pair_1 = get_ordered_base_pair(&(base_quadruple.0, base_quadruple.2));
-                let base_pair_2 = get_ordered_base_pair(&(base_quadruple.1, base_quadruple.3));
-                let base_triple_not_being_gap_triple = (base_quadruple.0, base_quadruple.1, if base_quadruple.2 < base_quadruple.3 {base_quadruple.3} else {base_quadruple.2});
-                if base_1 != GAP && base_2 != GAP && base_3 != GAP && base_4 != GAP {
-                  if sta_event_count_sets.bpa_counts_1.contains_key(&base_quadruple) {
-                    *sta_event_count_sets.bpa_counts_1.get_mut(&base_quadruple).expect("Failed to get an element from a hash map.") += BPP * BPP;
-                    *sta_event_count_sets.bpa_counts_2.get_mut(&base_quadruple).expect("Failed to get an element from a hash map.") += BPP * NBPP;
-                    *sta_event_count_sets.bpa_counts_2.get_mut(&(base_quadruple.2, base_quadruple.3, base_quadruple.0, base_quadruple.1)).expect("Failed to get an element from a hash map.") += NBPP * BPP;
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += NBPP * NBPP;
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += NBPP * NBPP;
-                  } else if sta_event_count_sets.bpa_counts_2.contains_key(&base_quadruple) {
-                    *sta_event_count_sets.bpa_counts_2.get_mut(&base_quadruple).expect("Failed to get an element from a hash map.") += BPP;
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += NBPP;
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += NBPP;
-                  } else {
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += 1.;
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 != GAP && base_2 != GAP && base_3 == GAP && base_4 == GAP {
-                  if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {
-                    if k != i + 1 && front_base_3 == GAP && l != j - 1 && behind_base_4 == GAP {
-                      *sta_event_count_sets.egp_counts.get_mut(&base_pair_not_being_gap_pair).expect("Failed to get an element from a hash map.") += BPP;
-                    } else {
-                      *sta_event_count_sets.ogp_counts.get_mut(&base_pair_not_being_gap_pair).expect("Failed to get an element from a hash map.") += BPP;
-                    }
-                    if k != i + 1 && front_base_3 == GAP && behind_base_3 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                    if l != j - 1 && front_base_4 == GAP && behind_base_4 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                  } else {
-                    if k != i + 1 && front_base_3 == GAP && behind_base_3 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                    if l != j - 1 && front_base_4 == GAP && behind_base_4 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                  }
-                } else if base_1 == GAP && base_2 == GAP && base_3 != GAP && base_4 != GAP {
-                  if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {
-                    if k != i + 1 && front_base_1 == GAP && l != j - 1 && behind_base_2 == GAP {
-                      *sta_event_count_sets.egp_counts.get_mut(&base_pair_not_being_gap_pair).expect("Failed to get an element from a hash map.") += BPP;
-                    } else {
-                      *sta_event_count_sets.ogp_counts.get_mut(&base_pair_not_being_gap_pair).expect("Failed to get an element from a hash map.") += BPP;
-                    }
-                    if k != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                    if l != j - 1 && front_base_2 == GAP && behind_base_2 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                  } else {
-                    if k != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.0).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                    if l != j - 1 && front_base_2 == GAP && behind_base_2 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_not_being_gap_pair.1).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                  }
-                } else if base_1 != GAP && base_2 != GAP && base_3 == GAP && base_4 != GAP {
-                  if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {
-                    *sta_event_count_sets.lg_counts.get_mut(&base_triple_not_being_gap_triple).expect("Failed to get an element from a hash map.") += BPP;
-                    if k != i + 1 && front_base_3 == GAP && behind_base_3 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += NBPP;
-                  } else {
-                    if k != i + 1 && front_base_3 == GAP && behind_base_3 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 != GAP && base_2 != GAP && base_3 != GAP && base_4 == GAP {
-                  if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {
-                    *sta_event_count_sets.rg_counts.get_mut(&base_triple_not_being_gap_triple).expect("Failed to get an element from a hash map.") += BPP;
-                    if l != j - 1 && front_base_4 == GAP && behind_base_4 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += NBPP;
-                  } else {
-                    if k != i + 1 && front_base_4 == GAP && behind_base_4 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 == GAP && base_2 != GAP && base_3 != GAP && base_4 != GAP {
-                  if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {
-                    *sta_event_count_sets.lg_counts.get_mut(&base_triple_not_being_gap_triple).expect("Failed to get an element from a hash map.") += BPP;
-                    if k != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += NBPP;
-                  } else {
-                    if k != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_1.1).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_2).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 != GAP && base_2 == GAP && base_3 != GAP && base_4 != GAP {
-                  if BP_ALPHABET.contains_key(&base_pair_not_being_gap_pair) {
-                    *sta_event_count_sets.rg_counts.get_mut(&base_triple_not_being_gap_triple).expect("Failed to get an element from a hash map.") += BPP;
-                    if l != j - 1 && front_base_2 == GAP && behind_base_2 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += NBPP;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += NBPP;
-                  } else {
-                    if k != i + 1 && front_base_2 == GAP && behind_base_2 == GAP {
-                      *sta_event_count_sets.eg_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += 1.;
-                    } else {
-                      *sta_event_count_sets.og_counts.get_mut(&base_pair_2.1).expect("Failed to get an element from a hash map.") += 1.;
-                    }
-                    *sta_event_count_sets.ba_counts.get_mut(&base_pair_1).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 != GAP && base_2 == GAP && base_3 == GAP && base_4 != GAP {
-                  if k != i + 1 && front_base_3 == GAP && behind_base_3 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                  if l != j - 1 && front_base_2 == GAP && behind_base_2 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_4).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_4).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 == GAP && base_2 != GAP && base_3 != GAP && base_4 == GAP {
-                  if k != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_3).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_3).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                  if l != j - 1 && front_base_4 == GAP && behind_base_4 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 != GAP && base_2 == GAP && base_3 == GAP && base_4 == GAP {
-                  if k != i + 1 && front_base_3 == GAP && behind_base_3 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_1).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 == GAP && base_2 == GAP && base_3 == GAP && base_4 != GAP {
-                  if l != j - 1 && front_base_2 == GAP && behind_base_2 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_4).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_4).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 == GAP && base_2 != GAP && base_3 == GAP && base_4 == GAP {
-                  if l != j - 1 && front_base_4 == GAP && behind_base_4 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_2).expect("Failed to get an element from a hash map.") += 1.;
-                  }
-                } else if base_1 == GAP && base_2 == GAP && base_3 != GAP && base_4 == GAP {
-                  if k != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
-                    *sta_event_count_sets.eg_counts.get_mut(&base_3).expect("Failed to get an element from a hash map.") += 1.;
-                  } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_3).expect("Failed to get an element from a hash map.") += 1.;
-                  }
+                if sta_event_count_sets.bpa_counts.contains_key(&base_quadruple) {
+                  *sta_event_count_sets.bpa_counts.get_mut(&base_quadruple).expect("Failed to get an element from a hash map.") += 1.;
                 }
               }
             }
@@ -434,22 +202,16 @@ fn main() {
                 if base_1 != GAP && base_2 != GAP {
                   *sta_event_count_sets.ba_counts.get_mut(&base_pair).expect("Failed to get an element from a hash map.") += 1.;
                 } else if base_1 != GAP {
-                  if (m == i + 1 || front_base_2 != GAP) && behind_base_2 != GAP {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
-                  } else if m != i + 1 && front_base_2 == GAP && behind_base_2 == GAP {
+                  if front_base_2 == GAP && behind_base_2 == GAP {
                     *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
-                    *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
+                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   }
                 } else if base_2 != GAP {
-                  if (m == i + 1 || front_base_1 != GAP) && behind_base_1 != GAP {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
-                  } else if m != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
+                  if front_base_1 == GAP && behind_base_1 == GAP {
                     *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
-                    *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
+                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   }
                 }
               }
@@ -473,22 +235,16 @@ fn main() {
                 if base_1 != GAP && base_2 != GAP {
                   *sta_event_count_sets.ba_counts.get_mut(&base_pair).expect("Failed to get an element from a hash map.") += 1.;
                 } else if base_1 != GAP {
-                  if (m == i + 1 || front_base_2 != GAP) && behind_base_2 != GAP {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
-                  } else if m != i + 1 && front_base_2 == GAP && behind_base_2 == GAP {
+                  if front_base_2 == GAP && behind_base_2 == GAP {
                     *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
-                    *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
+                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   }
                 } else if base_2 != GAP {
-                  if (m == i + 1 || front_base_1 != GAP) && behind_base_1 != GAP {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
-                  } else if m != i + 1 && front_base_1 == GAP && behind_base_1 == GAP {
+                  if front_base_1 == GAP && behind_base_1 == GAP {
                     *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   } else {
-                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
-                    *sta_event_count_sets.eg_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 0.5;
+                    *sta_event_count_sets.og_counts.get_mut(&base_not_being_gap).expect("Failed to get an element from a hash map.") += 1.;
                   }
                 }
               }
@@ -503,24 +259,12 @@ fn main() {
   count_of_all_sta_events += sta_event_count_sets.ba_counts.values().fold(0., |acc, &count| {acc + count});
   count_of_all_sta_events += sta_event_count_sets.og_counts.values().fold(0., |acc, &count| {acc + count});
   count_of_all_sta_events += sta_event_count_sets.eg_counts.values().fold(0., |acc, &count| {acc + count});
-  count_of_all_sta_events += sta_event_count_sets.bpa_counts_1.values().fold(0., |acc, &count| {acc + count});
-  count_of_all_sta_events += sta_event_count_sets.bpa_counts_2.values().fold(0., |acc, &count| {acc + count});
-  count_of_all_sta_events += sta_event_count_sets.ogp_counts.values().fold(0., |acc, &count| {acc + count});
-  count_of_all_sta_events += sta_event_count_sets.egp_counts.values().fold(0., |acc, &count| {acc + count});
-  count_of_all_sta_events += sta_event_count_sets.lg_counts.values().fold(0., |acc, &count| {acc + count});
-  count_of_all_sta_events += sta_event_count_sets.rg_counts.values().fold(0., |acc, &count| {acc + count});
+  count_of_all_sta_events += sta_event_count_sets.bpa_counts.values().fold(0., |acc, &count| {acc + count});
   stem_params.lbaps_with_base_pairs = sta_event_count_sets.ba_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
   stem_params.logps_with_bases = sta_event_count_sets.og_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
   stem_params.legps_with_bases = sta_event_count_sets.eg_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  stem_params.lbpaps_with_base_quadruples_1 = sta_event_count_sets.bpa_counts_1.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  stem_params.lbpaps_with_base_quadruples_2 = sta_event_count_sets.bpa_counts_2.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  stem_params.logpps_with_base_pairs = sta_event_count_sets.ogp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  stem_params.legpps_with_base_pairs = sta_event_count_sets.egp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  stem_params.llgps_with_base_triples = sta_event_count_sets.lg_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  stem_params.lrgps_with_base_triples = sta_event_count_sets.rg_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
-  // let count_of_all_bases = sta_event_count_sets.base_counts.values().fold(0., |acc, &count| {acc + count});
+  stem_params.lbpaps_with_base_quadruples = sta_event_count_sets.bpa_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_sta_events).ln())}).collect();
   let count_of_all_bps_and_nbps = sta_event_count_sets.bp_counts.values().fold(0., |acc, &count| {acc + count}) + sta_event_count_sets.nbp_counts.values().fold(0., |acc, &count| {acc + count});
-  // stem_params.lbps_with_bases = sta_event_count_sets.base_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bases).ln())}).collect();
   stem_params.lbpps_with_base_pairs = sta_event_count_sets.bp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bps_and_nbps).ln())}).collect();
   stem_params.lnbpps_with_bases = sta_event_count_sets.nbp_counts.iter().map(|(&key, &val)| {(key, (val / count_of_all_bps_and_nbps).ln())}).collect();
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).expect("Failed to create an output file."));
@@ -539,37 +283,13 @@ fn main() {
   for (&base, &legp) in &stem_params.legps_with_bases {
     buf_4_writer_2_output_file += &format!("({}, {:e}), ", base as char, legp);
   }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpaps_with_base_quadruples_1: [";
-  for (base_quadruple, &lbpap) in &stem_params.lbpaps_with_base_quadruples_1 {
+  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpaps_with_base_quadruples: [";
+  for (base_quadruple, &lbpap) in &stem_params.lbpaps_with_base_quadruples {
     buf_4_writer_2_output_file += &format!("(({}, {}, {}, {}), {:e}), ", base_quadruple.0 as char, base_quadruple.1 as char, base_quadruple.2 as char, base_quadruple.3 as char, lbpap);
     if (base_quadruple.0, base_quadruple.1) != (base_quadruple.2, base_quadruple.3) {
       buf_4_writer_2_output_file += &format!("(({}, {}, {}, {}), {:e}), ", base_quadruple.2 as char, base_quadruple.3 as char, base_quadruple.0 as char, base_quadruple.1 as char, lbpap);
     }
   }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpaps_with_base_quadruples_2: [";
-  for (base_quadruple, &lbpap) in &stem_params.lbpaps_with_base_quadruples_2 {
-    buf_4_writer_2_output_file += &format!("(({}, {}, {}, {}), {:e}), ", base_quadruple.0 as char, base_quadruple.1 as char, base_quadruple.2 as char, base_quadruple.3 as char, lbpap);
-  }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      logpps_with_base_pairs: [";
-  for (base_pair, &logpp) in &stem_params.logpps_with_base_pairs {
-    buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.0 as char, base_pair.1 as char, logpp);
-  }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      legpps_with_base_pairs: [";
-  for (base_pair, &legpp) in &stem_params.legpps_with_base_pairs {
-    buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.0 as char, base_pair.1 as char, legpp);
-  }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      llgps_with_base_triples: [";
-  for (base_triple, &llgp) in &stem_params.llgps_with_base_triples {
-    buf_4_writer_2_output_file += &format!("(({}, {}, {}), {:e}), ", base_triple.0 as char, base_triple.1 as char, base_triple.2 as char, llgp);
-  }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lrgps_with_base_triples: [";
-  for (base_triple, &lrgp) in &stem_params.lrgps_with_base_triples {
-    buf_4_writer_2_output_file += &format!("(({}, {}, {}), {:e}), ", base_triple.0 as char, base_triple.1 as char, base_triple.2 as char, lrgp);
-  }
-  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpps_with_base_pairs: [";
-  /* for (&base, &lbp) in &stem_params.lbps_with_bases {
-    buf_4_writer_2_output_file += &format!("({}, {:e}), ", get_base_str(base), if base == PSEUDO_BASE {0.} else {lbp});
-  } */
   for (base_pair, &lbpp) in &stem_params.lbpps_with_base_pairs {
     buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.0 as char, base_pair.1 as char, lbpp);
   }
