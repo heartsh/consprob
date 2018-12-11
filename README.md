@@ -1,10 +1,6 @@
 # STEM Program, Program for Approximate Expectation-maximazation of RNA Structural-alignment Posterior Probabilities
 This project provides the STEM program, a program for approximate expectation-maximazation of RNA structural-alignment posterior probabilities.
 
-# Dependencies
-This program depends on [the ParasoR program](https://github.com/carushi/ParasoR) for the estimations of base-pairing posterior probabilities
-Install this program by following the installation instruction over this link.
-
 # Installation
 This project has been written in mainly Rust, a systems programming language.
 So first, you need to install the Rust compiler, package manager, and standard library.
