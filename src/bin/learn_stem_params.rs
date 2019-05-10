@@ -39,7 +39,8 @@ const BP_LEFT_BRACKET: char = '(';
 const BP_RIGHT_BRACKET: char = ')';
 const GAP: Base = '-' as Base;
 const DEFAULT_STA_EVENT_PSEUDO_COUNT: StaEventCount = 0.;
-const MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS: Prob = 0.65;
+const DEFAULT_MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS: Prob = 0.2;
+const DEFAULT_MIN_BP_FREQ_RELATIVE_2_ALL_PROF_FREQS: Prob = 0.4;
 
 impl Sta {
   pub fn new() -> Sta {
@@ -73,6 +74,8 @@ fn main() {
   opts.reqopt("i", "input_file_path", "The path to an input Stockholm file containing RNA structural alignments", "STR");
   opts.reqopt("o", "output_file_path", "The path to an output file", "STR");
   opts.optopt("p", "struct_align_event_pseudo_count", "An structural-alignment event pseudo-count", "UINT");
+  opts.optopt("", "max_indel_freq_relative_2_all_prof_freqs", "A maximum indel-frequency relative to all profile frequencies", "FLOAT");
+  opts.optopt("", "min_base_pair_freq_relative_2_all_prof_freqs", "A minimum base-pairing-frequency relative to all profile frequencies", "FLOAT");
   opts.optflag("h", "help", "Print a help menu");
   let opts = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -86,6 +89,16 @@ fn main() {
     opts.opt_str("struct_align_event_pseudo_count").expect("Failed to get a structural-alignment event pseudo-count from command arguments.").parse().expect("Failed to parse a structural-alignment event pseudo-count.")
   } else {
     DEFAULT_STA_EVENT_PSEUDO_COUNT
+  };
+  let min_bp_freq_relative_2_all_prof_freqs = if opts.opt_present("min_base_pair_freq_relative_2_all_prof_freqs") {
+    opts.opt_str("min_base_pair_freq_relative_2_all_prof_freqs").expect("Failed to get a minimum base-pairing-frequency relative to all profile frequencies from command arguments.").parse().expect("Failed to parse a minimum base-pairing-frequency relative to all profile frequencies.")
+  } else {
+    DEFAULT_MIN_BP_FREQ_RELATIVE_2_ALL_PROF_FREQS
+  };
+  let max_indel_freq_relative_2_all_prof_freqs = if opts.opt_present("max_indel_freq_relative_2_all_prof_freqs") {
+    opts.opt_str("max_indel_freq_relative_2_all_prof_freqs").expect("Failed to get a maximum indel-frequency relative to all profile frequencies from command arguments.").parse().expect("Failed to parse a maximum indel-frequency relative to all profile frequencies.")
+  } else {
+    DEFAULT_MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS
   };
   let reader_2_sta_file = BufReader::new(File::open(input_file_path).expect("Failed to read an input file."));
   let mut stas = Stas::new();
@@ -103,8 +116,9 @@ fn main() {
       is_sta_valid = true;
     } else if line.starts_with("#=GC SS_cons") {
       let sta_prof = line.split_whitespace().skip(2).next().expect("Failed to split a string.");
+      let bp_freq_relative_2_all_prof_freqs = sta_prof.chars().filter(|&prof_char| prof_char == '(' || prof_char == ')').count() as Prob / sta_prof.len() as Prob;
       let indel_freq_relative_2_all_prof_freqs = sta_prof.chars().filter(|&prof_char| prof_char == '.').count() as Prob / sta_prof.len() as Prob;
-      is_sta_valid = (indel_freq_relative_2_all_prof_freqs <= MAX_INDEL_FREQ_RELATIVE_2_ALL_PROF_FREQS) & is_sta_valid;
+      is_sta_valid = (bp_freq_relative_2_all_prof_freqs >= min_bp_freq_relative_2_all_prof_freqs) & (indel_freq_relative_2_all_prof_freqs <= max_indel_freq_relative_2_all_prof_freqs) & is_sta_valid;
       sta.cons_second_struct = get_css(&convert_css_str(&(String::from("(") + sta_prof + ")")));
     } else {
       if is_sta_valid {
@@ -290,6 +304,7 @@ fn main() {
       buf_4_writer_2_output_file += &format!("(({}, {}, {}, {}), {:e}), ", base_quadruple.2 as char, base_quadruple.3 as char, base_quadruple.0 as char, base_quadruple.1 as char, lbpap);
     }
   }
+  buf_4_writer_2_output_file += "].iter().cloned().collect(),\n      lbpps_with_base_pairs: [";
   for (base_pair, &lbpp) in &stem_params.lbpps_with_base_pairs {
     buf_4_writer_2_output_file += &format!("(({}, {}), {:e}), ", base_pair.0 as char, base_pair.1 as char, lbpp);
   }
