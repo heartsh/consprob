@@ -99,7 +99,7 @@ fn main() {
     for (sparse_bpp_mat_1, sparse_bpp_mat_2, upp_mat, fasta_record) in multizip((sparse_bpp_mats_1.iter_mut(), sparse_bpp_mats_2.iter_mut(), upp_mats.iter_mut(), fasta_records.iter_mut())) {
       let seq_len = fasta_record.seq.len();
       scope.execute(move || {
-        let prob_mat_pair = get_bpp_and_unpair_prob_mat(&fasta_record.seq[1 .. seq_len - 1]);
+        let prob_mat_pair = get_bpp_and_unpair_prob_mats(&fasta_record.seq[1 .. seq_len - 1]);
         *sparse_bpp_mat_1 = remove_zeros_from_bpp_mat(&prob_mat_pair.0, seq_len);
         *sparse_bpp_mat_2 = remove_small_bpps_from_bpp_mat(&sparse_bpp_mat_1, min_bpp);
         *upp_mat = prob_mat_pair.1;
@@ -166,7 +166,7 @@ fn main() {
     }
   });
   thread_pool.scoped(|scope| {
-    for (rna_id, bpp_mat, up_mat) in multizip((0 .. num_of_fasta_records, sparse_bpp_mats_1.iter_mut(), up_mats.iter_mut())) {
+    for (rna_id, bpp_mat, upp_mat) in multizip((0 .. num_of_fasta_records, sparse_bpp_mats_1.iter_mut(), upp_mats.iter_mut())) {
       let ref ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs = log_prob_mat_pairs_on_sta_with_rna_id_pairs;
       scope.execute(move || {
         let prob_mat_pair = pct_of_bpp_and_upp_mat(ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mat, upp_mat);
