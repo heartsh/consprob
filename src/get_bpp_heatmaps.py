@@ -27,7 +27,7 @@ def main():
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)
   pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/bpp_mats_on_ss_and_bpp_mats_on_sta.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/bpp_mats_on_ss_and_sta.eps", bbox_inches = "tight")
 
 if __name__ == "__main__":
   main()

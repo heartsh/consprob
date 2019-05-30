@@ -71,7 +71,7 @@ pub struct LogStaPpfMatSets {
 }
 pub type ProbMats = Vec<SparseProbMat>;
 
-pub const INVERSE_TEMPERATURE: FreeEnergy = 1. / (2. * GAS_CONST * TEMPERATURE);
+pub const INVERSE_TEMPERATURE: FreeEnergy = 1. / (GAS_CONST * TEMPERATURE);
 
 impl LogProbMatPairOnSta {
   pub fn new() -> LogProbMatPairOnSta {
@@ -1542,22 +1542,25 @@ pub fn pct_of_bpp_and_upp_mat(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogP
     let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_pos_pairs[pos_pair];
     if max_ep_of_term_4_log_prob.is_finite() {
       let new_bpp = (log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)).exp();
-      let bpp = bpp_mat.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
-      if new_bpp > *bpp {
-        *bpp = new_bpp;
-      }
+      *bpp_mat.get_mut(pos_pair).expect("Failed to get an element of a hash map.") = new_bpp;
+      // let bpp = bpp_mat.get_mut(pos_pair).expect("Failed to get an element of a hash map.");
+      // if new_bpp > *bpp {
+        // *bpp = new_bpp;
+      // }
     }
   }
-  let mut upp_mat = upp_mat.clone();
+  // let mut upp_mat = upp_mat.clone();
+  let mut upp_mat = vec![1.; upp_mat_len];
   for (i, eps_of_terms_4_log_prob) in seqs_of_eps_of_terms_4_log_probs_with_poss.iter().enumerate() {
     if i == 0 || i == upp_mat_len - 1 {continue;}
     let max_ep_of_term_4_log_prob = max_eps_of_terms_4_log_probs_with_poss[i];
     if max_ep_of_term_4_log_prob.is_finite() {
-      let new_up = 1. - (log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)).exp();
-      let ref mut up = upp_mat[i];
-      if new_up > *up {
-        *up = new_up;
-      }
+      let new_upp = 1. - (log_coefficient + logsumexp(eps_of_terms_4_log_prob, max_ep_of_term_4_log_prob)).exp();
+      upp_mat[i] = new_upp;
+      // let ref mut up = upp_mat[i];
+      // if new_up > *up {
+        // *up = new_up;
+      // }
     }
   }
   (bpp_mat, upp_mat)
