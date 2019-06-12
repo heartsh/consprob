@@ -5,8 +5,7 @@ authors = ["heartsh <heartsh@heartsh.io>"]
 description = "RfamProb Program, Program for Estimations of Posterior Probabilities on RNA Structural Alignment"
 
 [dependencies]
-# rna-algos = "0.1"
-rna-algos = {path = "../rna-algos"}
+rna-algos = "0.1"
 lazy_static = "0.1"
 time = "0.1"
 scoped_threadpool = "0.1"

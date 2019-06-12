@@ -43,41 +43,45 @@ fn main() {
   opts.optopt("", "gap_num", &format!("A gap number for setting the maximum number of the gaps in a structural alignment; This gap number plus the absolute value of the difference of 2 RNA sequence lengths is this maximum number (Uses {} by default)", DEFAULT_GAP_NUM), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
-  let opts = match opts.parse(&args[1 ..]) {
+  let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
     Err(failure) => {print_program_usage(&program_name, &opts); panic!(failure.to_string())}
   };
-  let input_file_path = opts.opt_str("i").expect("Failed to get the path to an input FASTA file containing RNA sequences from command arguments.");
+  if matches.opt_present("h") {
+    print_program_usage(&program_name, &opts);
+    return;
+  }
+  let input_file_path = matches.opt_str("i").expect("Failed to get the path to an input FASTA file containing RNA sequences from command arguments.");
   let input_file_path = Path::new(&input_file_path);
-  let output_dir_path = opts.opt_str("o").expect("Failed to get the path to an output directory from command arguments.");
+  let output_dir_path = matches.opt_str("o").expect("Failed to get the path to an output directory from command arguments.");
   let output_dir_path = Path::new(&output_dir_path);
-  let opening_gap_penalty = if opts.opt_present("opening_gap_penalty") {
-    opts.opt_str("opening_gap_penalty").expect("Failed to get an opening-gap penalty from command arguments.").parse().expect("Failed to parse an opening-gap penalty.")
+  let opening_gap_penalty = if matches.opt_present("opening_gap_penalty") {
+    matches.opt_str("opening_gap_penalty").expect("Failed to get an opening-gap penalty from command arguments.").parse().expect("Failed to parse an opening-gap penalty.")
   } else {
     DEFAULT_OPENING_GAP_PENALTY
   };
-  let extending_gap_penalty = if opts.opt_present("extending_gap_penalty") {
-    opts.opt_str("extending_gap_penalty").expect("Failed to get an extending-gap penalty from command arguments.").parse().expect("Failed to parse an extending-gap penalty.")
+  let extending_gap_penalty = if matches.opt_present("extending_gap_penalty") {
+    matches.opt_str("extending_gap_penalty").expect("Failed to get an extending-gap penalty from command arguments.").parse().expect("Failed to parse an extending-gap penalty.")
   } else {
     DEFAULT_EXTENDING_GAP_PENALTY
   };
-  let sta_fe_scale_param = if opts.opt_present("struct_align_free_energy_scale_param") {
-    opts.opt_str("struct_align_free_energy_scale_param").expect("Failed to get a structural-alignment free-energy scale parameter from command arguments.").parse().expect("Failed to parse a structural-alignment free-energy scale parameter.")
+  let sta_fe_scale_param = if matches.opt_present("struct_align_free_energy_scale_param") {
+    matches.opt_str("struct_align_free_energy_scale_param").expect("Failed to get a structural-alignment free-energy scale parameter from command arguments.").parse().expect("Failed to parse a structural-alignment free-energy scale parameter.")
   } else {
     DEFAULT_STA_FE_SCALE_PARAM
   };
-  let min_bpp = if opts.opt_present("min_base_pair_prob") {
-    opts.opt_str("min_base_pair_prob").expect("Failed to get a minimum base-pairing-probability from command arguments.").parse().expect("Failed to parse a minimum base-pairing-probability.")
+  let min_bpp = if matches.opt_present("min_base_pair_prob") {
+    matches.opt_str("min_base_pair_prob").expect("Failed to get a minimum base-pairing-probability from command arguments.").parse().expect("Failed to parse a minimum base-pairing-probability.")
   } else {
     DEFAULT_MIN_BPP
   };
-  let gap_num = if opts.opt_present("gap_num") {
-    opts.opt_str("gap_num").expect("Failed to get a gap number for setting the maximum number of the gaps in a structural alignment from command arguments.").parse().expect("Failed to parse a gap number for setting the maximum number of the gaps in a structural alignment.")
+  let gap_num = if matches.opt_present("gap_num") {
+    matches.opt_str("gap_num").expect("Failed to get a gap number for setting the maximum number of the gaps in a structural alignment from command arguments.").parse().expect("Failed to parse a gap number for setting the maximum number of the gaps in a structural alignment.")
   } else {
     DEFAULT_GAP_NUM
   };
-  let num_of_threads = if opts.opt_present("t") {
-    opts.opt_str("t").expect("Failed to get the number of threads in multithreading from command arguments.").parse().expect("Failed to parse the number of threads in multithreading.")
+  let num_of_threads = if matches.opt_present("t") {
+    matches.opt_str("t").expect("Failed to get the number of threads in multithreading from command arguments.").parse().expect("Failed to parse the number of threads in multithreading.")
   } else {
     num_cpus::get() as NumOfThreads
   };
