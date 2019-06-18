@@ -16,4 +16,4 @@ itertools = "0.7"
 
 [lib]
 path = "src/lib.rs"
-name = "rfamprob"
+name = "rnafamprob"

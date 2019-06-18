@@ -4,7 +4,7 @@ extern crate bio;
 extern crate num_cpus;
 extern crate itertools;
 
-use rfamprob::*;
+use rnafamprob::*;
 use self::scoped_threadpool::Pool;
 use std::env;
 use std::path::Path;
