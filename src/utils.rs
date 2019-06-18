@@ -24,29 +24,6 @@ pub type BpaScoreMat = HashMap<(BasePair, BasePair), StaFreeEnergy>;
 pub const SEQ_ALPHABET: [Base; 4] = [A, C, G, U];
 pub const PSEUDO_BASE: Base = '$' as Base;
 lazy_static! {
-  /* pub static ref BA_ALPHABET: Vec<BasePair> = {
-    let mut ba_alphabet = Vec::new();
-    for (i, &base_1) in SEQ_ALPHABET.iter().enumerate() {
-      for &base_2 in &SEQ_ALPHABET[i ..] {
-        ba_alphabet.push((base_1, base_2));
-      }
-    }
-    ba_alphabet
-  };
-  pub static ref BP_ALPHABET: HashMap<BasePair, bool, Hasher> = {
-    [AU, CG, GC, GU, UA, UG].iter().map(|base_pair| {(*base_pair, true)}).collect()
-  };
-  pub static ref BPA_ALPHABET: Vec<BaseQuadruple> = {
-    let mut bpa_alphabet = Vec::new();
-    for base_pair_1 in BP_ALPHABET.keys() {
-      for base_pair_2 in BP_ALPHABET.keys() {
-        if base_pair_1 <= base_pair_2 {
-          bpa_alphabet.push((base_pair_1.0, base_pair_1.1, base_pair_2.0, base_pair_2.1));
-        }
-      }
-    }
-    bpa_alphabet
-  }; */
   pub static ref RIBOSUM_85_60_BA_SCORE_MAT: BaScoreMat = {
     [
       (AA, 2.22), (AC, -1.86), (AG, -1.46), (AU, -1.39),
@@ -66,19 +43,3 @@ lazy_static! {
     ].iter().map(|(base_quadruple, bpa_score)| {(*base_quadruple, bpa_score / LOG2_E)}).collect()
   };
 }
-
-/* impl StemParams {
-  pub fn new() -> StemParams {
-    let lbaps_with_base_pairs = BA_ALPHABET.iter().map(|base_pair| {(*base_pair, NEG_INFINITY)}).collect();
-    let lgps_with_bases: LogGapProbsWithBases = SEQ_ALPHABET.iter().map(|&base| {(base, NEG_INFINITY)}).collect();
-    let lbpaps_with_base_quadruples = BPA_ALPHABET.iter().map(|base_quadruple| {(*base_quadruple, NEG_INFINITY)}).collect();
-    StemParams {
-      lbaps_with_base_pairs: lbaps_with_base_pairs,
-      logps_with_bases: lgps_with_bases.clone(),
-      legps_with_bases: lgps_with_bases,
-      lbpaps_with_base_quadruples: lbpaps_with_base_quadruples,
-      lbpps_with_base_pairs: BP_ALPHABET.keys().map(|base_pair| {(*base_pair, NEG_INFINITY)}).collect(),
-      lnbpps_with_bases: SEQ_ALPHABET.iter().map(|&base| {(base, NEG_INFINITY)}).collect(),
-    }
-  }
-} */

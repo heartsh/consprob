@@ -51,7 +51,7 @@ def main():
     + colored.green("p >= %.2e, " % (0.25 ** 3))
     + colored.cyan("p >= %.2e, " % (0.25 ** 4))
     + colored.blue("p < %.2e" % (0.25 ** 4))
-    + colored.black(" where p is the mean\nof the posterior BPAP for each of the base quadruples in a color-coded column-pair")
+    + colored.black(" where p is the mean\nof the posterior pseudo-base-pair-alignment-probability for each of the base quadruples in a\ncolor-coded column-pair")
   )
 
 if __name__ == "__main__":

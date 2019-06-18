@@ -1,8 +1,8 @@
 [package]
-name = "rfamprob"
+name = "rnafamprob"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "RfamProb Program, Program for Estimations of Posterior Probabilities on RNA Structural Alignment"
+description = "RNAfamProb Program, Program for Estimations of Posterior Probabilities on RNA Structural Alignment"
 
 [dependencies]
 rna-algos = "0.1"

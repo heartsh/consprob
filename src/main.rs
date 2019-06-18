@@ -1,4 +1,4 @@
-extern crate rfamprob;
+extern crate rnafamprob;
 extern crate scoped_threadpool;
 extern crate bio;
 extern crate num_cpus;
@@ -115,7 +115,7 @@ fn main() {
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The version {} of the RfamProb program.\n; The path to the input file for computing the Base-Pairing Probability Matrices (= BPPMs) on secondary structure (= SS) in this file = \"{}\".\n; The values of the parameters used for computing these matrices are as follows.\n; \"num_of_threads\" = {}.", VERSION, input_file_path.display(), num_of_threads) + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on SS.";
+  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the Base-Pairing Probability Matrices (= BPPMs) on secondary structure (= SS) in this file = \"{}\".\n; The values of the parameters used for computing these matrices are as follows.\n; \"num_of_threads\" = {}.", VERSION, input_file_path.display(), num_of_threads) + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on SS.";
   let bpp_mat_on_ss_file_path = output_dir_path.join(BPP_MAT_ON_SS_FILE_NAME);
   let mut writer_2_bpp_mat_on_ss_file = BufWriter::new(File::create(bpp_mat_on_ss_file_path).expect("Failed to create an output file."));
   for (rna_id, bpp_mat) in sparse_bpp_mats_1.iter().enumerate() {
@@ -187,8 +187,8 @@ fn main() {
   let upp_mat_file_path = output_dir_path.join(UPP_MAT_FILE_NAME);
   let mut writer_2_bap_mat_file = BufWriter::new(File::create(bap_mat_file_path).expect("Failed to create an output file."));
   let mut writer_2_bpap_mat_file = BufWriter::new(File::create(bpap_mat_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_bap_mat_file = format!("; The version {} of the RfamProb program.\n; The path to the input file for computing base alignment probability matrices (= BAPMs) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of each of 2 RNA sequences. The row next to this row is with the BAPM between these 2 sequences.";
-  let mut buf_4_writer_2_bpap_mat_file = format!("; The version {} of the RfamProb program.\n; The path to the input file for computing base pair alignment probability matrices (= BPAPMs) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of each of 2 RNA sequences. The row next to this row is with the BPAPM between these 2 sequences.";
+  let mut buf_4_writer_2_bap_mat_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing base alignment probability matrices (= BAPMs) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of each of 2 RNA sequences. The row next to this row is with the BAPM between these 2 sequences.";
+  let mut buf_4_writer_2_bpap_mat_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing base pair alignment probability matrices (= BPAPMs) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of each of 2 RNA sequences. The row next to this row is with the BPAPM between these 2 sequences.";
   for (rna_id_pair, prob_mat_pair_on_sta) in &prob_mat_pairs_on_sta_with_rna_id_pairs {
     let mut buf_4_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
     for (&(i, j), bap) in prob_mat_pair_on_sta.base_align_prob_mat.iter() {
@@ -209,7 +209,7 @@ fn main() {
     let _ = writer_2_bpap_mat_file.write_all(buf_4_writer_2_bpap_mat_file.as_bytes());
   });
   let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_bpp_mat_on_sta_file = format!("; The version {} of the RfamProb program.\n; The path to the input file for computing the Base-Pairing Probability Matrices (= BPPMs) on STructural Alignment (= STA) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
+  let mut buf_4_writer_2_bpp_mat_on_sta_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the Base-Pairing Probability Matrices (= BPPMs) on STructural Alignment (= STA) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
   for (rna_id, bpp_mat) in sparse_bpp_mats_1.iter().enumerate() {
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
     for (&(i, j), &bpp) in bpp_mat.iter() {
@@ -222,7 +222,7 @@ fn main() {
     let _ = writer_2_bpp_mat_on_sta_file.write_all(buf_4_writer_2_bpp_mat_on_sta_file.as_bytes());
   });
   let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_upp_mat_file = format!("; The version {} of the RfamProb program.\n; The path to the input file for computing the unpairing probability matrices in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
+  let mut buf_4_writer_2_upp_mat_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the unpairing probability matrices in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
   for (rna_id, upp_mat) in upp_mats.iter().enumerate() {
     let seq_len = fasta_records[rna_id].seq.len();
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);

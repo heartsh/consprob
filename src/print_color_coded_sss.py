@@ -33,7 +33,7 @@ def main():
     + colored.green("p >= %.2e, " % (0.5 ** 3))
     + colored.cyan("p >= %.2e, " % (0.5 ** 4))
     + colored.blue("p < %.2e" % (0.5 ** 4))
-    + colored.black(" where p is a\n posterior BPP for a base pair")
+    + colored.black(" where p is a\n posterior (pseudo-)base-pairing-probability for a base pair")
   )
 
 if __name__ == "__main__":
