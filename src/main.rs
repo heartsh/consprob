@@ -42,6 +42,7 @@ fn main() {
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "gap_num", &format!("A gap number for setting the maximum number of the gaps in a structural alignment; This gap number plus the absolute value of the difference of 2 RNA sequence lengths is this maximum number (Uses {} by default)", DEFAULT_GAP_NUM), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
+  opts.optflag("s", "only_second_struct_probs", "Compute only probabilities about secondary structure");
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -80,6 +81,7 @@ fn main() {
   } else {
     DEFAULT_GAP_NUM
   };
+  let only_ss_probs = matches.opt_present("s");
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").expect("Failed to get the number of threads in multithreading from command arguments.").parse().expect("Failed to parse the number of threads in multithreading.")
   } else {
@@ -162,14 +164,6 @@ fn main() {
     }
   });
   thread_pool.scoped(|scope| {
-    for (rna_id_pair, log_prob_mat_pair_on_sta) in log_prob_mat_pairs_on_sta_with_rna_id_pairs_from_pct.iter_mut() {
-      let ref ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs = log_prob_mat_pairs_on_sta_with_rna_id_pairs;
-      scope.execute(move || {
-        *log_prob_mat_pair_on_sta = prob_cons_transformation_of_log_prob_mat_pair_on_sta(ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs, rna_id_pair, num_of_fasta_records);
-      });
-    }
-  });
-  thread_pool.scoped(|scope| {
     for (rna_id, bpp_mat, upp_mat) in multizip((0 .. num_of_fasta_records, sparse_bpp_mats_1.iter_mut(), upp_mats.iter_mut())) {
       let ref ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs = log_prob_mat_pairs_on_sta_with_rna_id_pairs;
       scope.execute(move || {
@@ -179,12 +173,48 @@ fn main() {
       });
     }
   });
-  let prob_mat_pairs_on_sta_with_rna_id_pairs = get_prob_mat_pairs_on_sta_with_rna_id_pairs(&log_prob_mat_pairs_on_sta_with_rna_id_pairs_from_pct);
   let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used for computing these matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"struct_align_free_energy_scale_param\" = {}, \"min_base_pair_prob\" = {}, \"gap_num\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, sta_fe_scale_param, min_bpp, gap_num, num_of_threads);
-  let bap_mat_file_path = output_dir_path.join(BAP_MAT_FILE_NAME);
-  let bpap_mat_file_path = output_dir_path.join(BPAP_MAT_FILE_NAME);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
   let upp_mat_file_path = output_dir_path.join(UPP_MAT_FILE_NAME);
+  let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
+  let mut buf_4_writer_2_bpp_mat_on_sta_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the Base-Pairing Probability Matrices (= BPPMs) on STructural Alignment (= STA) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
+  for (rna_id, bpp_mat) in sparse_bpp_mats_1.iter().enumerate() {
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (&(i, j), &bpp) in bpp_mat.iter() {
+      if i == 0 {continue;}
+      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
+    }
+    buf_4_writer_2_bpp_mat_on_sta_file.push_str(&buf_4_rna_id);
+  }
+  let thread_2 = thread::spawn(move || {
+    let _ = writer_2_bpp_mat_on_sta_file.write_all(buf_4_writer_2_bpp_mat_on_sta_file.as_bytes());
+  });
+  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).expect("Failed to create an output file."));
+  let mut buf_4_writer_2_upp_mat_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the unpairing probability matrices in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
+  for (rna_id, upp_mat) in upp_mats.iter().enumerate() {
+    let seq_len = fasta_records[rna_id].seq.len();
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (i, &upp) in upp_mat.iter().enumerate() {
+      if i == 0 || i == seq_len - 1 {continue;}
+      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+    }
+    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+  }
+  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+  let _ = thread_1.join();
+  let _ = thread_2.join();
+  if only_ss_probs {return;}
+  thread_pool.scoped(|scope| {
+    for (rna_id_pair, log_prob_mat_pair_on_sta) in log_prob_mat_pairs_on_sta_with_rna_id_pairs_from_pct.iter_mut() {
+      let ref ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs = log_prob_mat_pairs_on_sta_with_rna_id_pairs;
+      scope.execute(move || {
+        *log_prob_mat_pair_on_sta = prob_cons_transformation_of_log_prob_mat_pair_on_sta(ref_2_log_prob_mat_pairs_on_sta_with_rna_id_pairs, rna_id_pair, num_of_fasta_records);
+      });
+    }
+  });
+  let prob_mat_pairs_on_sta_with_rna_id_pairs = get_prob_mat_pairs_on_sta_with_rna_id_pairs(&log_prob_mat_pairs_on_sta_with_rna_id_pairs_from_pct);
+  let bap_mat_file_path = output_dir_path.join(BAP_MAT_FILE_NAME);
+  let bpap_mat_file_path = output_dir_path.join(BPAP_MAT_FILE_NAME);
   let mut writer_2_bap_mat_file = BufWriter::new(File::create(bap_mat_file_path).expect("Failed to create an output file."));
   let mut writer_2_bpap_mat_file = BufWriter::new(File::create(bpap_mat_file_path).expect("Failed to create an output file."));
   let mut buf_4_writer_2_bap_mat_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing base alignment probability matrices (= BAPMs) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of each of 2 RNA sequences. The row next to this row is with the BAPM between these 2 sequences.";
@@ -202,39 +232,9 @@ fn main() {
     }
     buf_4_writer_2_bpap_mat_file.push_str(&buf_4_rna_id_pair);
   }
-  let thread_2 = thread::spawn(move || {
+  let thread_3 = thread::spawn(move || {
     let _ = writer_2_bap_mat_file.write_all(buf_4_writer_2_bap_mat_file.as_bytes());
   });
-  let thread_3 = thread::spawn(move || {
-    let _ = writer_2_bpap_mat_file.write_all(buf_4_writer_2_bpap_mat_file.as_bytes());
-  });
-  let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_bpp_mat_on_sta_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the Base-Pairing Probability Matrices (= BPPMs) on STructural Alignment (= STA) in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
-  for (rna_id, bpp_mat) in sparse_bpp_mats_1.iter().enumerate() {
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (&(i, j), &bpp) in bpp_mat.iter() {
-      if i == 0 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
-    }
-    buf_4_writer_2_bpp_mat_on_sta_file.push_str(&buf_4_rna_id);
-  }
-  let thread_4 = thread::spawn(move || {
-    let _ = writer_2_bpp_mat_on_sta_file.write_all(buf_4_writer_2_bpp_mat_on_sta_file.as_bytes());
-  });
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_upp_mat_file = format!("; The version {} of the RNAfamProb program.\n; The path to the input file for computing the unpairing probability matrices in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the BPPM of this sequence on STA.";
-  for (rna_id, upp_mat) in upp_mats.iter().enumerate() {
-    let seq_len = fasta_records[rna_id].seq.len();
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &upp) in upp_mat.iter().enumerate() {
-      if i == 0 || i == seq_len - 1 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
-    }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
-  let _ = thread_1.join();
-  let _ = thread_2.join();
+  let _ = writer_2_bpap_mat_file.write_all(buf_4_writer_2_bpap_mat_file.as_bytes());
   let _ = thread_3.join();
-  let _ = thread_4.join();
 }
