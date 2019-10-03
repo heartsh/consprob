@@ -1,16 +1,5 @@
 # STOCKHOLM 1.0
 #=GF SS RNAalifold prediction
-X61068.1/651-73  gcccggguggugaaauc-gguaga-cacgcaggacuuaaa-auccugugg-cauaaaagcca-ugucgguucaaguccgaccccgggca
-M22764.1/167-24  gccgaaauagcucaguu-gggaga--gcguuagacugaag-aucuaaaag--------guc---ccugguucgaucccggguuucggca
-M18050.1/352-42  gacucguuagcucagcc-gguaga--gcaacuggcuuuua-acc-agugg--------guc---cgggguucgaauccccgacgaguca
-M16450.1/142-21  ggcuuuuuagcucagca-gguaga--gcaaccggcuguua-acc-gguuu--------guc---acagguucgagcccuguaaaagccg
-X99772.1/9544-9  -ucuuucuaguac--ua-aggagu--auaaguggcuucca-acc-acacg--------guc----uugguuagaguccaa-ggaaagau
-AF008220.1/6334  ggaggaauacccaagucuggcugaagggaucggucuugaaaaccgacagggugucaaagcccgcggggguucgaaucccucuuccuccg
-#=GC RF          _________________________________________________________________________________________
-#=GC SS_cons     (((((((..((((.........))..)).(((((........)).)))................(((((.......)))))))))))).
-//
-# STOCKHOLM 1.0
-#=GF SS RNAalifold prediction
 X61068.1/651-73  gcccggguggugaaauc--gguagacacgcaggacuuaaaauccuguggcau---aaaagccaugucgguucaaguccgaccccgggca
 M22764.1/167-24  gccgaaauagcucaguu--gggaga-gcguuagacugaagauc------------uaaaaggucccugguucgaucccggguuucggca
 M18050.1/352-42  gacucguuagcucagcc--gguaga-gcaacuggcuuuuaa-c------------caguggguccgggguucgaauccccgacgaguca
