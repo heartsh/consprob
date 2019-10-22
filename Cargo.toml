@@ -3,6 +3,10 @@ name = "rnafamprob"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
 description = "RNAfamProb Program, Program for Estimations of Posterior Probabilities on RNA Structural Alignment"
+repository = "https://github.com/heartsh/rnafamprob"
+readme = "README.md"
+keywords = ["bioinformatics", "rna", "structural-alignment"]
+license = "MIT"
 
 [dependencies]
 rna-algos = "0.1"
