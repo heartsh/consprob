@@ -20,9 +20,9 @@ type NumOfThreads = u32;
 
 const DEFAULT_OPENING_GAP_PENALTY: StaFreeEnergy = 0.;
 const DEFAULT_EXTENDING_GAP_PENALTY: StaFreeEnergy = 0.;
-const DEFAULT_STA_FE_SCALE_PARAM: LogProb = 1. / INVERSE_TEMPERATURE;
-const DEFAULT_MIN_BPP: Prob = 0.005;
-const DEFAULT_GAP_NUM: usize = 0;
+const DEFAULT_STA_FE_SCALE_PARAM: LogProb = 1.;
+const DEFAULT_MIN_BPP: Prob = 0.001;
+const DEFAULT_GAP_NUM: usize = 5;
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 const BAP_MAT_FILE_NAME: &'static str = "bap_mats.dat";
 const BPAP_MAT_FILE_NAME: &'static str = "bpap_mats.dat";
