@@ -1,9 +1,9 @@
 [package]
-name = "rnafamprob"
+name = "zprob"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "RNAfamProb Program, Program for Estimations of Posterior Probabilities on RNA Structural Alignment"
-repository = "https://github.com/heartsh/rnafamprob"
+description = "Zprob Program, which Predicts Average Posterior Probabilities on RNA Structural Alignment"
+repository = "https://github.com/heartsh/zprob"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "structural-alignment"]
 license = "MIT"
@@ -20,4 +20,4 @@ itertools = "0.7"
 
 [lib]
 path = "src/lib.rs"
-name = "rnafamprob"
+name = "zprob"

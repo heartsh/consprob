@@ -17,23 +17,23 @@ pub type SparseProbMat = HashMap<PosPair, Prob, Hasher>;
 pub type Prob4dMat = HashMap<PosQuadruple, Prob, Hasher>;
 /* pub type Prob3dMat = Vec<ProbMat>;
 pub type Prob4dMat = Vec<Prob3dMat>; */
-pub struct ProbMatPairOnSta {
+/* pub struct ProbMatPairOnSta {
   // pub base_align_prob_mat: SparseProbMat,
   pub base_align_prob_mat: ProbMat,
   pub base_pair_align_prob_mat: Prob4dMat,
-}
+} */
 pub type SparseLogProbMat = HashMap<PosPair, LogProb, Hasher>;
 // pub type LogProb3dMat = HashMap<PosTriple, LogProb, Hasher>;
 pub type LogProb4dMat = HashMap<PosQuadruple, LogProb, Hasher>;
 // pub type LogProbMat = Vec<LogProbs>;
 /* pub type LogProb3dMat = Vec<LogProbMat>;
 pub type LogProb4dMat = Vec<LogProb3dMat>; */
-#[derive(Clone)]
+/* #[derive(Clone)]
 pub struct LogProbMatPairOnSta {
   pub lbap_mat: SparseLogProbMat,
   // pub lbap_mat: LogProbMat,
   pub lbpap_mat: LogProb4dMat,
-}
+} */
 type SparseLogPpfMat = HashMap<PosPair, LogPf, Hasher>;
 type LogPpf4dMat = HashMap<PosQuadruple, LogPf, Hasher>;
 /* pub type LogPpf3dMat = Vec<LogPpfMat>;
@@ -50,10 +50,14 @@ pub struct LogStaInsidePpf4dMats {
 }
 #[derive(Clone)]
 pub struct LogStaInsidePpfMats {
-  pub log_ppf_mat: SparseLogPpfMat,
-  pub log_ppf_mat_4_bas: SparseLogPpfMat,
-  pub log_ppf_mat_4_gaps_1: SparseLogPpfMat,
-  pub log_ppf_mat_4_gaps_2: SparseLogPpfMat,
+  pub log_forward_ppf_mat: SparseLogPpfMat,
+  pub log_forward_ppf_mat_4_bas: SparseLogPpfMat,
+  pub log_forward_ppf_mat_4_gaps_1: SparseLogPpfMat,
+  pub log_forward_ppf_mat_4_gaps_2: SparseLogPpfMat,
+  pub log_backward_ppf_mat: SparseLogPpfMat,
+  pub log_backward_ppf_mat_4_bas: SparseLogPpfMat,
+  pub log_backward_ppf_mat_4_gaps_1: SparseLogPpfMat,
+  pub log_backward_ppf_mat_4_gaps_2: SparseLogPpfMat,
 }
 #[derive(Clone)]
 pub struct LogStaInsidePpfMatSets {
@@ -64,6 +68,18 @@ pub struct LogStaInsidePpfMatSets {
   pub log_ppf_mats_4_first_bpas_on_mls: LogStaInsidePpf4dMats,
   pub log_ppf_mats_4_external_loop: LogStaInsidePpfMats,
 }
+#[derive(Clone)]
+pub struct LogStaOutsidePpf4dMats {
+  pub log_ppf_mat_4_bpas: LogPpf4dMat,
+  pub log_ppf_mat_4_bpas_on_el: LogPpf4dMat,
+  pub log_ppf_mat_4_bpas_on_internal_2loops: LogPpf4dMat,
+  pub log_ppf_mat_4_bpas_on_internal_mls: LogPpf4dMat,
+  pub log_ppf_mat_4_right: LogPpf4dMat,
+  pub log_ppf_mat_4_right_2: LogPpf4dMat,
+  /* pub log_ppf_mat_4_right_internal_mls: LogPpf4dMat,
+  pub log_ppf_mat_4_right_first_bpas_on_mls: LogPpf4dMat,
+  pub log_ppf_mat_on_right_sa: LogPpf4dMat, */
+}
 pub struct StaFeParams {
   pub ba_score_mat: SparseLogProbMat,
   pub bpa_score_mat: LogProb4dMat,
@@ -73,9 +89,12 @@ pub struct StaFeParams {
 pub type RnaId = usize;
 pub type RnaIdPair = (RnaId, RnaId);
 pub type StaFeParamSetsWithRnaIdPairs = HashMap<RnaIdPair, StaFeParams, Hasher>;
-type ProbMatPairsOnStaWithRnaIdPairs = HashMap<RnaIdPair, ProbMatPairOnSta, Hasher>;
-pub type LogProbMatPairsOnStaWithRnaIdPairs = HashMap<RnaIdPair, LogProbMatPairOnSta, Hasher>;
+type Prob4dMatsWithRnaIdPairs = HashMap<RnaIdPair, Prob4dMat, Hasher>;
+// type ProbMatPairsOnStaWithRnaIdPairs = HashMap<RnaIdPair, ProbMatPairOnSta, Hasher>;
+// pub type LogProbMatPairsOnStaWithRnaIdPairs = HashMap<RnaIdPair, LogProbMatPairOnSta, Hasher>;
+pub type LogProb4dMatsWithRnaIdPairs = HashMap<RnaIdPair, LogProb4dMat, Hasher>;
 pub type LogProbMats = Vec<SparseLogProbMat>;
+pub type ProbMats = Vec<SparseProbMat>;
 // pub type LogProbSeqs = Vec<LogProbs>;
 type SeqsOfEpsOfTerms4LogProbsWithPosPairs = HashMap<PosPair, EpsOfTerms4LogProb, Hasher>;
 /* type SeqSetsOfEpsOfTerms4LogProbs = Vec<EpsOfTerms4LogProb>;
@@ -85,7 +104,7 @@ type EpsOfTerms4LogProbsWithPosPairs = HashMap<PosPair, ExpPartOfTerm4LogProb, H
 type EpsOfTermMat4LogProbs = Vec<ExpPartOfTerms4LogProbs>; */
 // type SeqsOfEpsOfTerms4LogProbsWithPosQuadruples = HashMap<PosQuadruple, EpsOfTerms4LogProb, Hasher>;
 // type SeqsOfEpsOfTerms4LogProbsWithPosQuadruples = Vec<EpsOfTerms4LogProb>;
-type EpsOfTerms4LogProbsWithPosQuadruples = HashMap<PosQuadruple, ExpPartOfTerm4LogProb, Hasher>;
+// type EpsOfTerms4LogProbsWithPosQuadruples = HashMap<PosQuadruple, ExpPartOfTerm4LogProb, Hasher>;
 type Arg = String;
 pub type Args = Vec<Arg>;
 pub type FastaId = String;
@@ -106,7 +125,7 @@ pub type SeqPair<'a> = (SeqSlice<'a>, SeqSlice<'a>);
 
 pub const INVERSE_TEMPERATURE: FreeEnergy = 1. / (GAS_CONST * TEMPERATURE);
 
-impl LogProbMatPairOnSta {
+/* impl LogProbMatPairOnSta {
   pub fn new() -> LogProbMatPairOnSta {
     LogProbMatPairOnSta {
       lbap_mat: SparseLogProbMat::default(),
@@ -115,7 +134,7 @@ impl LogProbMatPairOnSta {
       lbpap_mat: vec![vec![vec![vec![NEG_INFINITY; max_bp_span]; seq_len_pair.1]; max_bp_span]; seq_len_pair.0], */
     }
   }
-}
+} */
 
 impl StaFeParams {
   // pub fn origin(seq_len_pair: &(usize, usize), max_bp_span: usize) -> StaFeParams {
@@ -141,6 +160,7 @@ impl StaFeParams {
       let base = seq_pair.0[i];
       for j in 1 .. seq_len_pair.1 - 1 {
         let pos_pair = (i, j);
+        // println!("i, j: {}, {}.", i , j);
         if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
         let base_pair = (base, seq_pair.1[j]);
         sta_fe_params.ba_score_mat.insert(pos_pair, INVERSE_TEMPERATURE * sta_fe_scale_param * RIBOSUM_85_60_BA_SCORE_MAT[&base_pair]);
@@ -158,7 +178,7 @@ impl StaFeParams {
             if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num) {continue;}
             let pos_pair_2 = (k, l);
             let pos_quadruple = (pos_pair.0, pos_pair.1, pos_pair_2.0, pos_pair_2.1);
-            if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num) && bpp_mat_pair.0.contains_key(&pos_pair) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
+            if !(is_min_gap_ok_2(&pos_quadruple, &pseudo_pos_quadruple, max_gap_num) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
             let base_quadruple = (base_pair, (seq_pair.1[k], seq_pair.1[l]));
             sta_fe_params.bpa_score_mat.insert(pos_quadruple, INVERSE_TEMPERATURE * sta_fe_scale_param * RIBOSUM_85_60_BPA_SCORE_MAT[&base_quadruple]);
             // sta_fe_params.bpa_score_mat[i][j - i + 1[k][l - k + 1] = INVERSE_TEMPERATURE * sta_fe_scale_param * RIBOSUM_85_60_BPA_SCORE_MAT[&base_quadruple];
@@ -191,10 +211,14 @@ impl LogStaInsidePpfMats {
     // let neg_inf_mat = vec![vec![NEG_INFINITY; seq_len_pair.1]; seq_len_pair.0];
     let log_ppf_mat = SparseLogPpfMat::default();
     LogStaInsidePpfMats {
-      log_ppf_mat: log_ppf_mat.clone(),
-      log_ppf_mat_4_bas: log_ppf_mat.clone(),
-      log_ppf_mat_4_gaps_1: log_ppf_mat.clone(),
-      log_ppf_mat_4_gaps_2: log_ppf_mat,
+      log_forward_ppf_mat: log_ppf_mat.clone(),
+      log_forward_ppf_mat_4_bas: log_ppf_mat.clone(),
+      log_forward_ppf_mat_4_gaps_1: log_ppf_mat.clone(),
+      log_forward_ppf_mat_4_gaps_2: log_ppf_mat.clone(),
+      log_backward_ppf_mat: log_ppf_mat.clone(),
+      log_backward_ppf_mat_4_bas: log_ppf_mat.clone(),
+      log_backward_ppf_mat_4_gaps_1: log_ppf_mat.clone(),
+      log_backward_ppf_mat_4_gaps_2: log_ppf_mat,
     }
   }
 }
@@ -218,8 +242,27 @@ impl LogStaInsidePpfMatSets {
       log_ppf_mat_4_bpas: log_ppf_4d_mat.clone(),
       log_ppf_mats_on_sa: log_ppf_4d_mats.clone(),
       // log_ppf_mats_4_internal_2loop: log_ppf_4d_mats.clone(),
-      log_ppf_mats_4_internal_multiloop: log_ppf_4d_mats,
+      log_ppf_mats_4_internal_multiloop: log_ppf_4d_mats.clone(),
+      log_ppf_mats_4_first_bpas_on_mls: log_ppf_4d_mats,
       log_ppf_mats_4_external_loop: LogStaInsidePpfMats::new(),
+    }
+  }
+}
+
+impl LogStaOutsidePpf4dMats {
+  pub fn new() -> LogStaOutsidePpf4dMats {
+    // let neg_inf_mat = vec![vec![NEG_INFINITY; seq_len_pair.1]; seq_len_pair.0];
+    let log_ppf_4d_mat = LogPpf4dMat::default();
+    LogStaOutsidePpf4dMats {
+      log_ppf_mat_4_bpas: log_ppf_4d_mat.clone(),
+      log_ppf_mat_4_bpas_on_el: log_ppf_4d_mat.clone(),
+      log_ppf_mat_4_bpas_on_internal_2loops: log_ppf_4d_mat.clone(),
+      log_ppf_mat_4_bpas_on_internal_mls: log_ppf_4d_mat.clone(),
+      log_ppf_mat_4_right: log_ppf_4d_mat.clone(),
+      log_ppf_mat_4_right_2: log_ppf_4d_mat,
+      /* log_ppf_mat_4_right_internal_mls: log_ppf_4d_mat.clone(),
+      log_ppf_mat_4_right_first_bpas_on_mls: log_ppf_4d_mat.clone(),
+      log_ppf_mat_on_right_sa: log_ppf_4d_mat, */
     }
   }
 }
@@ -246,46 +289,103 @@ impl FastaRecord {
 } */
 
 #[inline]
-pub fn io_algo_4_prob_mat_pair_on_rna_sta(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize) -> ProbMatPairOnSta {
-  let log_prob_mat_pair_on_sta = io_algo_4_log_prob_mat_pair_on_rna_sta(seq_pair, seq_len_pair, sta_fe_params, max_bp_span, max_gap_num);
-  get_prob_mat_pair_on_sta(&log_prob_mat_pair_on_sta)
+pub fn io_algo_4_base_pair_align_prob_mat(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize) -> Prob4dMat {
+  let lbpap_mat = io_algo_4_lbpap_mat(seq_pair, seq_len_pair, sta_fe_params, max_bp_span, max_gap_num);
+  // get_prob_mat_pair_on_sta(&log_prob_mat_pair_on_sta)
+  get_bpap_mat(&lbpap_mat)
 }
 
 #[inline]
 // pub fn io_algo_4_log_prob_mat_pair_on_rna_sta(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_gap_num: usize) -> LogProbMatPairOnSta {
-pub fn io_algo_4_log_prob_mat_pair_on_rna_sta(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize) -> LogProbMatPairOnSta {
+pub fn io_algo_4_lbpap_mat(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize) -> LogProb4dMat {
   // let log_sta_ppf_mats = get_log_sta_ppf_4d_mats(seq_pair, seq_len_pair, sta_fe_params, max_gap_num);
   let log_sta_inside_ppf_mat_sets = get_log_sta_inside_ppf_mat_sets(seq_pair, seq_len_pair, sta_fe_params, max_bp_span, max_gap_num);
-  let log_sta_outside_ppf_mat_sets = get_log_sta_outside_ppf_mat_sets(seq_pair, seq_len_pair, sta_fe_params, max_bp_span, max_gap_num, &log_sta_inside_ppf_mat_sets);
-  // get_log_prob_mat_pair_on_sta(seq_pair, seq_len_pair, sta_fe_params, &log_sta_ppf_mats, max_gap_num)
+  println!("An inside step finished.");
+  let log_sta_outside_ppf_4d_mats = get_log_sta_outside_ppf_4d_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span, max_gap_num, &log_sta_inside_ppf_mat_sets);
+  println!("An outside step finished.");
+  get_lbpap_mat(/* seq_pair, */ seq_len_pair, /* sta_fe_params, */ &log_sta_inside_ppf_mat_sets, &log_sta_outside_ppf_4d_mats, /* max_bp_span, max_gap_num */)
 }
 
 #[inline]
-fn get_prob_mat_pair_on_sta(log_prob_mat_pair: &LogProbMatPairOnSta) -> ProbMatPairOnSta {
-  ProbMatPairOnSta {
+// fn get_prob_mat_pair_on_sta(log_prob_mat_pair: &LogProbMatPairOnSta) -> ProbMatPairOnSta {
+fn get_bpap_mat(lbpap_mat: &LogProb4dMat) -> Prob4dMat {
+  lbpap_mat.iter().map(|(pos_quadruple, &lbpap)| (*pos_quadruple, lbpap.exp())).collect()
+  /* ProbMatPairOnSta {
     base_align_prob_mat: log_prob_mat_pair.lbap_mat.iter().map(|(pos_pair, &lbap)| (*pos_pair, lbap.exp())).collect(),
     base_pair_align_prob_mat: log_prob_mat_pair.lbpap_mat.iter().map(|(pos_quadruple, &lbpap)| (*pos_quadruple, lbpap.exp())).collect(),
-  }
+  } */
 }
 
 #[inline]
-pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize, bpp_mats) -> LogStaInsidePpfMatSets {
+pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize) -> LogStaInsidePpfMatSets {
   let mut log_sta_inside_ppf_mat_sets = LogStaInsidePpfMatSets::new();
   let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   // for substr_len_1 in 2 .. seq_len_pair.0 + 1 {
-  for substr_len_1 in 1 .. max_bp_span + 1 {
+  for i in 1 .. seq_len_pair.0 {
+    for j in 1 .. seq_len_pair.1 {
+      let pos_pair = (i, j);
+      let pos_quadruple = (i, i - 1, j, j - 1);
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.insert(pos_quadruple, 0.);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.insert(pos_quadruple, 0.);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_gaps_1.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_gaps_2.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.insert(pos_quadruple, 0.);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_gaps_1.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_gaps_2.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_gaps_1.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_gaps_2.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_gaps_1.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_gaps_2.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_gaps_1.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_gaps_2.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_gaps_1.insert(pos_quadruple, NEG_INFINITY);
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_gaps_2.insert(pos_quadruple, NEG_INFINITY);
+    }
+  }
+  let leftmost_pos_pair = (0, 0);
+  let rightmost_pos_pair = (seq_len_pair.0 - 1, seq_len_pair.1 - 1);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat.insert(leftmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas.insert(leftmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_1.insert(leftmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_2.insert(leftmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat.insert(rightmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas.insert(rightmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_1.insert(rightmost_pos_pair, NEG_INFINITY);
+  log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_2.insert(rightmost_pos_pair, NEG_INFINITY);
+  let span_pair = (
+    if seq_len_pair.0 < max_bp_span {seq_len_pair.0} else {max_bp_span},
+    if seq_len_pair.1 < max_bp_span {seq_len_pair.1} else {max_bp_span},
+  );
+  // println!("span_pair: {:?}, max_gap_num: {}.", &span_pair, max_gap_num);
+  for substr_len_1 in 0 .. span_pair.0 + 1 {
     // for substr_len_2 in 2 .. seq_len_pair.1 + 1 {
-    for substr_len_2 in 1 .. max_bp_span + 1 {
-      if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) > max_gap_num {continue;}
+    for substr_len_2 in 0 .. span_pair.1 + 1 {
+      if substr_len_1 == substr_len_2 && substr_len_1 == 0 {
+        continue;
+      }
+      let remain_substr_len_pair = (
+        seq_len_pair.0 - substr_len_1,
+        seq_len_pair.1 - substr_len_2,
+      );
+      if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) + max(remain_substr_len_pair.0, remain_substr_len_pair.1) - min(remain_substr_len_pair.0, remain_substr_len_pair.1) > max_gap_num {continue;}
       // for i in 2 .. seq_len_pair.0 + 1 - substr_len_1 {
       for i in 1 .. seq_len_pair.0 - substr_len_1 {
         let j = i + substr_len_1 - 1;
         // for k in 2 .. seq_len_pair.1 + 1 - substr_len_2 {
         for k in 1 .. seq_len_pair.1 - substr_len_2 {
           let l = k + substr_len_2 - 1;
+          if !(sta_fe_params.ba_score_mat.contains_key(&(i, k)) && sta_fe_params.ba_score_mat.contains_key(&(j, l))) {continue;}
           let pos_quadruple = (i, j, k, l);
           // if !sta_fe_params.bpa_score_mat.contains_key(&pos_quadruple) {continue;}
           // Compute "log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas"
+          // println!("i: {}, j: {}, k: {}, l: {}.", i, j, k, l);
           if sta_fe_params.bpa_score_mat.contains_key(&pos_quadruple) {
             // let log_sta_ppf_mat_sets = get_log_sta_forward_ppf_mat_sets(&pos_quadruple, &pseudo_pos_quadruple, seq_pair, seq_len_pair, sta_fe_params, &log_sta_ppf_mat, max_gap_num);
             let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
@@ -308,11 +408,18 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
                     let pos_quadruple_2 = (m, n, o, p);
                     if !log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_2) {continue;}
                     if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(i + 1, m - 1, k + 1, o - 1)) && log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(n + 1, j - 1, p + 1, l - 1))) {continue;}
+                    let min_gap_num_1 = get_min_gap_num(&pos_quadruple_2);
+                    let min_gap_num_2 = get_min_gap_num(&(i + 1, m - 1, k + 1, o - 1));
+                    let min_gap_num_3 = get_min_gap_num(&(n + 1, j - 1, p + 1, l - 1));
+                    let min_gap_num_4 = get_min_gap_num(&(0, i, 0, k));
+                    let min_gap_num_5 = get_min_gap_num(&(j, seq_len_pair.0, l, seq_len_pair.1));
+                    let total_min_gap_num = min_gap_num_1 + min_gap_num_2 + min_gap_num_3 + min_gap_num_4 + min_gap_num_5;
+                    if total_min_gap_num > max_gap_num {continue;}
                     let two_loop_fe_pair = (
                       - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.0, &(i, j), &(m , n)) as Energy,
                       - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.1, &(k, l), &(o , p)) as Energy,
                     );
-                    let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i + 1, m - 1, k + 1, o - 1)] + bpa_score + two_loop_fe_pair.0 + two_loop_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(n + 1, j - 1, p + 1, l - 1)];
+                    let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i + 1, m - 1, k + 1, o - 1)] + bpa_score + two_loop_fe_pair.0 + two_loop_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(n + 1, j - 1, p + 1, l - 1)];
                     if ep_of_term_4_log_pf.is_finite() {
                       eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                       if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -354,11 +461,19 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
           }
           // Compute "log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa"
           let ba_score_pair = (sta_fe_params.ba_score_mat[&(i, k)], sta_fe_params.ba_score_mat[&(j, l)]);
-          log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.insert(pos_quadruple, log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i, j - 1, k, l - 1)] + ba_score_pair.1);
+          log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.insert(pos_quadruple, if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(i, j - 1, k, l - 1)) {
+              log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i, j - 1, k, l - 1)] + ba_score_pair.1
+          } else {
+            NEG_INFINITY
+          });
           let pos_quadruple_2 = (i, j - 1, k, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          let min_gap_num_1 = get_min_gap_num(&pos_quadruple_2);
+          let min_gap_num_2 = get_min_gap_num(&(0, i, 0, k));
+          let min_gap_num_3 = get_min_gap_num(&(j - 1, seq_len_pair.0, l, seq_len_pair.1));
+          let total_min_gap_num = min_gap_num_1 + min_gap_num_2 + min_gap_num_3 + 1;
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -378,7 +493,7 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
           let pos_quadruple_2 = (i, j, k, l - 1);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -395,11 +510,15 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_gaps_2.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
-          log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.insert(pos_quadruple, log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i - 1, j, k - 1, l)] + ba_score_pair.0);
-          let pos_quadruple_2 = (i - 1, j, k, l);
+          log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.insert(pos_quadruple, if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(i + 1, j, k + 1, l)) {
+            log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i + 1, j, k + 1, l)] + ba_score_pair.0
+          } else {
+            NEG_INFINITY
+          });
+          let pos_quadruple_2 = (i + 1, j, k, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -416,10 +535,10 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_gaps_1.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
-          let pos_quadruple_2 = (i, j, k - 1, l);
+          let pos_quadruple_2 = (i, j, k + 1, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -466,14 +585,48 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
               if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat.contains_key(&pos_quadruple_2) && log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_3)) {
                 continue;
               }
-              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
+              let accessible_bp_pair = (
+                (seq_pair.0[m], seq_pair.0[j]),
+                (seq_pair.1[n], seq_pair.1[l]),
+              );
+              let stacking_bp_pair = (
+                (seq_pair.0[m - 1], seq_pair.0[j + 1]),
+                (seq_pair.1[n - 1], seq_pair.1[l + 1]),
+              );
+              let ml_tm_or_de_delta_fe_pair = (
+                - INVERSE_TEMPERATURE * if m > 1 && j < seq_len_pair.0 - 2 {
+                  ML_TM_DELTA_FES[&(accessible_bp_pair.0, stacking_bp_pair.0)]
+                } else if m > 1 {
+                  FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).0)]
+                } else if j < seq_len_pair.0 - 2 {
+                  THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).1)]
+                } else {
+                  0.
+                },
+                - INVERSE_TEMPERATURE * if n > 1 && l < seq_len_pair.1 - 2 {
+                  ML_TM_DELTA_FES[&(accessible_bp_pair.1, stacking_bp_pair.1)]
+                } else if n > 1 {
+                  FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).0)]
+                } else if l < seq_len_pair.1 - 2 {
+                  THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).1)]
+                } else {
+                  0.
+                },
+              );
+              let au_or_gu_end_penalty_delta_fe_pair = (
+                - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+                - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+              );
+              // let ep_of_term_4_log_pf = log_sta_ppf_mat_sets.log_ppf_mats_on_sas.log_ppf_mat[&pos_pair] - INVERSE_TEMPERATURE * (ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + if pos_quadruple == pseudo_pos_quadruple {0.} else {2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE}) + log_sta_ppf_mat_4_bpas[&pos_quadruple_2];
+              // let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&pos_quadruple_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
+              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&pos_quadruple_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
               if ep_of_term_4_log_pf.is_finite() {
                 eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                 if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
                   max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
                 }
               }
-              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
+              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&pos_quadruple_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
               if ep_of_term_4_log_pf.is_finite() {
                 eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                 if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -482,18 +635,20 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
               }
             }
           }
-          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(i, j - 1, k, l - 1)] + ba_score_pair.1;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
-              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat.contains_key(&(i, j - 1, k, l - 1)) {
+            let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(i, j - 1, k, l - 1)] + ba_score_pair.1;
+            if ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
           let pos_quadruple_2 = (i, j - 1, k, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -513,7 +668,7 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
           let pos_quadruple_2 = (i, j, k, l - 1);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_forward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -539,14 +694,46 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
               if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat.contains_key(&pos_quadruple_3) && log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_2)) {
                 continue;
               }
-              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&pos_quadruple_3];
+              let accessible_bp_pair = (
+                (seq_pair.0[i], seq_pair.0[m]),
+                (seq_pair.1[k], seq_pair.1[n]),
+              );
+              let stacking_bp_pair = (
+                (seq_pair.0[i - 1], seq_pair.0[m + 1]),
+                (seq_pair.1[k - 1], seq_pair.1[n + 1]),
+              );
+              let ml_tm_or_de_delta_fe_pair = (
+                - INVERSE_TEMPERATURE * if i > 1 && m < seq_len_pair.0 - 2 {
+                  ML_TM_DELTA_FES[&(accessible_bp_pair.0, stacking_bp_pair.0)]
+                } else if i > 1 {
+                  FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).0)]
+                } else if m < seq_len_pair.0 - 2 {
+                  THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).1)]
+                } else {
+                  0.
+                },
+                - INVERSE_TEMPERATURE * if k > 1 && n < seq_len_pair.1 - 2 {
+                  ML_TM_DELTA_FES[&(accessible_bp_pair.1, stacking_bp_pair.1)]
+                } else if k > 1 {
+                  FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).0)]
+                } else if n < seq_len_pair.1 - 2 {
+                  THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).1)]
+                } else {
+                  0.
+                },
+              );
+              let au_or_gu_end_penalty_delta_fe_pair = (
+                - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+                - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+              );
+              let ep_of_term_4_log_pf = ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&pos_quadruple_3];
               if ep_of_term_4_log_pf.is_finite() {
                 eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                 if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
                   max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
                 }
               }
-              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&pos_quadruple_3];
+              let ep_of_term_4_log_pf = ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&pos_quadruple_3];
               if ep_of_term_4_log_pf.is_finite() {
                 eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                 if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -555,18 +742,20 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
               }
             }
           }
-          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(i - 1, j, k - 1, l)] + ba_score_pair.0;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
-              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat.contains_key(&(i + 1, j, k + 1, l)) {
+            let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(i + 1, j, k + 1, l)] + ba_score_pair.0;
+            if ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
-          let pos_quadruple_2 = (i - 1, j, k, l);
+          let pos_quadruple_2 = (i + 1, j, k, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -583,10 +772,10 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_gaps_1.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
-          let pos_quadruple_2 = (i, j, k - 1, l);
+          let pos_quadruple_2 = (i, j, k + 1, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_backward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -666,7 +855,7 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
                 - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
               );
               // let ep_of_term_4_log_pf = log_sta_ppf_mat_sets.log_ppf_mats_on_sas.log_ppf_mat[&pos_pair] - INVERSE_TEMPERATURE * (ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + if pos_quadruple == pseudo_pos_quadruple {0.} else {2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE}) + log_sta_ppf_mat_4_bpas[&pos_quadruple_2];
-              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&pos_quadruple_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + 2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
+              let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&pos_quadruple_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_3];
               if ep_of_term_4_log_pf.is_finite() {
                 eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                 if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -675,18 +864,20 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
               }
             }
           }
-          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(i, j - 1, k, l - 1)] + ba_score_pair.1;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
-              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat.contains_key(&(i, j - 1, k, l - 1)) {
+            let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&(i, j - 1, k, l - 1)] + ba_score_pair.1;
+            if ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
           let pos_quadruple_2 = (i, j - 1, k, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -706,7 +897,7 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
           let pos_quadruple_2 = (i, j, k, l - 1);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_forward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -764,7 +955,7 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
                 - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
                 - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
               );
-              let ep_of_term_4_log_pf = ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + 2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&pos_quadruple_3];
+              let ep_of_term_4_log_pf = ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 - 2. * INVERSE_TEMPERATURE * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&pos_quadruple_3];
               if ep_of_term_4_log_pf.is_finite() {
                 eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
                 if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
@@ -773,18 +964,20 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
               }
             }
           }
-          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&(i - 1, j, k - 1, l)] + ba_score_pair.0;
-          if ep_of_term_4_log_pf.is_finite() {
-            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
-            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
-              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat.contains_key(&(i + 1, j, k + 1, l)) {
+            let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&(i + 1, j, k + 1, l)] + ba_score_pair.0;
+            if ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
-          let pos_quadruple_2 = (i - 1, j, k, l);
+          let pos_quadruple_2 = (i + 1, j, k, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -801,10 +994,10 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
             }
           }
           log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_gaps_1.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
-          let pos_quadruple_2 = (i, j, k - 1, l);
+          let pos_quadruple_2 = (i, j, k + 1, l);
           let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
           let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
-          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) {
+          if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas.contains_key(&pos_quadruple_2) && total_min_gap_num <= max_gap_num {
             let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_backward_ppf_mat_4_bas[&pos_quadruple_2] + sta_fe_params.opening_gap_penalty;
             if ep_of_term_4_log_pf.is_finite() {
               eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
@@ -844,7 +1037,458 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
       }
     }
   }
+  for i in 0 .. seq_len_pair.0 - 1 {
+    for j in 0 .. seq_len_pair.1 - 1 {
+      let pos_pair = (i, j);
+      if pos_pair == (0, 0) {continue;}
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
+      // println!("pos_pair: {:?}.", &pos_pair);
+      let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      for k in 1 .. i {
+        for l in 1 .. j {
+          let pos_pair_2 = (k - 1, l - 1);
+          let pos_quadruple = (k, i, l, j);
+          if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat.contains_key(&pos_pair_2) && log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.contains_key(&pos_quadruple)) {
+            continue;
+          }
+          let accessible_bp_pair = (
+            (seq_pair.0[k], seq_pair.0[i]),
+            (seq_pair.1[l], seq_pair.1[j]),
+          );
+          let stacking_bp_pair = (
+            (seq_pair.0[k - 1], seq_pair.0[i + 1]),
+            (seq_pair.1[l - 1], seq_pair.1[j + 1]),
+          );
+          let ml_tm_or_de_delta_fe_pair = (
+            - INVERSE_TEMPERATURE * if k > 1 && i < seq_len_pair.0 - 2 {
+              ML_TM_DELTA_FES[&(accessible_bp_pair.0, stacking_bp_pair.0)]
+            } else if k > 1 {
+              FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).0)]
+            } else if i < seq_len_pair.0 - 2 {
+              THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).1)]
+            } else {
+              0.
+            },
+            - INVERSE_TEMPERATURE * if l > 1 && j < seq_len_pair.1 - 2 {
+              ML_TM_DELTA_FES[&(accessible_bp_pair.1, stacking_bp_pair.1)]
+            } else if l > 1 {
+              FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).0)]
+            } else if j < seq_len_pair.1 - 2 {
+              THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).1)]
+            } else {
+              0.
+            },
+          );
+          let au_or_gu_end_penalty_delta_fe_pair = (
+            - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+            - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+          );
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat[&pos_pair_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple];
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+        }
+      }
+      if i > 0 && j > 0 {
+        let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
+        let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat[&(i - 1, j - 1)] + ba_score;
+        if ep_of_term_4_log_pf.is_finite() {
+          eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+          if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+            max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+          }
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+      // println!("OK");
+      let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      if i > 0 {
+        let pos_pair_2 = (i - 1, j);
+        if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas.contains_key(&pos_pair_2) {
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas[&pos_pair_2] + sta_fe_params.opening_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_1[&pos_pair_2] + sta_fe_params.extending_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_1.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+      let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      if j > 0 {
+        let pos_pair_2 = (i, j - 1);
+        if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas.contains_key(&pos_pair_2) {
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas[&pos_pair_2] + sta_fe_params.opening_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_2[&pos_pair_2] + sta_fe_params.extending_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_2.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+      let eps_of_terms_4_log_pf = [
+        log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_bas[&pos_pair],
+        log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_1[&pos_pair],
+        log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat_4_gaps_2[&pos_pair],
+      ];
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      for &ep_of_term_4_log_pf in &eps_of_terms_4_log_pf {
+        if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+          max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {
+        logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)
+      } else {
+        NEG_INFINITY
+      });
+    }
+  }
+  for i in (1 .. seq_len_pair.0).rev() {
+    for j in (1 .. seq_len_pair.1).rev() {
+      let pos_pair = (i, j);
+      if pos_pair == (seq_len_pair.0 - 1, seq_len_pair.1 - 1) {continue;}
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
+      // println!("pos_pair: {:?}.", &pos_pair);
+      let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      for k in i + 1 .. seq_len_pair.0 - 1 {
+        for l in j + 1 .. seq_len_pair.1 - 1 {
+          let pos_pair_2 = (k + 1, l + 1);
+          let pos_quadruple = (i, k, j, l);
+          if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat.contains_key(&pos_pair_2) && log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.contains_key(&pos_quadruple)) {
+            continue;
+          }
+          let accessible_bp_pair = (
+            (seq_pair.0[i], seq_pair.0[k]),
+            (seq_pair.1[j], seq_pair.1[l]),
+          );
+          let stacking_bp_pair = (
+            (seq_pair.0[i - 1], seq_pair.0[k + 1]),
+            (seq_pair.1[j - 1], seq_pair.1[l + 1]),
+          );
+          let ml_tm_or_de_delta_fe_pair = (
+            - INVERSE_TEMPERATURE * if i > 1 && k < seq_len_pair.0 - 2 {
+              ML_TM_DELTA_FES[&(accessible_bp_pair.0, stacking_bp_pair.0)]
+            } else if i > 1 {
+              FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).0)]
+            } else if k < seq_len_pair.0 - 2 {
+              THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.0, (stacking_bp_pair.0).1)]
+            } else {
+              0.
+            },
+            - INVERSE_TEMPERATURE * if j > 1 && l < seq_len_pair.1 - 2 {
+              ML_TM_DELTA_FES[&(accessible_bp_pair.1, stacking_bp_pair.1)]
+            } else if j > 1 {
+              FIVE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).0)]
+            } else if l < seq_len_pair.1 - 2 {
+              THREE_PRIME_DE_DELTA_FES[&(accessible_bp_pair.1, (stacking_bp_pair.1).1)]
+            } else {
+              0.
+            },
+          );
+          let au_or_gu_end_penalty_delta_fe_pair = (
+            - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+            - INVERSE_TEMPERATURE * if is_au_or_gu(&accessible_bp_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+          );
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat[&pos_pair_2] + ml_tm_or_de_delta_fe_pair.0 + ml_tm_or_de_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple];
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+        }
+      }
+      if i < seq_len_pair.0 - 1 && j < seq_len_pair.1 - 1 {
+        let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
+        let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat[&(i + 1, j + 1)] + ba_score;
+        if ep_of_term_4_log_pf.is_finite() {
+          eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+          if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+            max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+          }
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+      let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      if i < seq_len_pair.0 - 1 {
+        let pos_pair_2 = (i + 1, j);
+        if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas.contains_key(&pos_pair_2) {
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas[&pos_pair_2] + sta_fe_params.opening_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_1[&pos_pair_2] + sta_fe_params.extending_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_1.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+      let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      if j < seq_len_pair.1 - 1 {
+        let pos_pair_2 = (i, j + 1);
+        if log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas.contains_key(&pos_pair_2) {
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas[&pos_pair_2] + sta_fe_params.opening_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+          let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_2[&pos_pair_2] + sta_fe_params.extending_gap_penalty;
+          if ep_of_term_4_log_pf.is_finite() {
+            eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+            if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+              max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+            }
+          }
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_2.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+      let eps_of_terms_4_log_pf = [
+        log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_bas[&pos_pair],
+        log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_1[&pos_pair],
+        log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat_4_gaps_2[&pos_pair],
+      ];
+      let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+      for &ep_of_term_4_log_pf in &eps_of_terms_4_log_pf {
+        if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+          max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+        }
+      }
+      log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat.insert(pos_pair, if max_ep_of_term_4_log_pf.is_finite() {
+        logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)
+      } else {
+        NEG_INFINITY
+      });
+    }
+  }
   log_sta_inside_ppf_mat_sets
+}
+
+#[inline]
+pub fn get_log_sta_outside_ppf_4d_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span: usize, max_gap_num: usize, log_sta_inside_ppf_mat_sets: &LogStaInsidePpfMatSets) -> LogStaOutsidePpf4dMats {
+  let mut log_sta_outside_ppf_4d_mats = LogStaOutsidePpf4dMats::new();
+  // let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
+  // for substr_len_1 in 2 .. seq_len_pair.0 + 1 {
+  let span_pair = (
+    if seq_len_pair.0 < max_bp_span {seq_len_pair.0} else {max_bp_span},
+    if seq_len_pair.1 < max_bp_span {seq_len_pair.1} else {max_bp_span},
+  );
+  for substr_len_1 in (2 .. span_pair.0 + 1).rev() {
+    // for substr_len_2 in 2 .. seq_len_pair.1 + 1 {
+    for substr_len_2 in (2 .. span_pair.1 + 1).rev() {
+      // if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) > max_gap_num {continue;}
+      let remain_substr_len_pair = (
+        seq_len_pair.0 - substr_len_1,
+        seq_len_pair.1 - substr_len_2,
+      );
+      if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) + max(remain_substr_len_pair.0, remain_substr_len_pair.1) - min(remain_substr_len_pair.0, remain_substr_len_pair.1) > max_gap_num {continue;}
+      // for i in 2 .. seq_len_pair.0 + 1 - substr_len_1 {
+      for i in 1 .. seq_len_pair.0 - substr_len_1 {
+        let j = i + substr_len_1 - 1;
+        // for k in 2 .. seq_len_pair.1 + 1 - substr_len_2 {
+        for k in 1 .. seq_len_pair.1 - substr_len_2 {
+          let l = k + substr_len_2 - 1;
+          let pos_quadruple = (i, j, k, l);
+          // if !sta_fe_params.bpa_score_mat.contains_key(&pos_quadruple) {continue;}
+          // Compute "log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas"
+          if sta_fe_params.bpa_score_mat.contains_key(&pos_quadruple) {
+            // let log_sta_ppf_mat_sets = get_log_sta_forward_ppf_mat_sets(&pos_quadruple, &pseudo_pos_quadruple, seq_pair, seq_len_pair, sta_fe_params, &log_sta_ppf_mat, max_gap_num);
+            log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas_on_el.insert(pos_quadruple, log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat[&(i - 1, k - 1)] + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_backward_ppf_mat[&(j + 1, l + 1)]);
+            let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+            let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+            // let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple];
+            // let ep_of_term_4_log_pf = bpa_score - INVERSE_TEMPERATURE * (if pos_quadruple == pseudo_pos_quadruple {0.} else {get_hl_fe(seq_pair.0, &(i, j)) + get_hl_fe(seq_pair.1, &(k, l))}) + log_sta_ppf_mat_sets.log_ppf_mats_on_sas.log_ppf_mat[&(j - 1, l - 1)];
+            /* let ep_of_term_4_log_pf = bpa_score - INVERSE_TEMPERATURE * (get_hl_fe(seq_pair.0, &(i, j)) + get_hl_fe(seq_pair.1, &(k, l))) + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i + 1, j - 1, k + 1, l - 1)];
+            if ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
+            } */
+            for m in 1 .. i {
+              for n in j + 1 .. seq_len_pair.0 - 1 {
+                if n - j - 1 + i - m - 1 > MAX_2_LOOP_LEN {continue;}
+                for o in 1 .. k {
+                  for p in l + 1 .. seq_len_pair.1 - 1 {
+                    if p - l - 1 + k - o - 1 > MAX_2_LOOP_LEN {continue;}
+                    let pos_quadruple_2 = (m, n, o, p);
+                    if !log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_2) {continue;}
+                    if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(m + 1, i - 1, o + 1, k - 1)) && log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(j + 1, n - 1, l + 1, p - 1))) {continue;}
+                    let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
+                    let two_loop_fe_pair = (
+                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.0, &(m, n), &(i , j)) as Energy,
+                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.1, &(o, p), &(k , l)) as Energy,
+                    );
+                    let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(m + 1, i - 1, o + 1, k - 1)] + bpa_score + two_loop_fe_pair.0 + two_loop_fe_pair.1 + log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(j + 1, n - 1, l + 1, p - 1)];
+                    if ep_of_term_4_log_pf.is_finite() {
+                      eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                      if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                        max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas_on_internal_2loops.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+            /* let ep_of_term_4_log_pf = bpa_score + log_sta_ppf_mat_sets.log_ppf_mats_on_2ls.log_ppf_mat[&(j - 1, l - 1)];
+            if ep_of_term_4_log_pf.is_finite() {
+              eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
+            } */
+            let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+            let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+            for m in j + 1 .. seq_len_pair.0 - 1 {
+              for n in l + 1 .. seq_len_pair.1 - 1 {
+                let pos_quadruple_2 = (i, m, k, n);
+                if !(log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_2) && log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat.contains_key(&(j + 1, m - 1, l + 1, n - 1))) {continue;}
+                let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
+                let bp_closing_loop_pair = (
+                  (seq_pair.0[i], seq_pair.0[m]),
+                  (seq_pair.1[k], seq_pair.1[n]),
+                );
+                let ml_tm_delta_fe_pair = (
+                  - INVERSE_TEMPERATURE * ML_TM_DELTA_FES[&(invert_bp(&bp_closing_loop_pair.0), invert_bp(&(seq_pair.0[i + 1], seq_pair.0[m - 1])))],
+                  - INVERSE_TEMPERATURE * ML_TM_DELTA_FES[&(invert_bp(&bp_closing_loop_pair.1), invert_bp(&(seq_pair.1[k + 1], seq_pair.1[n - 1])))],
+                );
+                let au_or_gu_end_penalty_delta_fe_pair = (
+                  - INVERSE_TEMPERATURE * if is_au_or_gu(&bp_closing_loop_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+                  - INVERSE_TEMPERATURE * if is_au_or_gu(&bp_closing_loop_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+                );
+                let ep_of_term_4_log_pf = bpa_score + ml_tm_delta_fe_pair.0 + ml_tm_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(j + 1, m - 1, l + 1, n - 1)];
+                if ep_of_term_4_log_pf.is_finite() {
+                  eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                  if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                    max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                  }
+                }
+                let ep_of_term_4_log_pf = bpa_score + ml_tm_delta_fe_pair.0 + ml_tm_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&(j + 1, m - 1, l + 1, n - 1)];
+                if ep_of_term_4_log_pf.is_finite() {
+                  eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                  if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                    max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                  }
+                }
+              }
+            }
+            // let ep_of_term_4_log_pf = bpa_score + if pos_quadruple == pseudo_pos_quadruple {0.} else {- 2. * INVERSE_TEMPERATURE * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe_pair.0 + ml_tm_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1} + log_sta_ppf_mat_sets.log_ppf_mats_on_mls.log_ppf_mat[&(j - 1, l - 1)];
+            log_sta_outside_ppf_4d_mats.log_ppf_mat_4_right_2.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+            for m in j + 1 .. seq_len_pair.0 - 1 {
+              for n in l + 1 .. seq_len_pair.1 - 1 {
+                let pos_quadruple_2 = (i, m, k, n);
+                if !(log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_2) && log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(j + 1, m - 1, l + 1, n - 1))) {continue;}
+                let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
+                let bp_closing_loop_pair = (
+                  (seq_pair.0[i], seq_pair.0[m]),
+                  (seq_pair.1[k], seq_pair.1[n]),
+                );
+                let ml_tm_delta_fe_pair = (
+                  - INVERSE_TEMPERATURE * ML_TM_DELTA_FES[&(invert_bp(&bp_closing_loop_pair.0), invert_bp(&(seq_pair.0[i + 1], seq_pair.0[m - 1])))],
+                  - INVERSE_TEMPERATURE * ML_TM_DELTA_FES[&(invert_bp(&bp_closing_loop_pair.1), invert_bp(&(seq_pair.1[k + 1], seq_pair.1[n - 1])))],
+                );
+                let au_or_gu_end_penalty_delta_fe_pair = (
+                  - INVERSE_TEMPERATURE * if is_au_or_gu(&bp_closing_loop_pair.0) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+                  - INVERSE_TEMPERATURE * if is_au_or_gu(&bp_closing_loop_pair.1) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.},
+                );
+                let ep_of_term_4_log_pf = bpa_score + ml_tm_delta_fe_pair.0 + ml_tm_delta_fe_pair.1 + au_or_gu_end_penalty_delta_fe_pair.0 + au_or_gu_end_penalty_delta_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(j + 1, m - 1, l + 1, n - 1)];
+                if ep_of_term_4_log_pf.is_finite() {
+                  eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                  if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                    max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                  }
+                }
+              }
+            }
+            log_sta_outside_ppf_4d_mats.log_ppf_mat_4_right.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+            let mut eps_of_terms_4_log_pf = EpsOfTerms4LogPf::new();
+            let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+            for m in 1 .. i {
+              for n in 1 .. k {
+                let pos_quadruple_2 = (m, j, n, l);
+                if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat.contains_key(&(m + 1, i - 1, n + 1, k - 1)) && log_sta_outside_ppf_4d_mats.log_ppf_mat_4_right.contains_key(&pos_quadruple_2)) {continue;}
+                let ep_of_term_4_log_pf = - 2. * INVERSE_TEMPERATURE * (CONST_4_INIT_ML_DELTA_FE + COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE) + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_internal_multiloop.log_ppf_mat[&(m + 1, i - 1, n + 1, k - 1)] + log_sta_outside_ppf_4d_mats.log_ppf_mat_4_right[&pos_quadruple_2];
+                if ep_of_term_4_log_pf.is_finite() {
+                  eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                  if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                    max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                  }
+                }
+                let ep_of_term_4_log_pf = - 2. * INVERSE_TEMPERATURE * (CONST_4_INIT_ML_DELTA_FE + COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE) + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_first_bpas_on_mls.log_ppf_mat[&(m + 1, i - 1, n + 1, k - 1)] + log_sta_outside_ppf_4d_mats.log_ppf_mat_4_right[&pos_quadruple_2];
+                if ep_of_term_4_log_pf.is_finite() {
+                  eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                  if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                    max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                  }
+                }
+                let ep_of_term_4_log_pf = - 2. * INVERSE_TEMPERATURE * (CONST_4_INIT_ML_DELTA_FE + COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE) + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(m + 1, i - 1, n + 1, k - 1)] + log_sta_outside_ppf_4d_mats.log_ppf_mat_4_right_2[&pos_quadruple_2];
+                if ep_of_term_4_log_pf.is_finite() {
+                  eps_of_terms_4_log_pf.push(ep_of_term_4_log_pf);
+                  if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                    max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+                  }
+                }
+              }
+            }
+            log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas_on_internal_mls.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)} else {NEG_INFINITY});
+            let eps_of_terms_4_log_pf = [
+              log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas_on_el[&pos_quadruple],
+              log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas_on_internal_2loops[&pos_quadruple],
+              log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas_on_internal_mls[&pos_quadruple],
+            ];
+            let mut max_ep_of_term_4_log_pf = NEG_INFINITY;
+            for &ep_of_term_4_log_pf in &eps_of_terms_4_log_pf {
+              if ep_of_term_4_log_pf > max_ep_of_term_4_log_pf {
+                max_ep_of_term_4_log_pf = ep_of_term_4_log_pf;
+              }
+            }
+            log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas.insert(pos_quadruple, if max_ep_of_term_4_log_pf.is_finite() {
+              logsumexp(&eps_of_terms_4_log_pf[..], max_ep_of_term_4_log_pf)
+            } else {
+              NEG_INFINITY
+            });
+          }
+        }
+      }
+    }
+  }
+  log_sta_outside_ppf_4d_mats
 }
 
 /* #[inline]
@@ -1348,23 +1992,57 @@ fn get_log_sta_forward_ppf_mat_sets(pos_quadruple: &PosQuadruple, pseudo_pos_qua
   log_sta_ppf_mat_sets
 } */
 
+// Implement on 1/6/2020.
 #[inline]
-fn get_log_prob_mat_pair_on_sta(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, log_sta_ppf_mat_4_bpas: &LogPpf4dMat, max_gap_num: usize) -> LogProbMatPairOnSta {
-  let mut log_prob_mat_pair_on_sta = LogProbMatPairOnSta::new();
-  let mut seqs_of_eps_of_terms_4_lbaps_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
-  let mut max_eps_of_terms_4_lbaps_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default();
-  let mut seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples = SeqsOfEpsOfTerms4LogProbsWithPosQuadruples::default();
-  let mut max_eps_of_terms_4_lbpaps_with_pos_quadruples = EpsOfTerms4LogProbsWithPosQuadruples::default();
-  for pos_pair in sta_fe_params.ba_score_mat.keys() {
+fn get_lbpap_mat(/* seq_pair: &SeqPair, */ seq_len_pair: &(usize, usize), /* sta_fe_params: &StaFeParams, */ log_sta_inside_ppf_mat_sets: &LogStaInsidePpfMatSets, log_sta_outside_ppf_4d_mats: &LogStaOutsidePpf4dMats, /* max_bp_span: usize, max_gap_num: usize */) -> LogProb4dMat {
+  // let mut log_prob_mat_pair_on_sta = LogProbMatPairOnSta::new();
+  let mut lbpap_mat = LogProb4dMat::default();
+  /* let mut seqs_of_eps_of_terms_4_lbaps_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
+  let mut max_eps_of_terms_4_lbaps_with_pos_pairs = EpsOfTerms4LogProbsWithPosPairs::default(); */
+  /* let mut seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples = SeqsOfEpsOfTerms4LogProbsWithPosQuadruples::default();
+  let mut max_eps_of_terms_4_lbpaps_with_pos_quadruples = EpsOfTerms4LogProbsWithPosQuadruples::default(); */
+  /* for pos_pair in sta_fe_params.ba_score_mat.keys() {
     seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.insert(*pos_pair, EpsOfTerms4LogProb::new());
     max_eps_of_terms_4_lbaps_with_pos_pairs.insert(*pos_pair, NEG_INFINITY);
+  } */
+  let log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_forward_ppf_mat[&(seq_len_pair.0 - 2, seq_len_pair.1 - 2)];
+  for pos_quadruple in log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.keys() {
+    let lbpap = log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[pos_quadruple] + log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas[pos_quadruple] - log_pf;
+    if lbpap.is_finite() {
+      debug_assert!(NEG_INFINITY < lbpap && lbpap <= 0.);
+      lbpap_mat.insert(*pos_quadruple, lbpap);
+    }
   }
-  for pos_quadruple in sta_fe_params.bpa_score_mat.keys() {
+  lbpap_mat
+  /* for i in 1 .. seq_len_pair.0 - 1 {
+    for j in 1 .. seq_len_pair.1 - 1 {
+      let pos_pair = (i, j);
+      if !sta_fe_params.ba_score_mat.keys(&pos_pair) {continue;}
+      let ep_of_term_4_log_prob = log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_ppf_mat_4_bas[&pos_pair] + log_sta_inside_ppf_mat_sets.log_ppf_mats_4_external_loop.log_ppf_mat[&(i + 1, j + 1)] - log_pf;
+      if ep_of_term_4_log_prob.is_finite() {
+        seqs_of_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.").push(ep_of_term_4_log_prob);
+        let max_ep_of_term_4_log_prob = max_eps_of_terms_4_lbaps_with_pos_pairs.get_mut(&pos_pair).expect("Failed to get an element of a hash map.");
+        if ep_of_term_4_log_prob > *max_ep_of_term_4_log_prob {
+          *max_ep_of_term_4_log_prob = ep_of_term_4_log_prob;
+        }
+      }
+      for k in 1 .. i {
+        for l in i + 1 .. seq_len_pair.0 - 1 {
+          for m in 1 .. j {
+            for n in j + 1 .. seq_len_pair.1 - 1 {
+              if !log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.keys(&pos_quadruple) {continue;}
+            }
+          }
+        }
+      }
+    }
+  } */
+  /* for pos_quadruple in sta_fe_params.bpa_score_mat.keys() {
     seqs_of_eps_of_terms_4_lbpaps_with_pos_quadruples.insert(*pos_quadruple, EpsOfTerms4LogProb::new());
     max_eps_of_terms_4_lbpaps_with_pos_quadruples.insert(*pos_quadruple, NEG_INFINITY);
   }
-  let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
-  for substr_len_1 in (3 .. seq_len_pair.0 + 1).rev() {
+  let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1); */
+  /* for substr_len_1 in (3 .. seq_len_pair.0 + 1).rev() {
     for substr_len_2 in (3 .. seq_len_pair.1 + 1).rev() {
       if max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2) > max_gap_num {continue;}
       for i in 0 .. seq_len_pair.0 + 1 - substr_len_1 {
@@ -1535,8 +2213,8 @@ fn get_log_prob_mat_pair_on_sta(seq_pair: &SeqPair, seq_len_pair: &(usize, usize
       // if lbap >= 0. {println!("{}.", lbap.exp())};
       log_prob_mat_pair_on_sta.lbap_mat.insert(*pos_pair, lbap);
     }
-  }
-  log_prob_mat_pair_on_sta
+  } */
+  // lbpap_mat
 }
 
 /* #[inline]
@@ -2040,11 +2718,13 @@ fn get_log_sta_backward_ppf_mat_sets(pos_quadruple: &PosQuadruple, pseudo_pos_qu
   log_sta_ppf_mat_sets
 } */
  
-#[inline]
-pub fn prob_cons_transformation_of_log_prob_mat_pair_on_sta(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogProbMatPairsOnStaWithRnaIdPairs, rna_id_pair: &RnaIdPair, num_of_rnas: usize) -> LogProbMatPairOnSta {
-  let mut log_prob_mat_pair_on_sta = log_prob_mat_pairs_on_sta_with_rna_id_pairs[rna_id_pair].clone();
+/* #[inline]
+// pub fn prob_cons_transformation_of_log_prob_mat_pair_on_sta(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogProbMatPairsOnStaWithRnaIdPairs, rna_id_pair: &RnaIdPair, num_of_rnas: usize) -> LogProbMatPairOnSta {
+pub fn prob_cons_transformation_of_lbpap_mat(lbpap_mats_with_rna_id_pairs: &LogProb4dMatsWithRnaIdPairs, rna_id_pair: &RnaIdPair, num_of_rnas: usize) -> LogProb4dMat {
+  let mut lbpap_mat_pair_on_sta = log_prob_mat_pairs_on_sta_with_rna_id_pairs[rna_id_pair].clone();
   let log_coefficient = -((num_of_rnas - 1) as Prob).ln();
-  for (pos_quadruple, lbpap) in log_prob_mat_pair_on_sta.lbpap_mat.iter_mut() {
+  // for (pos_quadruple, lbpap) in log_prob_mat_pair_on_sta.lbpap_mat.iter_mut() {
+  for (pos_quadruple, lbpap) in lbpap_mats_with_rna_id_pairs.iter_mut() {
     let (i, j, k, l) = *pos_quadruple;
     let mut eps_of_terms_4_log_prob = EpsOfTerms4LogProb::new();
     let mut max_ep_of_term_4_log_prob = *lbpap;
@@ -2053,9 +2733,11 @@ pub fn prob_cons_transformation_of_log_prob_mat_pair_on_sta(log_prob_mat_pairs_o
     }
     for rna_id in 0 .. num_of_rnas {
       if rna_id == rna_id_pair.0 || rna_id == rna_id_pair.1 {continue;}
-      for (&(m, n, o, p), &lbpap_1) in log_prob_mat_pairs_on_sta_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].lbpap_mat.iter() {
+      // for (&(m, n, o, p), &lbpap_1) in log_prob_mat_pairs_on_sta_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].lbpap_mat.iter() {
+      for (&(m, n, o, p), &lbpap_1) in lbpap_mats_with_rna_id_pairs[& if rna_id_pair.0 < rna_id {(rna_id_pair.0, rna_id)} else {(rna_id, rna_id_pair.0)}].iter() {
         if (rna_id_pair.0 < rna_id && m != i && n != j) || (rna_id_pair.0 > rna_id && o != i && p != j) {continue;}
-        for (&(m, n, o, p), &lbpap_2) in log_prob_mat_pairs_on_sta_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].lbpap_mat.iter() {
+        // for (&(m, n, o, p), &lbpap_2) in log_prob_mat_pairs_on_sta_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].lbpap_mat.iter() {
+        for (&(m, n, o, p), &lbpap_2) in lbpap_mats_with_rna_id_pairs[& if rna_id_pair.1 < rna_id {(rna_id_pair.1, rna_id)} else {(rna_id, rna_id_pair.1)}].iter() {
           if (rna_id_pair.1 < rna_id && m != k && n != l) || (rna_id_pair.1 > rna_id && o != k && p != l) {continue;}
           let ep_of_term_4_log_prob = lbpap_1 + lbpap_2;
           if ep_of_term_4_log_prob.is_finite() {
@@ -2098,10 +2780,10 @@ pub fn prob_cons_transformation_of_log_prob_mat_pair_on_sta(log_prob_mat_pairs_o
     }
   }
   log_prob_mat_pair_on_sta
-}
+} */
 
 #[inline]
-pub fn pct_of_bpp_and_upp_mat(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogProbMatPairsOnStaWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, bpp_mat: &SparseProbMat, upp_mat: &Probs) -> (SparseProbMat, Probs) {
+pub fn pct_of_bpp_and_upp_mat(lbpap_mats_with_rna_id_pairs: &LogProb4dMatsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, bpp_mat: &SparseProbMat, upp_mat: &Probs) -> (SparseProbMat, Probs) {
   let log_coefficient = -((num_of_rnas - 1) as Prob).ln();
   let upp_mat_len = upp_mat.len();
   let mut seqs_of_eps_of_terms_4_log_probs_with_pos_pairs = SeqsOfEpsOfTerms4LogProbsWithPosPairs::default();
@@ -2116,8 +2798,9 @@ pub fn pct_of_bpp_and_upp_mat(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogP
   for rna_id_2 in 0 .. num_of_rnas {
     if rna_id == rna_id_2 {continue;}
     let rna_id_pair = if rna_id < rna_id_2 {(rna_id, rna_id_2)} else {(rna_id_2, rna_id)};
-    let ref ref_2_log_prob_mat_pair_on_sta = log_prob_mat_pairs_on_sta_with_rna_id_pairs[&rna_id_pair];
-    for (pos_quadruple, &lbpap) in ref_2_log_prob_mat_pair_on_sta.lbpap_mat.iter() {
+    // let ref ref_2_log_prob_mat_pair_on_sta = log_prob_mat_pairs_on_sta_with_rna_id_pairs[&rna_id_pair];
+    let ref ref_2_lbpap_mat = lbpap_mats_with_rna_id_pairs[&rna_id_pair];
+    for (pos_quadruple, &lbpap) in ref_2_lbpap_mat.iter() {
       if pos_quadruple.0 == 0 {continue;}
       if lbpap.is_finite() {
         let pos_pair = if rna_id < rna_id_2 {(pos_quadruple.0, pos_quadruple.1)} else {(pos_quadruple.2, pos_quadruple.3)};
@@ -2170,12 +2853,17 @@ pub fn pct_of_bpp_and_upp_mat(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogP
 }
 
 #[inline]
-pub fn get_prob_mat_pairs_on_sta_with_rna_id_pairs(log_prob_mat_pairs_on_sta_with_rna_id_pairs: &LogProbMatPairsOnStaWithRnaIdPairs) -> ProbMatPairsOnStaWithRnaIdPairs {
-  let mut prob_mat_pairs_on_sta_with_rna_id_pairs = ProbMatPairsOnStaWithRnaIdPairs::default();
+pub fn get_bpap_mats_with_rna_id_pairs(lbpap_mats_with_rna_id_pairs: &LogProb4dMatsWithRnaIdPairs) -> Prob4dMatsWithRnaIdPairs {
+  /* let mut prob_mat_pairs_on_sta_with_rna_id_pairs = ProbMatPairsOnStaWithRnaIdPairs::default();
   for (rna_id_pair, log_prob_mat_pair_on_sta) in log_prob_mat_pairs_on_sta_with_rna_id_pairs.iter() {
     prob_mat_pairs_on_sta_with_rna_id_pairs.insert(*rna_id_pair, get_prob_mat_pair_on_sta(log_prob_mat_pair_on_sta));
   }
-  prob_mat_pairs_on_sta_with_rna_id_pairs
+  prob_mat_pairs_on_sta_with_rna_id_pairs */
+  let mut bpap_mats_with_rna_id_pairs = Prob4dMatsWithRnaIdPairs::default();
+  for (rna_id_pair, lbpap_mat) in lbpap_mats_with_rna_id_pairs.iter() {
+    bpap_mats_with_rna_id_pairs.insert(*rna_id_pair, get_bpap_mat(lbpap_mat));
+  }
+  bpap_mats_with_rna_id_pairs
 }
 
 #[inline]
@@ -2223,7 +2911,7 @@ pub fn get_seq_len_diff(seq_len_pair: &(usize, usize)) -> usize {
 fn is_min_gap_ok_1(pos_pair: &PosPair, pos_quadruple: &PosQuadruple, max_gap_num: usize) -> bool {
   let min_gap_num_1 = get_min_gap_num(&(pos_quadruple.0, pos_pair.0, pos_quadruple.2, pos_pair.1));
   let min_gap_num_2 = get_min_gap_num(&(pos_pair.0, pos_quadruple.1, pos_pair.1, pos_quadruple.3));
-  if min_gap_num_1 <= max_gap_num && min_gap_num_2 <= max_gap_num {
+  if min_gap_num_1 + min_gap_num_2 <= max_gap_num {
     true
   } else {
     false
@@ -2231,9 +2919,11 @@ fn is_min_gap_ok_1(pos_pair: &PosPair, pos_quadruple: &PosQuadruple, max_gap_num
 }
 
 #[inline]
-fn is_min_gap_ok_2(pos_quadruple: &PosQuadruple, max_gap_num: usize) -> bool {
-  let min_gap_num = get_min_gap_num(&pos_quadruple);
-  if min_gap_num <= max_gap_num {
+fn is_min_gap_ok_2(pos_quadruple: &PosQuadruple, pseudo_pos_quadruple: &PosQuadruple, max_gap_num: usize) -> bool {
+  let min_gap_num_1 = get_min_gap_num(&pos_quadruple);
+  let min_gap_num_2 = get_min_gap_num(&(pseudo_pos_quadruple.0, pos_quadruple.0, pseudo_pos_quadruple.2, pos_quadruple.2));
+  let min_gap_num_3 = get_min_gap_num(&(pos_quadruple.1, pseudo_pos_quadruple.1, pos_quadruple.3, pseudo_pos_quadruple.3));
+  if min_gap_num_1 + min_gap_num_2 + min_gap_num_3 <= max_gap_num {
     true
   } else {
     false

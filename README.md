@@ -1,27 +1,30 @@
-# RNAfamProb Program, Program for Estimations of Posterior Probabilities on RNA Structural alignment
-This project provides the RNAfamProb program, a program for estimations of posterior probabilities on RNA structural alignment.
-
+# Zprob Program, which Predicts Average Posterior Probabilities on RNA Structural alignment
 # Installation
 This project has been written in mainly Rust, a systems programming language.
 So first, you need to install the Rust compiler, package manager, and standard library.
 Visit [the Rust website](https://www.rust-lang.org) to see more about this language.
-You can install these 3 components with 1 line as follows:
+You can install the components with one line as follows:
 ```bash
 $ curl https://sh.rustup.rs -sSf | sh
 ```
-The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), so you can easily switch a compiler in use.
-Now you can install the RNAfamProb program as follows: 
+The installation is arranged by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), which enables to switch easily a compiler in use.
+Now you can install the ZProb program: 
 ```bash
-$ cargo install rnafamprob
+$ cargo install zprob
 ```
-Check if this program has been installed properly as follows:
+Check if the program has been installed properly:
 ```bash
-$ rnafamprob
+$ zprob # Its available command options will be displayed.
 ```
-If you're interested in how much fast this program is, run the benchmark prepared for this program as follows:
+You can run the program with a prepared test set of RNA homologous sequences:
 ```bash
-$ git clone https://github.com/heartsh/rnafamprob && cd rnafamprob
+$ git clone https://github.com/heartsh/zprob && cd zprob
 $ cargo test --release -- --nocapture
+```
+After the test, figures shown in the paper of the program can be reproduced:
+```bash
+$ cd src
+$ ./run_all.py # Install required python packages to the reproduction. Saved figures will appear at the "../assets/images" directory.
 ```
 
 # Author
