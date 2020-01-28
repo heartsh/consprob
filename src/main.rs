@@ -17,16 +17,17 @@ use itertools::multizip;
 
 type NumOfThreads = u32;
 
-const DEFAULT_OPENING_GAP_PENALTY: StaFreeEnergy = -4.;
-const DEFAULT_EXTENDING_GAP_PENALTY: StaFreeEnergy = -1.;
+const DEFAULT_OPENING_GAP_PENALTY: StaFreeEnergy = 0.;
+const DEFAULT_EXTENDING_GAP_PENALTY: StaFreeEnergy = 0.;
 const DEFAULT_STA_FE_SCALE_PARAM: LogProb = 1.;
 const DEFAULT_MIN_BPP: Prob = 0.005;
-const DEFAULT_MAX_POS_DIST_4_IL: usize = 2;
+const DEFAULT_MAX_POS_DIST_4_IL: usize = 5;
 const DEFAULT_OFFSET_4_MAX_POS_DIST_ON_EL: usize = 0;
-const DEFAULT_MAX_SUBSTR_DIST: usize = 2;
+const DEFAULT_MAX_SUBSTR_DIST: usize = 5;
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
-const UPP_MAT_FILE_NAME: &'static str = "upp_mats.dat";
+const UPP_MAT_ON_SS_FILE_NAME: &'static str = "upp_mats_on_ss.dat";
+const UPP_MAT_ON_STA_FILE_NAME: &'static str = "upp_mats_on_sta.dat";
 const VERSION: &'static str = "0.1.0";
 
 fn main() {
@@ -89,7 +90,7 @@ fn main() {
   let max_substr_dist = if matches.opt_present("max_substr_dist") {
     matches.opt_str("max_substr_dist").expect("Failed to get a maximum substring distance from command arguments.").parse().expect("Failed to parse a maximum substring distance.")
   } else {
-    DEFAULT_OFFSET_4_MAX_POS_DIST_ON_EL
+    DEFAULT_MAX_SUBSTR_DIST
   };
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").expect("Failed to get the number of threads in multithreading from command arguments.").parse().expect("Failed to parse the number of threads in multithreading.")
@@ -128,7 +129,7 @@ fn main() {
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The version {} of the Zprob program.\n; The path to the input file in order to compute the base-pairing probability matrices on secondary structure in this file = \"{}\".\n; The values of the parameters used in order to compute the matrices are as follows.\n; \"num_of_threads\" = {}.", VERSION, input_file_path.display(), num_of_threads) + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the base-pairing probability marxi on secondary structure of the sequence.";
+  let mut buf_4_writer_2_bpp_mat_on_ss_file = format!("; The version {} of the Zprob program.\n; The path to the input file in order to compute the base-pairing probability matrices on secondary structure in this file = \"{}\".\n; The values of the parameters used in order to compute the matrices are as follows.\n; \"num_of_threads\" = {}.", VERSION, input_file_path.display(), num_of_threads) + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the base-pairing probability marix on secondary structure of the sequence.";
   let bpp_mat_on_ss_file_path = output_dir_path.join(BPP_MAT_ON_SS_FILE_NAME);
   let mut writer_2_bpp_mat_on_ss_file = BufWriter::new(File::create(bpp_mat_on_ss_file_path).expect("Failed to create an output file."));
   for (rna_id, bpp_mat) in bpp_mats.iter().enumerate() {
@@ -139,6 +140,20 @@ fn main() {
     buf_4_writer_2_bpp_mat_on_ss_file.push_str(&buf_4_rna_id);
   }
   let _ = writer_2_bpp_mat_on_ss_file.write_all(buf_4_writer_2_bpp_mat_on_ss_file.as_bytes());
+  let upp_mat_on_ss_file_path = output_dir_path.join(UPP_MAT_ON_SS_FILE_NAME);
+  let mut writer_2_upp_mat_on_ss_file = BufWriter::new(File::create(upp_mat_on_ss_file_path).expect("Failed to create an output file."));
+  let mut buf_4_writer_2_upp_mat_on_ss_file = format!("; The version {} of the Zprob program.\n; The path to the input file in order to compute the unpairing probability matrices on secondary structure in this file = \"{}\".\n; The values of the parameters used in order to compute the matrices are as follows.\n; \"num_of_threads\" = {}.", VERSION, input_file_path.display(), num_of_threads) + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The row next to this row is with the unpairing probability marix on secondary structure of the sequence.";
+  for (rna_id, upp_mat) in upp_mats.iter().enumerate() {
+    let seq_len = fasta_records[rna_id].seq.len();
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (i, &upp) in upp_mat.iter().enumerate() {
+      if i == 0 || i == seq_len - 1 {continue;}
+      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+    }
+    buf_4_writer_2_upp_mat_on_ss_file.push_str(&buf_4_rna_id);
+  }
+  let _ = writer_2_upp_mat_on_ss_file.write_all(buf_4_writer_2_upp_mat_on_ss_file.as_bytes());
+  return;
   let mut sta_fe_param_sets_with_rna_id_pairs = StaFeParamSetsWithRnaIdPairs::default();
   let mut lbpap_mats_with_rna_id_pairs = LogProb4dMatsWithRnaIdPairs::default();
   for rna_id_1 in 0 .. num_of_fasta_records {
@@ -180,7 +195,7 @@ fn main() {
   });
   let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"struct_align_free_energy_scale_param\" = {}, \"min_bpp\" = {}, \"max_pos_dist_4_il\" = {}, \"offset_4_max_pos_dist_on_el\" = {}, \"max_substr_dist\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, sta_fe_scale_param, min_bpp, max_pos_dist_4_il, offset_4_max_pos_dist_on_el, max_substr_dist, num_of_threads);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
-  let upp_mat_file_path = output_dir_path.join(UPP_MAT_FILE_NAME);
+  let upp_mat_on_sta_file_path = output_dir_path.join(UPP_MAT_ON_STA_FILE_NAME);
   let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
   let mut buf_4_writer_2_bpp_mat_on_sta_file = format!("; The version {} of the Zprob program.\n; The path to the input file in order to compute the average base-pairing probability matrices on structural alignment in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of the input RNA sequence correpsonding to the row. The next row to the row is with the average base-pairing probability matrix on structural alignment of the sequence.";
   for (rna_id, bpp_mat) in bpp_mats.iter().enumerate() {
@@ -191,8 +206,8 @@ fn main() {
     buf_4_writer_2_bpp_mat_on_sta_file.push_str(&buf_4_rna_id);
   }
   let _ = writer_2_bpp_mat_on_sta_file.write_all(buf_4_writer_2_bpp_mat_on_sta_file.as_bytes());
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_upp_mat_file = format!("; The version {} of the Zprob program.\n; The path to the input file in order to compute the average unpairing probability matrices on structural alignment in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The next row to the row is with the average unpairing probability matrix on structural alignment of the sequence.";
+  let mut writer_2_upp_mat_on_sta_file = BufWriter::new(File::create(upp_mat_on_sta_file_path).expect("Failed to create an output file."));
+  let mut buf_4_writer_2_upp_mat_on_sta_file = format!("; The version {} of the Zprob program.\n; The path to the input file in order to compute the average unpairing probability matrices on structural alignment in this file", VERSION) + &output_file_header + "\n; Each row beginning with \">\" is with the ID of an RNA sequence. The next row to the row is with the average unpairing probability matrix on structural alignment of the sequence.";
   for (rna_id, upp_mat) in upp_mats.iter().enumerate() {
     let seq_len = fasta_records[rna_id].seq.len();
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
@@ -200,7 +215,7 @@ fn main() {
       if i == 0 || i == seq_len - 1 {continue;}
       buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
     }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+    buf_4_writer_2_upp_mat_on_sta_file.push_str(&buf_4_rna_id);
   }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+  let _ = writer_2_upp_mat_on_sta_file.write_all(buf_4_writer_2_upp_mat_on_sta_file.as_bytes());
 }

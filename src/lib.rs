@@ -222,7 +222,7 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
     for j in 1 .. seq_len_pair.1 {
       let pos_pair = (i, j);
       let pos_quadruple = (i, i - 1, j, j - 1);
-      if !is_pos_dist_ok(&pos_pair, max_pos_dist_4_el) {continue;}
+      if !is_pos_dist_ok(&pos_pair, max_pos_dist_4_il) {continue;}
       log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.insert(pos_quadruple, 0.);
       log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_forward_ppf_mat_4_bas.insert(pos_quadruple, 0.);
       log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_backward_ppf_mat_4_bas.insert(pos_quadruple, 0.);
@@ -269,8 +269,8 @@ pub fn get_log_sta_inside_ppf_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usize
                     if !log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas.contains_key(&pos_quadruple_2) {continue;}
                     if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(i + 1, m - 1, k + 1, o - 1)) && log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(n + 1, j - 1, p + 1, l - 1))) {continue;}
                     let two_loop_fe_pair = (
-                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.0, &(i, j), &(m , n)) as Energy,
-                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.1, &(k, l), &(o , p)) as Energy,
+                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.0, &(i, j), &(m , n)) as FreeEnergy,
+                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.1, &(k, l), &(o , p)) as FreeEnergy,
                     );
                     let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(i + 1, m - 1, k + 1, o - 1)] + bpa_score + two_loop_fe_pair.0 + two_loop_fe_pair.1 + log_sta_inside_ppf_mat_sets.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(n + 1, j - 1, p + 1, l - 1)];
                     if ep_of_term_4_log_pf.is_finite() {
@@ -1473,8 +1473,8 @@ pub fn get_log_sta_outside_ppf_4d_mats(seq_pair: &SeqPair, seq_len_pair: &(usize
                     if !(log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(m + 1, i - 1, o + 1, k - 1)) && log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat.contains_key(&(j + 1, n - 1, l + 1, p - 1))) {continue;}
                     let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
                     let two_loop_fe_pair = (
-                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.0, &(m, n), &(i , j)) as Energy,
-                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.1, &(o, p), &(k , l)) as Energy,
+                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.0, &(m, n), &(i , j)) as FreeEnergy,
+                      - INVERSE_TEMPERATURE * get_2_loop_fe(seq_pair.1, &(o, p), &(k , l)) as FreeEnergy,
                     );
                     let ep_of_term_4_log_pf = log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(m + 1, i - 1, o + 1, k - 1)] + bpa_score + two_loop_fe_pair.0 + two_loop_fe_pair.1 + log_sta_outside_ppf_4d_mats.log_ppf_mat_4_bpas[&pos_quadruple_2] + log_sta_inside_ppf_mat_sets.log_ppf_mats_on_sa.log_ppf_mat[&(j + 1, n - 1, l + 1, p - 1)];
                     if ep_of_term_4_log_pf.is_finite() {
