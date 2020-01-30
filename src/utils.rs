@@ -2,22 +2,6 @@ pub use rna_algos::utils::*;
 pub use rna_algos::mccaskill_algo::*;
 use std::f64::consts::LOG2_E;
 
-// pub type StaFreeEnergy = FreeEnergy;
-/* type LbapsWithBasePairs = HashMap<BasePair, LogProb, Hasher>;
-type LogGapProbsWithBases = HashMap<Base, LogProb, Hasher>;
-pub type BaseQuadruple = (Base, Base, Base, Base);
-type LbpapsWithBaseQuadruples = HashMap<BaseQuadruple, LogProb, Hasher>;
-type LbppsWithBasePairs = HashMap<BasePair, LogProb, Hasher>;
-type LnbppsWithBases = HashMap<Base, LogProb, Hasher>; */
-/* #[derive(Debug)]
-pub struct StemParams {
-  pub lbaps_with_base_pairs: LbapsWithBasePairs,
-  pub logps_with_bases: LogGapProbsWithBases,
-  pub legps_with_bases: LogGapProbsWithBases,
-  pub lbpaps_with_base_quadruples: LbpapsWithBaseQuadruples,
-  pub lbpps_with_base_pairs: LbppsWithBasePairs,
-  pub lnbpps_with_bases: LnbppsWithBases,
-} */
 pub type BaScoreMat = HashMap<BasePair, FreeEnergy>;
 pub type BpaScoreMat = HashMap<(BasePair, BasePair), FreeEnergy>;
 

@@ -1,10 +1,10 @@
-extern crate zprob;
+extern crate phyloprob;
 extern crate scoped_threadpool;
 extern crate bio;
 extern crate num_cpus;
 extern crate itertools;
 
-use zprob::*;
+use phyloprob::*;
 use self::scoped_threadpool::Pool;
 use std::env;
 use std::path::Path;

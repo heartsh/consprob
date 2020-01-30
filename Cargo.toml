@@ -1,9 +1,9 @@
 [package]
-name = "zprob"
+name = "phyloprob"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "Zprob Program, which Predicts Average Posterior Probabilities on RNA Structural Alignment"
-repository = "https://github.com/heartsh/zprob"
+description = "PhyloProb Program, which Predicts Average Posterior Probabilities on RNA Structural Alignment"
+repository = "https://github.com/heartsh/phyloprob"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "structural-alignment"]
 license = "MIT"
@@ -20,4 +20,4 @@ itertools = "0.7"
 
 [lib]
 path = "src/lib.rs"
-name = "zprob"
+name = "phyloprob"
