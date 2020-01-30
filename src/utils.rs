@@ -2,14 +2,14 @@ pub use rna_algos::utils::*;
 pub use rna_algos::mccaskill_algo::*;
 use std::f64::consts::LOG2_E;
 
-pub type StaFreeEnergy = LogProb;
-type LbapsWithBasePairs = HashMap<BasePair, LogProb, Hasher>;
+// pub type StaFreeEnergy = FreeEnergy;
+/* type LbapsWithBasePairs = HashMap<BasePair, LogProb, Hasher>;
 type LogGapProbsWithBases = HashMap<Base, LogProb, Hasher>;
 pub type BaseQuadruple = (Base, Base, Base, Base);
 type LbpapsWithBaseQuadruples = HashMap<BaseQuadruple, LogProb, Hasher>;
 type LbppsWithBasePairs = HashMap<BasePair, LogProb, Hasher>;
-type LnbppsWithBases = HashMap<Base, LogProb, Hasher>;
-#[derive(Debug)]
+type LnbppsWithBases = HashMap<Base, LogProb, Hasher>; */
+/* #[derive(Debug)]
 pub struct StemParams {
   pub lbaps_with_base_pairs: LbapsWithBasePairs,
   pub logps_with_bases: LogGapProbsWithBases,
@@ -17,9 +17,9 @@ pub struct StemParams {
   pub lbpaps_with_base_quadruples: LbpapsWithBaseQuadruples,
   pub lbpps_with_base_pairs: LbppsWithBasePairs,
   pub lnbpps_with_bases: LnbppsWithBases,
-}
-pub type BaScoreMat = HashMap<BasePair, StaFreeEnergy>;
-pub type BpaScoreMat = HashMap<(BasePair, BasePair), StaFreeEnergy>;
+} */
+pub type BaScoreMat = HashMap<BasePair, FreeEnergy>;
+pub type BpaScoreMat = HashMap<(BasePair, BasePair), FreeEnergy>;
 
 pub const SEQ_ALPHABET: [Base; 4] = [A, C, G, U];
 pub const PSEUDO_BASE: Base = '$' as Base;
@@ -32,6 +32,7 @@ lazy_static! {
       (UA, -1.39), (UC, -1.05), (UG, -1.74), (UU, 1.65),
     ].iter().map(|(base_pair, ba_score)| {(*base_pair, ba_score / LOG2_E)}).collect()
   };
+  pub static ref EXP_RIBOSUM_85_60_BA_SCORE_MAT: BaScoreMat = {RIBOSUM_85_60_BA_SCORE_MAT.iter().map(|(base_pair, &ba_score)| {(*base_pair, ba_score.exp())}).collect()};
   pub static ref RIBOSUM_85_60_BPA_SCORE_MAT: BpaScoreMat = {
     [
       ((AU, AU), 4.49), ((AU, CG), 1.67), ((AU, GC), 2.70), ((AU, GU), 0.59), ((AU, UA), 1.61), ((AU, UG), -0.51),
@@ -42,4 +43,5 @@ lazy_static! {
       ((UG, AU), -0.51), ((UG, CG), 1.32), ((UG, GC), -0.08), ((UG, GU), -2.09), ((UG, UA), 1.14), ((UG, UG), 3.36),
     ].iter().map(|(base_quadruple, bpa_score)| {(*base_quadruple, bpa_score / LOG2_E)}).collect()
   };
+  pub static ref EXP_RIBOSUM_85_60_BPA_SCORE_MAT: BpaScoreMat = {RIBOSUM_85_60_BPA_SCORE_MAT.iter().map(|(base_quadruple, &bpa_score)| {(*base_quadruple, bpa_score.exp())}).collect()};
 }

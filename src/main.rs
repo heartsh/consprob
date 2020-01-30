@@ -17,9 +17,8 @@ use itertools::multizip;
 
 type NumOfThreads = u32;
 
-const DEFAULT_OPENING_GAP_PENALTY: StaFreeEnergy = 0.;
-const DEFAULT_EXTENDING_GAP_PENALTY: StaFreeEnergy = 0.;
-const DEFAULT_STA_FE_SCALE_PARAM: LogProb = 1.;
+const DEFAULT_OPENING_GAP_PENALTY: FreeEnergy = 0.;
+const DEFAULT_EXTENDING_GAP_PENALTY: FreeEnergy = 0.;
 const DEFAULT_MIN_BPP: Prob = 0.005;
 const DEFAULT_MAX_POS_DIST_4_IL: usize = 5;
 const DEFAULT_OFFSET_4_MAX_POS_DIST_ON_EL: usize = 0;
@@ -38,7 +37,6 @@ fn main() {
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
   opts.optopt("", "opening_gap_penalty", &format!("An opening-gap penalty (Uses {} by default)", DEFAULT_OPENING_GAP_PENALTY), "FLOAT");
   opts.optopt("", "extending_gap_penalty", &format!("An extending-gap penalty (Uses {} by default)", DEFAULT_EXTENDING_GAP_PENALTY), "FLOAT");
-  opts.optopt("", "struct_align_free_energy_scale_param", &format!("A structural-alignment free-energy scale parameter (Uses {} by default)", DEFAULT_STA_FE_SCALE_PARAM), "FLOAT");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "max_pos_dist_4_int_loop", &format!("A maximum position distance for internal loop (Uses {} by default)", DEFAULT_MAX_POS_DIST_4_IL), "UINT");
   opts.optopt("", "offset_4_max_pos_dist_on_ext_loop", &format!("An offset for maximum position distances for external loop (Uses {} by default)", DEFAULT_OFFSET_4_MAX_POS_DIST_ON_EL), "UINT");
@@ -61,17 +59,14 @@ fn main() {
     matches.opt_str("opening_gap_penalty").expect("Failed to get an opening-gap penalty from command arguments.").parse().expect("Failed to parse an opening-gap penalty.")
   } else {
     DEFAULT_OPENING_GAP_PENALTY
-  };
+  }.exp();
+  let exp_opening_gap_penalty = opening_gap_penalty.exp();
   let extending_gap_penalty = if matches.opt_present("extending_gap_penalty") {
     matches.opt_str("extending_gap_penalty").expect("Failed to get an extending-gap penalty from command arguments.").parse().expect("Failed to parse an extending-gap penalty.")
   } else {
     DEFAULT_EXTENDING_GAP_PENALTY
   };
-  let sta_fe_scale_param = if matches.opt_present("struct_align_free_energy_scale_param") {
-    matches.opt_str("struct_align_free_energy_scale_param").expect("Failed to get a structural-alignment free-energy scale parameter from command arguments.").parse().expect("Failed to parse a structural-alignment free-energy scale parameter.")
-  } else {
-    DEFAULT_STA_FE_SCALE_PARAM
-  };
+  let exp_extending_gap_penalty = extending_gap_penalty.exp();
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").expect("Failed to get a minimum base-pairing-probability from command arguments.").parse().expect("Failed to parse a minimum base-pairing-probability.")
   } else {
@@ -112,14 +107,16 @@ fn main() {
   let mut sparse_bpp_mats = bpp_mats.clone();
   let mut upp_mats = vec![Probs::new(); num_of_fasta_records];
   let mut max_bp_spans = vec![0; num_of_fasta_records];
+  let mut invert_exp_max_free_energies = vec![0.; num_of_fasta_records];
   thread_pool.scoped(|scope| {
-    for (bpp_mat, sparse_bpp_mat, upp_mat, max_bp_span, fasta_record) in multizip((bpp_mats.iter_mut(), sparse_bpp_mats.iter_mut(), upp_mats.iter_mut(), max_bp_spans.iter_mut(), fasta_records.iter_mut())) {
+    for (bpp_mat, sparse_bpp_mat, upp_mat, max_bp_span, fasta_record, invert_exp_max_free_energy) in multizip((bpp_mats.iter_mut(), sparse_bpp_mats.iter_mut(), upp_mats.iter_mut(), max_bp_spans.iter_mut(), fasta_records.iter_mut(), invert_exp_max_free_energies.iter_mut())) {
       let seq_len = fasta_record.seq.len();
       scope.execute(move || {
-        let prob_mat_pair = get_bpp_and_unpair_prob_mats(&fasta_record.seq[1 .. seq_len - 1]);
-        *bpp_mat = remove_zeros_from_bpp_mat(&prob_mat_pair.0);
+        let (obtained_bpp_mat, obtained_upp_mat, max_free_energy) = get_bpp_and_unpair_prob_mats(&fasta_record.seq[1 .. seq_len - 1]);
+        *bpp_mat = obtained_bpp_mat;
         *sparse_bpp_mat = remove_small_bpps_from_bpp_mat(&bpp_mat, min_bpp);
-        *upp_mat = prob_mat_pair.1;
+        *upp_mat = obtained_upp_mat;
+        *invert_exp_max_free_energy = 1. / max_free_energy.exp();
         *max_bp_span = get_max_bp_span(sparse_bpp_mat);
         upp_mat.insert(0, 0.);
         upp_mat.push(0.);
@@ -153,14 +150,13 @@ fn main() {
     buf_4_writer_2_upp_mat_on_ss_file.push_str(&buf_4_rna_id);
   }
   let _ = writer_2_upp_mat_on_ss_file.write_all(buf_4_writer_2_upp_mat_on_ss_file.as_bytes());
-  return;
   let mut sta_fe_param_sets_with_rna_id_pairs = StaFeParamSetsWithRnaIdPairs::default();
-  let mut lbpap_mats_with_rna_id_pairs = LogProb4dMatsWithRnaIdPairs::default();
+  let mut bpap_mats_with_rna_id_pairs = Prob4dMatsWithRnaIdPairs::default();
   for rna_id_1 in 0 .. num_of_fasta_records {
     for rna_id_2 in rna_id_1 + 1 .. num_of_fasta_records {
       let rna_id_pair = (rna_id_1, rna_id_2);
       sta_fe_param_sets_with_rna_id_pairs.insert(rna_id_pair, StaFeParams::origin());
-      lbpap_mats_with_rna_id_pairs.insert(rna_id_pair, LogProb4dMat::default());
+      bpap_mats_with_rna_id_pairs.insert(rna_id_pair, Prob4dMat::default());
     }
   }
   for (rna_id_pair, sta_fe_params) in sta_fe_param_sets_with_rna_id_pairs.iter_mut() {
@@ -168,32 +164,33 @@ fn main() {
     let max_pos_dist_4_el = offset_4_max_pos_dist_on_el + get_seq_len_diff(&seq_len_pair);
     let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
     let ref ref_2_fasta_records = fasta_records;
+    let ref ref_2_invert_exp_max_free_energies = invert_exp_max_free_energies;
     let ref ref_2_bpp_mats = sparse_bpp_mats;
-    *sta_fe_params = StaFeParams::new(rna_id_pair, ref_2_fasta_records, &max_bp_span_pair, max_pos_dist_4_il, max_pos_dist_4_el, max_substr_dist, ref_2_bpp_mats, sta_fe_scale_param, opening_gap_penalty, extending_gap_penalty);
+    *sta_fe_params = StaFeParams::new(rna_id_pair, ref_2_fasta_records, ref_2_invert_exp_max_free_energies, &max_bp_span_pair, max_pos_dist_4_il, max_pos_dist_4_el, max_substr_dist, ref_2_bpp_mats, exp_opening_gap_penalty, exp_extending_gap_penalty);
   }
   thread_pool.scoped(|scope| {
-    for (rna_id_pair, lbpap_mat) in lbpap_mats_with_rna_id_pairs.iter_mut() {
+    for (rna_id_pair, bpap_mat) in bpap_mats_with_rna_id_pairs.iter_mut() {
       let seq_pair = (&fasta_records[rna_id_pair.0].seq[..], &fasta_records[rna_id_pair.1].seq[..]);
       let seq_len_pair = (seq_pair.0.len(), seq_pair.1.len());
       let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
       let max_pos_dist_4_el = offset_4_max_pos_dist_on_el + get_seq_len_diff(&seq_len_pair);
       let ref sta_fe_params = sta_fe_param_sets_with_rna_id_pairs[&rna_id_pair];
       scope.execute(move || {
-        *lbpap_mat = io_algo_4_lbpap_mat(&seq_pair, &seq_len_pair, sta_fe_params, &max_bp_span_pair, max_pos_dist_4_il, max_pos_dist_4_el, max_substr_dist);
+        *bpap_mat = io_algo_4_bpap_mat(&seq_pair, &seq_len_pair, sta_fe_params, &max_bp_span_pair, max_pos_dist_4_il, max_pos_dist_4_el, max_substr_dist);
       });
     }
   });
   thread_pool.scoped(|scope| {
     for (rna_id, bpp_mat, upp_mat) in multizip((0 .. num_of_fasta_records, bpp_mats.iter_mut(), upp_mats.iter_mut())) {
-      let ref ref_2_lbpap_mats_with_rna_id_pairs = lbpap_mats_with_rna_id_pairs;
+      let ref ref_2_bpap_mats_with_rna_id_pairs = bpap_mats_with_rna_id_pairs;
       scope.execute(move || {
-        let prob_mat_pair = pct_of_bpp_and_upp_mat(ref_2_lbpap_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mat, upp_mat);
+        let prob_mat_pair = pct_of_bpp_and_upp_mat(ref_2_bpap_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mat, upp_mat.len());
         *bpp_mat = prob_mat_pair.0;
         *upp_mat = prob_mat_pair.1;
       });
     }
   });
-  let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"struct_align_free_energy_scale_param\" = {}, \"min_bpp\" = {}, \"max_pos_dist_4_il\" = {}, \"offset_4_max_pos_dist_on_el\" = {}, \"max_substr_dist\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, sta_fe_scale_param, min_bpp, max_pos_dist_4_il, offset_4_max_pos_dist_on_el, max_substr_dist, num_of_threads);
+  let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"max_pos_dist_4_il\" = {}, \"offset_4_max_pos_dist_on_el\" = {}, \"max_substr_dist\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, max_pos_dist_4_il, offset_4_max_pos_dist_on_el, max_substr_dist, num_of_threads);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
   let upp_mat_on_sta_file_path = output_dir_path.join(UPP_MAT_ON_STA_FILE_NAME);
   let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
