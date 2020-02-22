@@ -112,6 +112,7 @@ impl StaFeParams {
     }
   }
   pub fn new(rna_id_pair: &RnaIdPair, fasta_records: &FastaRecords, max_bp_span_pair: &(usize, usize), max_gap_num: usize, max_gap_num_4_il: usize, bpp_mats: &ProbMats, opening_gap_penalty: FreeEnergy, extending_gap_penalty: FreeEnergy, exp_opening_gap_penalty: FreeEnergy, exp_extending_gap_penalty: FreeEnergy) -> StaFeParams {
+    let max = max(max(max_gap_num, max_gap_num_4_il), MAX_GAP_NUM_4_IL);
     let seq_pair = (&fasta_records[rna_id_pair.0].seq[..], &fasta_records[rna_id_pair.1].seq[..]);
     let seq_len_pair = (seq_pair.0.len(), seq_pair.1.len());
     let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
@@ -127,7 +128,7 @@ impl StaFeParams {
         let pos_pair = (i, j);
         /* let min_gap_num = get_seq_len_diff(&(0, i, 0, j)) + get_seq_len_diff(&(i, seq_len_pair.0, j, seq_len_pair.1));
         if min_gap_num > max_gap_num {continue;} */
-        if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
+        if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max) {continue;}
         let base_pair = (base, seq_pair.1[j]);
         sta_fe_params.ba_score_mat.insert(pos_pair, RIBOSUM_85_60_BA_SCORE_MAT[&base_pair]);
         sta_fe_params.exp_ba_score_mat.insert(pos_pair, EXP_RIBOSUM_85_60_BA_SCORE_MAT[&base_pair]);
@@ -138,13 +139,14 @@ impl StaFeParams {
         let base_pair = (base, seq_pair.0[j]);
         if !bpp_mat_pair.0.contains_key(&pos_pair) {continue;}
         for k in 1 .. seq_len_pair.1 - 1 {
-          if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num) {continue;}
+          if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
           let upper_l = if k + max_bp_span_pair.1 >= seq_len_pair.1 - 1 {seq_len_pair.1 - 1} else {k + max_bp_span_pair.1};
           for l in k + 1 .. upper_l {
-            if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num) {continue;}
+            if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
             let pos_pair_2 = (k, l);
             let pos_quadruple = (pos_pair.0, pos_pair.1, pos_pair_2.0, pos_pair_2.1);
-            if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
+            // if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num_4_il) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
+            if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num_4_il) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
             /* let min_gap_num_4_il = get_seq_len_diff(&pos_quadruple);
             if min_gap_num_4_il > max_gap_num_4_il {continue;} */
             /* let min_gap_num = get_seq_len_diff(&(0, j, 0, l)) + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
@@ -250,12 +252,13 @@ impl MaxStaFreeEnergyMats {
   }
 }
 
+pub const MAX_GAP_NUM_4_IL: usize = 5;
+
 #[inline]
 pub fn io_algo_4_bpap_mat(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &(usize, usize), max_gap_num: usize, max_gap_num_4_il: usize) -> Prob4dMat {
   let (sta_inside_part_func_mat_sets, farthest_pos_pairs_with_pos_pairs, bools_with_pair_aligned_right_pos_pairs) = get_sta_inside_part_func_mat_sets(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il);
   // println!("Inside part funcs computed.");
   let sta_outside_part_func_4d_mat_4_bpas = get_sta_outside_part_func_4d_mat_4_bpas(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_inside_part_func_mat_sets, &farthest_pos_pairs_with_pos_pairs, &bools_with_pair_aligned_right_pos_pairs);
-  // println!("Outside part funcs computed.");
   get_bpap_mat(seq_len_pair, &sta_inside_part_func_mat_sets, &sta_outside_part_func_4d_mat_4_bpas, sta_fe_params)
 }
 
@@ -269,6 +272,7 @@ pub fn get_sta_inside_part_func_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usi
   for substr_len_1 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL .. max_bp_span_pair.0 + 1 {
     for substr_len_2 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL .. max_bp_span_pair.1 + 1 {
       let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
+      // if min_gap_num_4_il > max_gap_num_4_il {continue;}
       if min_gap_num_4_il > max_gap_num_4_il {continue;}
       // if min_gap_num_4_il > max_gap_num {continue;}
       for i in 1 .. seq_len_pair.0 - substr_len_1 {
@@ -348,11 +352,11 @@ pub fn get_sta_inside_part_func_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usi
           let backward_tmp_sta_inside_part_func_mat_sets = get_backward_tmp_sta_inside_part_func_mat_sets(seq_len_pair, sta_fe_params, max_gap_num, max_gap_num_4_il, &pos_quadruple, invert_exp_max_free_energy, &sta_inside_part_func_mat_sets);
           sta_inside_part_func_mat_sets.forward_tmp_sta_inside_part_func_mat_sets_with_pos_quadruples.insert(pos_quadruple, forward_tmp_sta_inside_part_func_mat_sets);
           sta_inside_part_func_mat_sets.backward_tmp_sta_inside_part_func_mat_sets_with_pos_quadruples.insert(pos_quadruple, backward_tmp_sta_inside_part_func_mat_sets);
-          /* if !farthest_pos_pairs_with_pos_pairs.contains_key(&(i, k)) {
+          if !farthest_pos_pairs_with_pos_pairs.contains_key(&(i, k)) {
             farthest_pos_pairs_with_pos_pairs.insert((i, k), (j, l));
           } else {
             *farthest_pos_pairs_with_pos_pairs.get_mut(&(i, k)).expect("Failed to get an element from a hash map.") = (j, l);
-          } */
+          }
         }
       }
     }
@@ -510,18 +514,20 @@ pub fn get_sta_inside_part_func_mat_sets(seq_pair: &SeqPair, seq_len_pair: &(usi
 
 #[inline]
 pub fn get_max_sta_free_energy(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &(usize, usize), max_gap_num: usize, max_gap_num_4_il: usize) -> FreeEnergy {
+  let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut max_sta_free_energy_mat_sets = MaxStaFreeEnergyMatSets::new();
   for substr_len_1 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL .. max_bp_span_pair.0 + 1 {
     for substr_len_2 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL .. max_bp_span_pair.1 + 1 {
       let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
       // if min_gap_num_4_il > max_gap_num_4_il {continue;}
-      if min_gap_num_4_il > max_gap_num_4_il {continue;}
+      if min_gap_num_4_il > MAX_GAP_NUM_4_IL {continue;}
       for i in 1 .. seq_len_pair.0 - substr_len_1 {
         let j = i + substr_len_1 - 1;
         for k in 1 .. seq_len_pair.1 - substr_len_2 {
           let l = k + substr_len_2 - 1;
           let pos_quadruple = (i, j, k, l);
           if !sta_fe_params.bpa_score_mat.contains_key(&pos_quadruple) {continue;}
+          // println!("i, j, k, l: {:?}.", &pos_quadruple);
           let max_sta_free_energies = get_max_sta_free_energies(seq_pair, seq_len_pair, sta_fe_params, max_gap_num, max_gap_num_4_il, &pos_quadruple, &max_sta_free_energy_mat_sets);
           let mut max = NEG_INFINITY;
           let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple];
@@ -598,15 +604,16 @@ pub fn get_max_sta_free_energy(seq_pair: &SeqPair, seq_len_pair: &(usize, usize)
     for j in 0 .. seq_len_pair.1 - 1 {
       let pos_pair = (i, j);
       if pos_pair == (0, 0) {continue;}
-      let min_gap_num = get_seq_len_diff(&(0, i, 0, j)) + get_seq_len_diff(&(i, seq_len_pair.0, j, seq_len_pair.1));
-      if min_gap_num > max_gap_num {continue;}
+      /* let min_gap_num = get_seq_len_diff(&(0, i, 0, j)) + get_seq_len_diff(&(i, seq_len_pair.0, j, seq_len_pair.1));
+      if min_gap_num > max_gap_num {continue;} */
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
       let mut max = NEG_INFINITY;
       for k in 1 .. i {
         for l in 1 .. j {
           let pos_pair_2 = (k - 1, l - 1);
           let pos_quadruple = (k, i, l, j);
-          let min_gap_num = get_seq_len_diff(&(0, k, 0, l)) + get_seq_len_diff(&pos_quadruple) + get_seq_len_diff(&(i, seq_len_pair.0, j, seq_len_pair.1));
-          if min_gap_num > max_gap_num {continue;}
+          /* let min_gap_num = get_seq_len_diff(&(0, k, 0, l)) + get_seq_len_diff(&pos_quadruple) + get_seq_len_diff(&(i, seq_len_pair.0, j, seq_len_pair.1));
+          if min_gap_num > max_gap_num {continue;} */
           if !(max_sta_free_energy_mat_sets.free_energy_mats_4_external_loop.free_energy_mat.contains_key(&pos_pair_2) && max_sta_free_energy_mat_sets.free_energy_4d_mat_4_bpas_accessible_on_els.contains_key(&pos_quadruple)) {
             continue;
           }
@@ -622,8 +629,8 @@ pub fn get_max_sta_free_energy(seq_pair: &SeqPair, seq_len_pair: &(usize, usize)
       if max > NEG_INFINITY {
         max_sta_free_energy_mat_sets.free_energy_mats_4_external_loop.free_energy_mat_4_bas.insert(pos_pair, max);
       }
-      let min_gap_num_2 = min_gap_num /* + 2 */;
-      if min_gap_num_2 <= max_gap_num {
+      /* let min_gap_num_2 = min_gap_num /* + 2 */;
+      if min_gap_num_2 <= max_gap_num { */
         max = NEG_INFINITY;
         if i > 0 {
           let pos_pair_2 = (i - 1, j);
@@ -654,7 +661,7 @@ pub fn get_max_sta_free_energy(seq_pair: &SeqPair, seq_len_pair: &(usize, usize)
         if max > NEG_INFINITY {
           max_sta_free_energy_mat_sets.free_energy_mats_4_external_loop.free_energy_mat_4_gaps_2.insert(pos_pair, max);
         }
-      }
+      // }
       max = NEG_INFINITY;
       if max_sta_free_energy_mat_sets.free_energy_mats_4_external_loop.free_energy_mat_4_bas.contains_key(&pos_pair) {
         let free_energy_4_ba = max_sta_free_energy_mat_sets.free_energy_mats_4_external_loop.free_energy_mat_4_bas[&pos_pair];
@@ -678,15 +685,20 @@ pub fn get_max_sta_free_energy(seq_pair: &SeqPair, seq_len_pair: &(usize, usize)
 
 #[inline]
 pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_gap_num: usize, max_gap_num_4_il: usize, pos_quadruple: &PosQuadruple, max_sta_free_energy_mat_sets: &MaxStaFreeEnergyMatSets) -> MaxStaFreeEnergies {
+  let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut tmp_max_sta_free_energy_mat_sets = TmpMaxStaFreeEnergyMatSets::new();
   let &(i, j, k, l) = pos_quadruple;
   for u in i .. j {
     for v in k .. l {
       let pos_pair = (u, v);
-      let min_gap_num_4_il = get_seq_len_diff(&(i, u, k, v)) + get_seq_len_diff(&(u, j, v, l));
+      /* let min_gap_num_4_il = get_seq_len_diff(&(i, u, k, v)) + get_seq_len_diff(&(u, j, v, l));
       if min_gap_num_4_il > max_gap_num_4_il {continue;}
       let min_gap_num = get_seq_len_diff(&(0, i, 0, k)) + min_gap_num_4_il + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
-      if min_gap_num > max_gap_num {continue;}
+      if min_gap_num > max_gap_num {continue;} */
+      // if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
+      // if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, MAX_GAP_NUM_4_IL) {continue;}
+      // println!("u, v: {:?}.", &pos_pair);
       if u == i && v == k {
         tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat_4_bas.insert(pos_pair, 0.);
         tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat.insert(pos_pair, 0.);
@@ -700,10 +712,11 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
           tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat[&pos_pair_2] + ba_score
         );
       }
+      // println!("OK.");
       let mut max = NEG_INFINITY;
-      let min_gap_num_4_il_2 = min_gap_num_4_il /* + 2 */;
+      /* let min_gap_num_4_il_2 = min_gap_num_4_il /* + 2 */;
       let min_gap_num_2 = min_gap_num /* + 2 */;
-      if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
+      if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num { */
         let pos_pair_2 = (u - 1, v);
         if tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat_4_bas.contains_key(&pos_pair_2) {
           let free_energy_4_opening_gap = tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat_4_bas[&pos_pair_2] + sta_fe_params.opening_gap_penalty;
@@ -729,7 +742,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
         if max > NEG_INFINITY {
           tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat_4_gaps_2.insert(pos_pair, max);
         }
-      }
+      // }
       max = NEG_INFINITY;
       if tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat_4_bas.contains_key(&pos_pair) {
         let free_energy_4_ba = tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat_4_bas[&pos_pair];
@@ -754,10 +767,10 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
           if n - k - 1 + l - v - 1 > MAX_2_LOOP_LEN {continue;}
           let pos_pair_2 = (m - 1, n - 1);
           let pos_quadruple_2 = (m, u, n, v);
-          let min_gap_num_4_il = get_seq_len_diff(&(i, m, k, n)) + get_seq_len_diff(&pos_quadruple_2) + get_seq_len_diff(&(u, j, v, l));
+          /* let min_gap_num_4_il = get_seq_len_diff(&(i, m, k, n)) + get_seq_len_diff(&pos_quadruple_2) + get_seq_len_diff(&(u, j, v, l));
           if min_gap_num_4_il > max_gap_num_4_il {continue;}
           let min_gap_num = get_seq_len_diff(&(0, i, 0, k)) + min_gap_num_4_il + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
-          if min_gap_num > max_gap_num {continue;}
+          if min_gap_num > max_gap_num {continue;} */
           if !max_sta_free_energy_mat_sets.free_energy_4d_mat_4_bpas.contains_key(&pos_quadruple_2) {continue;}
           let twoloop_fe_pair = (
             get_2_loop_fe(seq_pair.0, &(i, j), &(m , u)),
@@ -777,7 +790,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
       if max > NEG_INFINITY {
         tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_2loop.free_energy_mat_4_bas.insert(pos_pair, max);
       }
-      if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
+      // if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
         let pos_pair_2 = (u - 1, v);
         max = NEG_INFINITY;
         if tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_2loop.free_energy_mat_4_bas.contains_key(&pos_pair_2) {
@@ -804,7 +817,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
         if max > NEG_INFINITY {
           tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_2loop.free_energy_mat_4_gaps_2.insert(pos_pair, max);
         }
-      }
+      // }
       max = NEG_INFINITY;
       if tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_2loop.free_energy_mat_4_bas.contains_key(&pos_pair) {
         let free_energy_4_ba = tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_2loop.free_energy_mat_4_bas[&pos_pair];
@@ -827,10 +840,10 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
         for n in k + 1 .. v {
           let pos_pair_2 = (m - 1, n - 1);
           let pos_quadruple_2 = (m, u, n, v);
-          let min_gap_num_4_il = get_seq_len_diff(&(i, m, k, n)) + get_seq_len_diff(&pos_quadruple_2) + get_seq_len_diff(&(u, j, v, l));
+          /* let min_gap_num_4_il = get_seq_len_diff(&(i, m, k, n)) + get_seq_len_diff(&pos_quadruple_2) + get_seq_len_diff(&(u, j, v, l));
           if min_gap_num_4_il > max_gap_num_4_il {continue;}
           let min_gap_num = get_seq_len_diff(&(0, i, 0, k)) + min_gap_num_4_il + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
-          if min_gap_num > max_gap_num {continue;}
+          if min_gap_num > max_gap_num {continue;} */
           if !max_sta_free_energy_mat_sets.free_energy_4d_mat_4_bpas_accessible_on_mls.contains_key(&pos_quadruple_2) {
             continue;
           }
@@ -852,7 +865,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
       if max > NEG_INFINITY {
         tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_multiloop.free_energy_mat_4_bas.insert(pos_pair, max);
       }
-      if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
+      // if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
         let pos_pair_2 = (u - 1, v);
         max = NEG_INFINITY;
         if tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_multiloop.free_energy_mat_4_bas.contains_key(&pos_pair_2) {
@@ -879,7 +892,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
         if max > NEG_INFINITY {
           tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_multiloop.free_energy_mat_4_gaps_2.insert(pos_pair, max);
         }
-      }
+      // }
       max = NEG_INFINITY;
       if tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_multiloop.free_energy_mat_4_bas.contains_key(&pos_pair) {
         let free_energy_4_ba = tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_internal_multiloop.free_energy_mat_4_bas[&pos_pair];
@@ -902,10 +915,10 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
         for n in k + 1 .. v {
           let pos_pair_2 = (m - 1, n - 1);
           let pos_quadruple_2 = (m, u, n, v);
-          let min_gap_num_4_il = get_seq_len_diff(&(i, m, k, n)) + get_seq_len_diff(&pos_quadruple_2) + get_seq_len_diff(&(u, j, v, l));
+          /* let min_gap_num_4_il = get_seq_len_diff(&(i, m, k, n)) + get_seq_len_diff(&pos_quadruple_2) + get_seq_len_diff(&(u, j, v, l));
           if min_gap_num_4_il > max_gap_num_4_il {continue;}
           let min_gap_num = get_seq_len_diff(&(0, i, 0, k)) + min_gap_num_4_il + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
-          if min_gap_num > max_gap_num {continue;}
+          if min_gap_num > max_gap_num {continue;} */
           if !(tmp_max_sta_free_energy_mat_sets.free_energy_mats_on_sa.free_energy_mat.contains_key(&pos_pair_2) && max_sta_free_energy_mat_sets.free_energy_4d_mat_4_bpas_accessible_on_mls.contains_key(&pos_quadruple_2)) {
             continue;
           }
@@ -921,7 +934,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
       if max > NEG_INFINITY {
         tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_first_bpas_on_mls.free_energy_mat_4_bas.insert(pos_pair, max);
       }
-      if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
+      // if min_gap_num_4_il_2 <= max_gap_num_4_il && min_gap_num_2 <= max_gap_num {
         let pos_pair_2 = (u - 1, v);
         max = NEG_INFINITY;
         if tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_first_bpas_on_mls.free_energy_mat_4_bas.contains_key(&pos_pair_2) {
@@ -948,7 +961,7 @@ pub fn get_max_sta_free_energies(seq_pair: &SeqPair, seq_len_pair: &(usize, usiz
         if max > NEG_INFINITY {
           tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_first_bpas_on_mls.free_energy_mat_4_gaps_2.insert(pos_pair, max);
         }
-      }
+      // }
       max = NEG_INFINITY;
       if tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_first_bpas_on_mls.free_energy_mat_4_bas.contains_key(&pos_pair) {
         let free_energy_4_ba = tmp_max_sta_free_energy_mat_sets.free_energy_mats_4_first_bpas_on_mls.free_energy_mat_4_bas[&pos_pair];
@@ -988,7 +1001,10 @@ pub fn get_forward_tmp_sta_inside_part_func_mat_sets(seq_pair: &SeqPair, seq_len
       // if min_gap_num_4_il > max_gap_num {continue;}
       /* let min_gap_num = get_seq_len_diff(&(0, i, 0, k)) + min_gap_num_4_il + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
       if min_gap_num > max_gap_num {continue;} */
-      if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      // if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      // if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
+      // if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
       if u == i && v == k {
         forward_tmp_sta_inside_part_func_mat_sets.part_func_mats_on_sa.part_func_mat_4_bas.insert(pos_pair, invert_exp_max_free_energy);
         forward_tmp_sta_inside_part_func_mat_sets.part_func_mats_on_sa.part_func_mat.insert(pos_pair, invert_exp_max_free_energy);
@@ -1249,7 +1265,10 @@ pub fn get_backward_tmp_sta_inside_part_func_mat_sets(seq_len_pair: &(usize, usi
       if min_gap_num_4_il > max_gap_num_4_il {continue;}
       let min_gap_num = get_seq_len_diff(&(0, i, 0, k)) + min_gap_num_4_il + get_seq_len_diff(&(j, seq_len_pair.0, l, seq_len_pair.1));
       if min_gap_num > max_gap_num {continue;} */
-      if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      // if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      // if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
+      // if !(is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) && is_min_gap_ok_1(&pos_pair, &pos_quadruple, max_gap_num_4_il)) {continue;}
+      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
       if u == j && v == l {
         backward_tmp_sta_inside_part_func_mat_sets.part_func_mats_on_sa.part_func_mat_4_bas.insert(pos_pair, invert_exp_max_free_energy);
         backward_tmp_sta_inside_part_func_mat_sets.part_func_mats_on_sa.part_func_mat.insert(pos_pair, invert_exp_max_free_energy);
@@ -1442,6 +1461,7 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
     for substr_len_2 in (MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL .. max_bp_span_pair.1 + 1).rev() {
       let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
       // if min_gap_num_4_il > max_gap_num_4_il {continue;}
+      // if min_gap_num_4_il > max_gap_num_4_il {continue;}
       if min_gap_num_4_il > max_gap_num_4_il {continue;}
       for i in 1 .. seq_len_pair.0 - substr_len_1 {
         let j = i + substr_len_1 - 1;
@@ -1525,7 +1545,7 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
             }
           }
           let part_func_ratio = sta_inside_part_func_mat_sets.part_func_4d_mat_4_bpas_accessible_on_mls[&pos_quadruple] / sta_inside_part_func_mat_sets.part_func_4d_mat_4_bpas[&pos_quadruple];
-          for m in 1 .. i {
+          /* for m in 1 .. i {
             for n in j + 1 .. seq_len_pair.0 - 1 {
               for o in 1 .. k {
                 for p in l + 1 .. seq_len_pair.1 - 1 {
@@ -1590,8 +1610,8 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
                 }
               }
             }
-          }
-          /* for m in 1 .. i {
+          } */
+          for m in 1 .. i {
             for n in 1 .. k {
               if !farthest_pos_pairs_with_pos_pairs.contains_key(&(m, n)) {continue;}
               let (o, p) = farthest_pos_pairs_with_pos_pairs[&(m, n)];
@@ -1622,7 +1642,7 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
                 }
               }
             }
-          } */
+          }
           if sum > 0. {
             sta_outside_part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
           }
@@ -1638,11 +1658,11 @@ fn get_bpap_mat(seq_len_pair: &(usize, usize), sta_inside_part_func_mat_sets: &S
   let mut bpap_mat = Prob4dMat::default();
   let invert_exp_max_free_energy = sta_fe_params.invert_exp_max_free_energy;
   let part_func = sta_inside_part_func_mat_sets.forward_part_func_mats_4_external_loop.part_func_mat[&(seq_len_pair.0 - 2, seq_len_pair.1 - 2)];
+  // println!("part_func: {}", part_func);
   for pos_quadruple in sta_inside_part_func_mat_sets.part_func_4d_mat_4_bpas.keys() {
     if !sta_outside_part_func_4d_mat_4_bpas.contains_key(pos_quadruple) {continue;}
     let bpap = sta_inside_part_func_mat_sets.part_func_4d_mat_4_bpas[pos_quadruple] * sta_outside_part_func_4d_mat_4_bpas[pos_quadruple] / (part_func * invert_exp_max_free_energy);
-    // debug_assert!(0. <= bpap && bpap <= 1.);
-    assert!(0. <= bpap && bpap <= 1.);
+    debug_assert!(0. <= bpap && bpap <= 1.);
     bpap_mat.insert(*pos_quadruple, bpap);
   }
   bpap_mat
@@ -1713,7 +1733,7 @@ pub fn get_seq_len_diff(pos_quadruple: &PosQuadruple) -> usize {
 fn is_min_gap_ok_1(pos_pair: &PosPair, pos_quadruple: &PosQuadruple, max_gap_num: usize) -> bool {
   let min_gap_num_1 = get_seq_len_diff(&(pos_quadruple.0, pos_pair.0, pos_quadruple.2, pos_pair.1));
   let min_gap_num_2 = get_seq_len_diff(&(pos_pair.0, pos_quadruple.1, pos_pair.1, pos_quadruple.3));
-  if min_gap_num_1 <= max_gap_num && min_gap_num_2 <= max_gap_num {
+  if min_gap_num_1 + min_gap_num_2 <= max_gap_num {
     true
   } else {
     false
