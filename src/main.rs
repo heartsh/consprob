@@ -21,7 +21,7 @@ const DEFAULT_OPENING_GAP_PENALTY: FreeEnergy = 0.;
 const DEFAULT_EXTENDING_GAP_PENALTY: FreeEnergy = 0.;
 const DEFAULT_MIN_BPP: Prob = 0.005;
 const DEFAULT_OFFSET_4_MAX_GAP_NUM: usize = 0;
-const DEFAULT_MAX_GAP_NUM_4_IL: usize = 30;
+// const DEFAULT_MAX_GAP_NUM_4_IL: usize = 30;
 // const DEFAULT_MAX_BP_SPAN: usize = 500;
 const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
@@ -39,7 +39,7 @@ fn main() {
   opts.optopt("", "extending_gap_penalty", &format!("An extending-gap penalty (Uses {} by default)", DEFAULT_EXTENDING_GAP_PENALTY), "FLOAT");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
-  opts.optopt("", "max_gap_num_4_int_loop", &format!("A maximum number of gaps for internal loop (Uses {} by default)", DEFAULT_MAX_GAP_NUM_4_IL), "UINT");
+  // opts.optopt("", "max_gap_num_4_int_loop", &format!("A maximum number of gaps for internal loop (Uses {} by default)", DEFAULT_MAX_GAP_NUM_4_IL), "UINT");
   // opts.optopt("", "max_base_pair_span", &format!("A maximum span of base-pairings (Uses {} by default)", DEFAULT_MAX_BP_SPAN), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
@@ -77,12 +77,12 @@ fn main() {
   } else {
     DEFAULT_OFFSET_4_MAX_GAP_NUM
   };
-  let max_gap_num_4_il = if matches.opt_present("max_gap_num_4_int_loop") {
+  /* let max_gap_num_4_il = if matches.opt_present("max_gap_num_4_int_loop") {
     matches.opt_str("max_gap_num_4_int_loop").expect("Failed to get a maximum number of gaps for internal loop from command arguments.").parse().expect("Failed to parse a maximum number of gaps for internal loop.")
   } else {
     DEFAULT_MAX_GAP_NUM_4_IL
-  };
-  let max_gap_num_4_il = max(max_gap_num_4_il, MAX_GAP_NUM_4_IL);
+  }; */
+  // let max_gap_num_4_il = max(max_gap_num_4_il, MAX_GAP_NUM_4_IL);
   /* let input_max_bp_span = if matches.opt_present("max_base_pair_span") {
     matches.opt_str("max_base_pair_span").expect("Failed to get a maximum span of base-pairings from command arguments.").parse().expect("Failed to parse a maximum span of base-pairings.")
   } else {
@@ -172,12 +172,12 @@ fn main() {
     for (rna_id_pair, sta_fe_params) in sta_fe_param_sets_with_rna_id_pairs.iter_mut() {
       let seq_len_pair = (fasta_records[rna_id_pair.0].seq.len(), fasta_records[rna_id_pair.1].seq.len());
       let max_gap_num = offset_4_max_gap_num + max(seq_len_pair.0, seq_len_pair.1) - min(seq_len_pair.0, seq_len_pair.1);
-      let max_gap_num_4_il = min(max_gap_num, max_gap_num_4_il);
+      // let max_gap_num_4_il = min(max_gap_num, max_gap_num_4_il);
       let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
       let ref ref_2_fasta_records = fasta_records;
       let ref ref_2_bpp_mats = sparse_bpp_mats;
       scope.execute(move || {
-        *sta_fe_params = StaFeParams::new(rna_id_pair, ref_2_fasta_records, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, ref_2_bpp_mats, opening_gap_penalty, extending_gap_penalty, exp_opening_gap_penalty, exp_extending_gap_penalty);
+        *sta_fe_params = StaFeParams::new(rna_id_pair, ref_2_fasta_records, &max_bp_span_pair, max_gap_num, ref_2_bpp_mats, opening_gap_penalty, extending_gap_penalty, exp_opening_gap_penalty, exp_extending_gap_penalty);
       });
     }
   });
@@ -188,10 +188,10 @@ fn main() {
       let seq_len_pair = (seq_pair.0.len(), seq_pair.1.len());
       let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
       let max_gap_num = offset_4_max_gap_num + max(seq_len_pair.0, seq_len_pair.1) - min(seq_len_pair.0, seq_len_pair.1);
-      let max_gap_num_4_il = min(max_gap_num, max_gap_num_4_il);
+      // let max_gap_num_4_il = min(max_gap_num, max_gap_num_4_il);
       let ref sta_fe_params = sta_fe_param_sets_with_rna_id_pairs[&rna_id_pair];
       scope.execute(move || {
-        *bpap_mat = io_algo_4_bpap_mat(&seq_pair, &seq_len_pair, sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il);
+        *bpap_mat = io_algo_4_bpap_mat(&seq_pair, &seq_len_pair, sta_fe_params, &max_bp_span_pair, max_gap_num);
       });
     }
   });
@@ -205,7 +205,8 @@ fn main() {
       });
     }
   });
-  let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"offset_4_max_gap_num\" = {}, \"max_gap_num_4_int_loop\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num, max_gap_num_4_il, num_of_threads);
+  // let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"offset_4_max_gap_num\" = {}, \"max_gap_num_4_int_loop\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num, max_gap_num_4_il, num_of_threads);
+  let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"offset_4_max_gap_num\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num, num_of_threads);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
   let upp_mat_on_sta_file_path = output_dir_path.join(UPP_MAT_ON_STA_FILE_NAME);
   let mut writer_2_bpp_mat_on_sta_file = BufWriter::new(File::create(bpp_mat_on_sta_file_path).expect("Failed to create an output file."));
