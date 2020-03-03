@@ -2,11 +2,11 @@ pub use rna_algos::utils::*;
 pub use rna_algos::mccaskill_algo::*;
 use std::f64::consts::LOG2_E;
 
-pub type BaScoreMat = HashMap<BasePair, FreeEnergy>;
-pub type BpaScoreMat = HashMap<(BasePair, BasePair), FreeEnergy>;
+pub type BaScoreMat = FxHashMap<BasePair, FreeEnergy>;
+pub type BpaScoreMat = FxHashMap<(BasePair, BasePair), FreeEnergy>;
 
-pub const SEQ_ALPHABET: [Base; 4] = [A, C, G, U];
-pub const PSEUDO_BASE: Base = '$' as Base;
+// pub const SEQ_ALPHABET: [Base; NUM_OF_BASES] = [A, C, G, U];
+pub const PSEUDO_BASE: Base = U + 1 as Base;
 lazy_static! {
   pub static ref RIBOSUM_85_60_BA_SCORE_MAT: BaScoreMat = {
     [
