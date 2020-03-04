@@ -23,8 +23,9 @@ $ cargo test --release -- --nocapture
 ```
 After the test, figures shown in the paper of the program can be reproduced:
 ```bash
+$ cargo test --release --nocapture
 $ cd src
-$ ./run_all.py # Install required python packages to the reproduction. Saved figures will appear at the "../assets/images" directory.
+$ ./print_color_coded_csss_with_sas.py # Install python packages required to the reproduction. Saved figures will appear at the "../assets/images" directory.
 ```
 
 # Author

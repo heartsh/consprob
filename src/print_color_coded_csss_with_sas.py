@@ -23,10 +23,12 @@ def main():
   css_string = utils.get_css_string(css_file_path)
   css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
-  bpap_mat_file_path = asset_dir_path + "/sampled_trnas/bpap_mats.dat"
-  bpap_mats = utils.get_bpap_mats(bpap_mat_file_path, seq_lens)
+  # bpap_mat_file_path = asset_dir_path + "/sampled_trnas/bpap_mats.dat"
+  # bpap_mats = utils.get_bpap_mats(bpap_mat_file_path, seq_lens)
+  bpp_mat_file_path = asset_dir_path + "/sampled_trnas/bpp_mats_on_sta.dat"
+  bpp_mats = utils.get_bpp_mats(bpp_mat_file_path, seq_lens)
   print(colored.black("(A)"))
-  utils.print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
+  utils.print_color_coded_css_with_sa(css, css_string, sa, bpp_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
   sa_file_path = asset_dir_path + "/sampled_trnas/sa_with_mafft_xinsi.aln"
   sa = AlignIO.read(sa_file_path, "clustal")
   sa_len = sa.get_alignment_length()
@@ -35,7 +37,7 @@ def main():
   css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
   print(colored.black("(B)"))
-  utils.print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
+  utils.print_color_coded_css_with_sa(css, css_string, sa, bpp_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
   sa_file_path = asset_dir_path + "/sampled_trnas/ref_sa.aln"
   sa = AlignIO.read(sa_file_path, "clustal")
   sa_len = sa.get_alignment_length()
@@ -44,14 +46,13 @@ def main():
   css = utils.get_ss(css_string)
   nums_of_gaps_in_front_of_chars = utils.get_nums_of_gaps_in_front_of_chars(sa, num_of_records, sa_len)
   print(colored.black("(C)"))
-  utils.print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
+  utils.print_color_coded_css_with_sa(css, css_string, sa, bpp_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len)
   print(
-    colored.red("p >= %.2e, " % (0.25))
-    + colored.yellow("p >= %.2e, " % (0.25 ** 2))
-    + colored.green("p >= %.2e, " % (0.25 ** 3))
-    + colored.cyan("p >= %.2e, " % (0.25 ** 4))
-    + colored.blue("p < %.2e" % (0.25 ** 4))
-    + colored.black(" where p is the mean\nof the posterior pseudo-base-pair-alignment-probability for each of the base quadruples in a\ncolor-coded column-pair")
+    colored.red("p >= %.2e, " % (0.5))
+    + colored.yellow("p >= %.2e, " % (0.5 ** 2))
+    + colored.green("p >= %.2e, " % (0.5 ** 3))
+    + colored.cyan("p >= %.2e, " % (0.5 ** 4))
+    + colored.blue("p < %.2e" % (0.5 ** 4))
   )
 
 if __name__ == "__main__":

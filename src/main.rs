@@ -37,7 +37,6 @@ fn main() {
   opts.optopt("", "extending_gap_penalty", &format!("An extending-gap penalty (Uses {} by default)", DEFAULT_EXTENDING_GAP_PENALTY), "FLOAT");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
-  // opts.optopt("", "max_gap_num_4_int_loop", &format!("A maximum number of gaps for internal loop (Uses {} by default)", DEFAULT_MAX_GAP_NUM_4_IL), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
@@ -88,7 +87,6 @@ fn main() {
   let mut fasta_records = FastaRecords::new();
   for fasta_record in fasta_file_reader.records() {
     let fasta_record = fasta_record.unwrap();
-    // let mut seq: Seq = unsafe {from_utf8_unchecked(fasta_record.seq()).to_uppercase().as_bytes().iter().filter(|&&base| {is_rna_base(base)}).map(|&base| {base}).collect()};
     let mut seq = convert(fasta_record.seq());
     seq.insert(0, PSEUDO_BASE);
     seq.push(PSEUDO_BASE);
@@ -152,7 +150,6 @@ fn main() {
       bpap_mats_with_rna_id_pairs.insert(rna_id_pair, Prob4dMat::default());
     }
   }
-  // println!("Start");
   thread_pool.scoped(|scope| {
     for (rna_id_pair, bpap_mat) in bpap_mats_with_rna_id_pairs.iter_mut() {
       let seq_pair = (&fasta_records[rna_id_pair.0].seq[..], &fasta_records[rna_id_pair.1].seq[..]);
@@ -160,17 +157,11 @@ fn main() {
       let max_gap_num = offset_4_max_gap_num + (max(seq_len_pair.0, seq_len_pair.1) - min(seq_len_pair.0, seq_len_pair.1)) as Pos;
       let max_gap_num_4_il = max(min(max_gap_num, MAX_GAP_NUM_4_IL), MIN_GAP_NUM_4_IL);
       let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
-      // let ref ref_2_fasta_records = fasta_records;
-      // let ref ref_2_bpp_mats = sparse_bpp_mats;
       let bpp_mat_pair = (&sparse_bpp_mats[rna_id_pair.0], &sparse_bpp_mats[rna_id_pair.1]);
       let max_free_energy = max_free_energies[rna_id_pair.0] + max_free_energies[rna_id_pair.1];
-      // let ref ref_2_max_free_energies = max_free_energies;
       scope.execute(move || {
-        // println!("For {:?}, start.", rna_id_pair);
         let sta_fe_params = StaFeParams::new(&seq_pair, &seq_len_pair, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, max_free_energy, opening_gap_penalty, extending_gap_penalty, exp_opening_gap_penalty, exp_extending_gap_penalty);
-        // println!("For {:?}, scores prepared.", rna_id_pair);
         *bpap_mat = io_algo_4_bpap_mat(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair);
-        // println!("For {:?}, prob mat computed.", rna_id_pair);
       });
     }
   });
@@ -184,7 +175,6 @@ fn main() {
       });
     }
   });
-  // let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"offset_4_max_gap_num\" = {}, \"max_gap_num_4_int_loop\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num, max_gap_num_4_il, num_of_threads);
   let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"offset_4_max_gap_num\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num, num_of_threads);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
   let upp_mat_on_sta_file_path = output_dir_path.join(UPP_MAT_ON_STA_FILE_NAME);

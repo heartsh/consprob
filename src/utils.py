@@ -55,33 +55,29 @@ def get_ss(ss_string):
       ss.insert(0, (stack.pop(), i))
   return ss
 
-def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len):
+def print_color_coded_css_with_sa(css, css_string, sa, bpp_mats, nums_of_gaps_in_front_of_chars, num_of_records, sa_len):
   color_coded_css_with_sa = [list(map(colored.black, sa[i].seq.upper())) for i in range(0, num_of_records)]
   color_coded_css_with_sa.append(list(map(colored.black, css_string)))
-  combination_num = len(list(combinations(range(0, num_of_records), 2)))
   for (i, j) in css:
-    mean_bpap = 0
+    mean_bpp = 0
     for k in range(0, num_of_records):
       pos_without_gaps_1 = i - nums_of_gaps_in_front_of_chars[k][i]
       pos_without_gaps_2 = j - nums_of_gaps_in_front_of_chars[k][j]
-      for l in range(k + 1, num_of_records):
-        pos_without_gaps_3 = i - nums_of_gaps_in_front_of_chars[l][i]
-        pos_without_gaps_4 = j - nums_of_gaps_in_front_of_chars[l][j]
-        bpap = bpap_mats[(k, l)][pos_without_gaps_1][pos_without_gaps_2][pos_without_gaps_3][pos_without_gaps_4]
-        if bpap > 0:
-          mean_bpap += bpap
-    mean_bpap /= combination_num
+      bpp = bpp_mats[k][pos_without_gaps_1][pos_without_gaps_2]
+      if bpp > 0:
+          mean_bpp += bpp
+    mean_bpp /= num_of_records
     for k in range(0, num_of_records + 1):
       for l in (i, j):
         char = colored.clean(color_coded_css_with_sa[k][l])
         color_coded_char = colored.blue(char)
-        if mean_bpap >= 0.25:
+        if mean_bpp >= 0.5:
           color_coded_char = colored.red(char)
-        elif mean_bpap >= 0.25 ** 2:
+        elif mean_bpp >= 0.5 ** 2:
           color_coded_char = colored.yellow(char)
-        elif mean_bpap >= 0.25 ** 3:
+        elif mean_bpp >= 0.5 ** 3:
           color_coded_char = colored.green(char)
-        elif mean_bpap >= 0.25 ** 4:
+        elif mean_bpp >= 0.5 ** 4:
           color_coded_char = colored.cyan(char)
         color_coded_css_with_sa[k][l] = color_coded_char
   for string in color_coded_css_with_sa:
@@ -89,24 +85,6 @@ def print_color_coded_css_with_sa(css, css_string, sa, bpap_mats, nums_of_gaps_i
     for char in string:
       color_coded_string += char
     print(color_coded_string)
-
-def get_bpap_mats(bpap_mat_file_path, seq_lens):
-  bpap_mats = {}
-  bpap_mat_file = open(bpap_mat_file_path)
-  lines = bpap_mat_file.readlines()
-  lines = [line for line in lines if line[0].isdigit() or line[0].startswith(">")]
-  num_of_lines = len(lines)
-  for i in range(0, num_of_lines - 1, 2):
-    tail = lines[i][1 :].split(",")
-    rna_id_pair = (int(tail[0]), int(tail[1]))
-    seq_len_pair = (seq_lens[rna_id_pair[0]], seq_lens[rna_id_pair[1]])
-    bpap_mat = numpy.zeros((seq_len_pair[0],seq_len_pair[0], seq_len_pair[1],  seq_len_pair[1]))
-    for string in lines[i + 1].strip().split(" "):
-      substrings = string.split(",")
-      (j, k, l, m, bpap) = (int(substrings[0]), int(substrings[1]), int(substrings[2]), int(substrings[3]), float(substrings[4]))
-      bpap_mat[j, k, l, m] = bpap
-    bpap_mats[rna_id_pair] = bpap_mat
-  return bpap_mats
 
 def get_bpp_mats(bpp_mat_file_path, seq_lens):
   bpp_mats = {}
