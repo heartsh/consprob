@@ -12,7 +12,7 @@ use std::fs::File;
 
 const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
 const UPP_MAT_ON_STA_FILE_NAME: &'static str = "upp_mats_on_sta.dat";
-const VERSION: &'static str = "0.1.0";
+const VERSION: &'static str = "0.1.1";
 
 fn main() {
   let args = env::args().collect::<Args>();
