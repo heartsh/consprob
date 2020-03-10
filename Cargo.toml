@@ -1,6 +1,6 @@
 [package]
 name = "phyloprob"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["heartsh <heartsh@heartsh.io>"]
 description = "PhyloProb Program, which Predicts Average Posterior Probabilities on RNA Structural Alignment"
 repository = "https://github.com/heartsh/phyloprob"
