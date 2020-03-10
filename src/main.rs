@@ -9,6 +9,7 @@ use bio::io::fasta::Reader;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::fs::File;
+use std::fs::create_dir;
 
 const BPP_MAT_ON_STA_FILE_NAME: &'static str = "bpp_mats_on_sta.dat";
 const UPP_MAT_ON_STA_FILE_NAME: &'static str = "upp_mats_on_sta.dat";
@@ -74,6 +75,9 @@ fn main() {
   }
   let mut thread_pool = Pool::new(num_of_threads);
   let (bpp_mats, upp_mats) = phyloprob(&mut thread_pool, &fasta_records, opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num);
+  if !output_dir_path.exists() {
+    let _ = create_dir(output_dir_path);
+  }
   let output_file_header = format!(" in this file = \"{}\".\n; The values of the parameters used to the matrices are as follows.\n; \"opening_gap_penalty\" = {}, \"extending_gap_penalty\" = {}, \"min_bpp\" = {}, \"offset_4_max_gap_num\" = {}, \"num_of_threads\" = {}.", input_file_path.display(), opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num, num_of_threads);
   let bpp_mat_on_sta_file_path = output_dir_path.join(BPP_MAT_ON_STA_FILE_NAME);
   let upp_mat_on_sta_file_path = output_dir_path.join(UPP_MAT_ON_STA_FILE_NAME);
