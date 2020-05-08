@@ -1960,7 +1960,6 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
                     if !is_canonical(&base_pair_3) {continue;}
                     if !bpp_mat_pair.0.contains_key(&(m, n)) {continue;}
                     if long_n - long_j - 1 + long_i - long_m - 1 > MAX_2_LOOP_LEN {continue;}
-                    // let exp_2loop_fe = get_exp_2_loop_fe(seq_pair.0, &(long_m, long_n), &(long_i, long_j));
                     let exp_2loop_fe = ss_free_energy_mat_set_pair.0.exp_2loop_fe_4d_mat[&(m, n, i, j)];
                     for o in 1 .. k {
                       if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
@@ -1981,7 +1980,6 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
                                 match backward_tmp_sta_inside_part_func_mat_sets.part_func_mats_on_sa.part_func_mat.get(&(j + 1, l + 1)) {
                                   Some(&part_func_3) => {
                                     let exp_bpa_score = sta_fe_params.exp_bpa_score_mat[&pos_quadruple_2];
-                                    // let exp_2loop_fe_2 = get_exp_2_loop_fe(seq_pair.1, &(long_o, long_p), &(long_k, long_l));
                                     let exp_2loop_fe_2 = ss_free_energy_mat_set_pair.1.exp_2loop_fe_4d_mat[&(o, p, k, l)];
                                     sum += part_func_2 * exp_bpa_score * exp_2loop_fe * exp_2loop_fe_2 * part_func / scaler * part_func_3 / scaler;
                                   }, None => {},
@@ -2136,7 +2134,6 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
                     if !is_canonical(&base_pair_3) {continue;}
                     if !bpp_mat_pair.0.contains_key(&(m, n)) {continue;}
                     if long_n - long_j - 1 + long_i - long_m - 1 > MAX_2_LOOP_LEN {continue;}
-                    // let twoloop_fe = get_2_loop_fe(seq_pair.0, &(long_m, long_n), &(long_i, long_j));
                     let twoloop_fe = ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(m, n, i, j)];
                     for o in 1 .. k {
                       if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
@@ -2157,7 +2154,6 @@ pub fn get_sta_outside_part_func_4d_mat_4_bpas(seq_pair: &SeqPair, seq_len_pair:
                                 match backward_tmp_sta_inside_part_func_mat_sets.part_func_mats_on_sa.part_func_mat.get(&(j + 1, l + 1)) {
                                   Some(&part_func_3) => {
                                     let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
-                                    // let twoloop_fe_2 = get_2_loop_fe(seq_pair.1, &(long_o, long_p), &(long_k, long_l));
                                     let twoloop_fe_2 = ss_free_energy_mat_set_pair.1.twoloop_fe_4d_mat[&(o, p, k, l)];
                                     logsumexp(&mut sum, part_func_2 + bpa_score + twoloop_fe + twoloop_fe_2 + part_func - scaler + part_func_3 - scaler);
                                   }, None => {},
@@ -2369,33 +2365,27 @@ pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, opening_g
   let num_of_fasta_records = fasta_records.len();
   let mut bpp_mats = vec![SparseProbMat::default(); num_of_fasta_records];
   let mut sparse_bpp_mats = bpp_mats.clone();
-  let mut upp_mats = vec![Probs::new(); num_of_fasta_records];
   let mut max_bp_spans = vec![0; num_of_fasta_records];
   let mut max_free_energies = vec![NEG_INFINITY; num_of_fasta_records];
   let mut ss_free_energy_mat_sets = vec![SsFreeEnergyMats::new(); num_of_fasta_records];
   thread_pool.scoped(|scope| {
-    for (bpp_mat, sparse_bpp_mat, upp_mat, max_bp_span, fasta_record, max_free_energy, ss_free_energy_mats) in multizip((bpp_mats.iter_mut(), sparse_bpp_mats.iter_mut(), upp_mats.iter_mut(), max_bp_spans.iter_mut(), fasta_records.iter(), max_free_energies.iter_mut(), ss_free_energy_mat_sets.iter_mut())) {
+    for (bpp_mat, sparse_bpp_mat, max_bp_span, fasta_record, max_free_energy, ss_free_energy_mats) in multizip((bpp_mats.iter_mut(), sparse_bpp_mats.iter_mut(), max_bp_spans.iter_mut(), fasta_records.iter(), max_free_energies.iter_mut(), ss_free_energy_mat_sets.iter_mut())) {
       let seq_len = fasta_record.seq.len();
       scope.execute(move || {
-        let (obtained_bpp_mat, obtained_upp_mat, obtained_max_free_energy, obtained_ss_free_energy_mats) = get_bpp_and_unpair_prob_mats(&fasta_record.seq[1 .. seq_len - 1]);
+        let (obtained_bpp_mat, obtained_max_free_energy, obtained_ss_free_energy_mats) = mccaskill_algo(&fasta_record.seq[1 .. seq_len - 1]);
         *bpp_mat = obtained_bpp_mat;
         *ss_free_energy_mats = obtained_ss_free_energy_mats;
         ss_free_energy_mats.sparsify(bpp_mat, min_bpp);
         *sparse_bpp_mat = remove_small_bpps_from_bpp_mat(&bpp_mat, min_bpp);
-        *upp_mat = obtained_upp_mat;
         *max_free_energy = obtained_max_free_energy;
         *max_bp_span = get_max_bp_span(sparse_bpp_mat);
-        upp_mat.insert(0, 1.);
-        upp_mat.push(1.);
       });
     }
   });
-  let mut sta_fe_param_sets_with_rna_id_pairs = StaFeParamSetsWithRnaIdPairs::default();
   let mut bpap_mats_with_rna_id_pairs = Prob4dMatsWithRnaIdPairs::default();
   for rna_id_1 in 0 .. num_of_fasta_records {
     for rna_id_2 in rna_id_1 + 1 .. num_of_fasta_records {
       let rna_id_pair = (rna_id_1, rna_id_2);
-      sta_fe_param_sets_with_rna_id_pairs.insert(rna_id_pair, StaFeParams::origin());
       bpap_mats_with_rna_id_pairs.insert(rna_id_pair, Prob4dMat::default());
     }
   }
@@ -2415,11 +2405,13 @@ pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, opening_g
       });
     }
   });
+  let mut upp_mats = vec![Probs::new(); num_of_fasta_records];
   thread_pool.scoped(|scope| {
     for (rna_id, bpp_mat, upp_mat) in multizip((0 .. num_of_fasta_records, bpp_mats.iter_mut(), upp_mats.iter_mut())) {
       let ref ref_2_bpap_mats_with_rna_id_pairs = bpap_mats_with_rna_id_pairs;
+      let seq_len = fasta_records[rna_id].seq.len();
       scope.execute(move || {
-        let prob_mat_pair = pct_of_bpp_and_upp_mat(ref_2_bpap_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mat, upp_mat.len());
+        let prob_mat_pair = pct_of_bpp_and_upp_mat(ref_2_bpap_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mat, seq_len);
         *bpp_mat = prob_mat_pair.0;
         *upp_mat = prob_mat_pair.1;
       });
