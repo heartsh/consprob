@@ -1,6 +1,6 @@
 pub use rna_algos::utils::*;
 pub use rna_algos::mccaskill_algo::*;
-use std::f64::consts::LOG2_E;
+use std::f32::consts::LOG2_E;
 
 pub type BaScoreMat = HashMap<BasePair, FreeEnergy>;
 pub type BpaScoreMat = HashMap<(BasePair, BasePair), FreeEnergy>;
