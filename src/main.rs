@@ -30,6 +30,7 @@ fn main() {
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
+  opts.optflag("u", "uses_bpp_score", "Uses base-pairing probabilities as scores of secondary structures (Not recommended due to poor accuracy)");
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -58,6 +59,7 @@ fn main() {
   } else {
     num_cpus::get() as NumOfThreads
   };
+  let uses_bpps = matches.opt_present("u");
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
   let mut fasta_records = FastaRecords::new();
   for fasta_record in fasta_file_reader.records() {
@@ -68,7 +70,7 @@ fn main() {
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
   let mut thread_pool = Pool::new(num_of_threads);
-  let prob_mat_sets = phyloprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num);
+  let prob_mat_sets = phyloprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, uses_bpps);
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }

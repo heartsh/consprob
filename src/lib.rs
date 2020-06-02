@@ -91,6 +91,7 @@ pub type SparseProbMatPair = (SparseProbMat, SparseProbMat);
 pub type ProbSetPair = (Probs, Probs);
 pub type ProbMatSets = Vec<PctStaProbMats>;
 pub type StaProbMatsWithRnaIdPairs = HashMap<RnaIdPair, StaProbMats>;
+pub type ProbSeqPair<'a> = (&'a Probs, &'a Probs);
 
 impl StaProbMats {
   pub fn origin() -> StaProbMats {
@@ -172,7 +173,7 @@ impl StaFeParams {
     }
   }
 
-  pub fn new(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair) -> StaFeParams {
+  pub fn new(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, uses_bpps: bool) -> StaFeParams {
     let max = max(max_gap_num, max_gap_num_4_il);
     let mut sta_fe_params = StaFeParams::origin();
     let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
@@ -194,6 +195,7 @@ impl StaFeParams {
         let base_pair = (base, seq_pair.0[long_j]);
         if !is_canonical(&base_pair) {continue;}
         if !bpp_mat_pair.0.contains_key(&pos_pair) {continue;}
+        let bpp = if uses_bpps {bpp_mat_pair.0[&pos_pair].ln()} else {0.};
         for k in 1 .. seq_len_pair.1 - 1 {
           if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
           let long_k = k as usize;
@@ -206,8 +208,9 @@ impl StaFeParams {
             let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
             if !is_canonical(&base_pair_2) {continue;}
             if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num_4_il) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
+            let bpp_2 = if uses_bpps {bpp_mat_pair.1[&pos_pair_2].ln()} else {0.};
             let base_quadruple = (base_pair, base_pair_2);
-            sta_fe_params.bpa_score_mat.insert(pos_quadruple, BPA_SCORE_MAT[&base_quadruple]);
+            sta_fe_params.bpa_score_mat.insert(pos_quadruple, BPA_SCORE_MAT[&base_quadruple] + bpp + bpp_2);
           }
         }
       }
@@ -255,20 +258,17 @@ impl FastaRecord {
   }
 }
 
-pub const MIN_SEQ_LENGTH_4_LOGSUMEXP_METHOD: usize = 0;
 pub const MAX_GAP_NUM_4_IL: Pos = 100;
 pub const MIN_GAP_NUM_4_IL: Pos = 5;
-pub const DEFAULT_OPENING_GAP_PENALTY: FreeEnergy = 0.;
-pub const DEFAULT_EXTENDING_GAP_PENALTY: FreeEnergy = 0.;
 pub const DEFAULT_MIN_BPP: Prob = 0.005;
 pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: Pos = 0;
 
-pub fn io_algo_4_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair) -> StaProbMats {
-  let sta_inside_part_func_mats = get_sta_inside_part_func_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, ss_free_energy_mat_set_pair);
+pub fn io_algo_4_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, uses_bpps: bool) -> StaProbMats {
+  let sta_inside_part_func_mats = get_sta_inside_part_func_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, ss_free_energy_mat_set_pair, false);
   get_sta_prob_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_inside_part_func_mats, bpp_mat_pair, ss_free_energy_mat_set_pair)
 }
 
-pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair) -> StaInsidePartFuncMats {
+pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, is_viterbi: bool) -> StaInsidePartFuncMats {
   let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
   let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut sta_inside_part_func_mats = StaInsidePartFuncMats::new();
@@ -307,13 +307,20 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
           let pos_quadruple = (i, j, k, l);
           match sta_fe_params.bpa_score_mat.get(&pos_quadruple) {
             Some(&bpa_score) => {
-              let forward_tmp_sta_inside_part_func_mats = get_forward_tmp_sta_inside_part_func_mats(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_inside_part_func_mats, bpp_mat_pair);
-              let backward_tmp_sta_inside_part_func_mats = get_backward_tmp_sta_inside_part_func_mats(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_inside_part_func_mats, bpp_mat_pair);
+              let forward_tmp_sta_inside_part_func_mats = get_forward_tmp_sta_inside_part_func_mats(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_inside_part_func_mats, bpp_mat_pair, is_viterbi);
+              let backward_tmp_sta_inside_part_func_mats = get_backward_tmp_sta_inside_part_func_mats(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_inside_part_func_mats, bpp_mat_pair, is_viterbi);
               let mut sum = NEG_INFINITY;
               let pos_pair = (j - 1, l - 1);
               match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair) {
                 Some(&part_func) => {
-                  logsumexp(&mut sum, bpa_score + hl_fe + ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)] + part_func);
+                  let score = bpa_score + hl_fe + ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)] + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
               for m in i + 1 .. j {
@@ -342,7 +349,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
                               match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&(n + 1, p + 1)) {
                                 Some(&part_func_3) => {
                                   let twoloop_fe_2 = ss_free_energy_mat_set_pair.1.twoloop_fe_4d_mat[&(k, l, o, p)];
-                                  logsumexp(&mut sum, bpa_score + part_func_2 + twoloop_fe + twoloop_fe_2 + part_func + part_func_3);
+                                  let score = bpa_score + part_func_2 + twoloop_fe + twoloop_fe_2 + part_func + part_func_3;
+                                  if is_viterbi {
+                                    if score > sum {
+                                      sum = score;
+                                    }
+                                  } else {
+                                    logsumexp(&mut sum, score);
+                                  }
                                 }, None => {},
                               }
                             }, None => {},
@@ -359,7 +373,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
                   let invert_base_pair_2 = invert_bp(&base_pair_2);
                   let invert_stacking_base_pair_2 = invert_bp(&(seq_pair.1[long_k + 1], seq_pair.1[long_l - 1]));
                   let ml_tm_delta_fe_2 = ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_base_pair_2.0][invert_stacking_base_pair_2.1];
-                  logsumexp(&mut sum, bpa_score + 2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2 + part_func);
+                  let score = bpa_score + 2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
               if sum > NEG_INFINITY {
@@ -406,7 +427,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
             Some(&part_func) => {
               match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_2) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut sum, part_func_2 + part_func);
+                  let score = part_func_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
             }, None => {},
@@ -417,7 +445,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
         match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&(i - 1, j - 1)) {
           Some(&part_func) => {
             let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-            logsumexp(&mut sum, part_func + ba_score);
+            let score = part_func + ba_score;
+            if is_viterbi {
+              if score > sum {
+                sum = score;
+              }
+            } else {
+              logsumexp(&mut sum, score);
+            }
           }, None => {},
         }
       }
@@ -425,7 +460,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
         let pos_pair_2 = (i - 1, j);
         match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_2) {
           Some(&part_func) => {
-            logsumexp(&mut sum, part_func);
+            let score = part_func;
+            if is_viterbi {
+              if score > sum {
+                sum = score;
+              }
+            } else {
+              logsumexp(&mut sum, score);
+            }
           }, None => {},
         }
       }
@@ -433,7 +475,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
         let pos_pair_2 = (i, j - 1);
         match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_2) {
           Some(&part_func) => {
-            logsumexp(&mut sum, part_func);
+            let score = part_func;
+            if is_viterbi {
+              if score > sum {
+                sum = score;
+              }
+            } else {
+              logsumexp(&mut sum, score);
+            }
           }, None => {},
         }
       }
@@ -458,7 +507,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
             Some(&part_func) => {
               match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut sum, part_func_2 + part_func);
+                  let score = part_func_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
             }, None => {},
@@ -469,7 +525,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
         match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&(i + 1, j + 1)) {
           Some(&part_func) => {
             let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-            logsumexp(&mut sum, part_func + ba_score);
+            let score = part_func + ba_score;
+            if is_viterbi {
+              if score > sum {
+                sum = score;
+              }
+            } else {
+              logsumexp(&mut sum, score);
+            }
           }, None => {},
         }
       }
@@ -477,7 +540,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
         let pos_pair_2 = (i + 1, j);
         match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
           Some(&part_func) => {
-            logsumexp(&mut sum, part_func);
+            let score = part_func;
+            if is_viterbi {
+              if score > sum {
+                sum = score;
+              }
+            } else {
+              logsumexp(&mut sum, score);
+            }
           }, None => {},
         }
       }
@@ -485,7 +555,14 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
         let pos_pair_2 = (i, j + 1);
         match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
           Some(&part_func) => {
-            logsumexp(&mut sum, part_func);
+            let score = part_func;
+            if is_viterbi {
+              if score > sum {
+                sum = score;
+              }
+            } else {
+              logsumexp(&mut sum, score);
+            }
           }, None => {},
         }
       }
@@ -494,10 +571,11 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
       }
     }
   }
+  // println!("Inside finished.");
   sta_inside_part_func_mats
 }
 
-pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_params: &StaFeParams, max_gap_num_4_il: Pos, pos_quadruple: &PosQuadruple, sta_inside_part_func_mats: &StaInsidePartFuncMats, bpp_mat_pair: &ProbMatPair) -> TmpStaInsidePartFuncMats {
+pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_params: &StaFeParams, max_gap_num_4_il: Pos, pos_quadruple: &PosQuadruple, sta_inside_part_func_mats: &StaInsidePartFuncMats, bpp_mat_pair: &ProbMatPair, is_viterbi: bool) -> TmpStaInsidePartFuncMats {
   let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut forward_tmp_sta_inside_part_func_mats = TmpStaInsidePartFuncMats::new();
   let &(i, j, k, l) = pos_quadruple;
@@ -509,25 +587,46 @@ pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_
         forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.insert(pos_pair, 0.);
         continue;
       }
-      let mut sum = NEG_INFINITY;
       // Compute "sta_inside_part_func_mats.part_func_mat_on_sa"
+      let mut sum = NEG_INFINITY;
       let pos_pair_2 = (u - 1, v - 1);
       let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func + ba_score);
+          let score = part_func + ba_score;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u - 1, v);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u, v - 1);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       if sum > NEG_INFINITY {
@@ -546,7 +645,14 @@ pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_
             Some(&part_func) => {
               match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut sum, part_func_2 + part_func);
+                  let score = part_func_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
             }, None => {},
@@ -556,24 +662,47 @@ pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_
       let pos_pair_2 = (u - 1, v - 1);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func + ba_score);
+          let score = part_func + ba_score;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u - 1, v);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u, v - 1);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       if sum > NEG_INFINITY {
         forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.insert(pos_pair, sum);
-        logsumexp(&mut tmp_sum, sum);
+        if !is_viterbi {
+          logsumexp(&mut tmp_sum, sum);
+        }
       }
       // Compute "sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls"
       sum = NEG_INFINITY;
@@ -587,7 +716,14 @@ pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_
             Some(&part_func) => {
               match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut sum, part_func_2 + part_func);
+                  let score = part_func_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
             }, None => {},
@@ -597,26 +733,49 @@ pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_
       let pos_pair_2 = (u - 1, v - 1);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func + ba_score);
+          let score = part_func + ba_score;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u - 1, v);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u, v - 1);
       match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       if sum > NEG_INFINITY {
         forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.insert(pos_pair, sum);
-        logsumexp(&mut tmp_sum, sum);
+        if !is_viterbi {
+          logsumexp(&mut tmp_sum, sum);
+        }
       }
-      if tmp_sum > NEG_INFINITY {
+      if !is_viterbi && tmp_sum > NEG_INFINITY {
         forward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.insert(pos_pair, tmp_sum);
       }
     }
@@ -624,7 +783,7 @@ pub fn get_forward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_
   forward_tmp_sta_inside_part_func_mats
 }
 
-pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_params: &StaFeParams, max_gap_num_4_il: Pos, pos_quadruple: &PosQuadruple, sta_inside_part_func_mats: &StaInsidePartFuncMats, bpp_mat_pair: &ProbMatPair) -> TmpStaInsidePartFuncMats {
+pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe_params: &StaFeParams, max_gap_num_4_il: Pos, pos_quadruple: &PosQuadruple, sta_inside_part_func_mats: &StaInsidePartFuncMats, bpp_mat_pair: &ProbMatPair, is_viterbi: bool) -> TmpStaInsidePartFuncMats {
   let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut backward_tmp_sta_inside_part_func_mats = TmpStaInsidePartFuncMats::new();
   let &(i, j, k, l) = pos_quadruple;
@@ -650,7 +809,14 @@ pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe
             Some(&part_func) => {
               match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut sum, part_func_2 + part_func);
+                  let score = part_func_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
             }, None => {},
@@ -660,24 +826,47 @@ pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe
       let pos_pair_2 = (u + 1, v + 1);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func + ba_score);
+          let score = part_func + ba_score;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u + 1, v);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u, v + 1);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       if sum > NEG_INFINITY {
         backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.insert(pos_pair, sum);
-        logsumexp(&mut tmp_sum, sum);
+        if !is_viterbi {
+          logsumexp(&mut tmp_sum, sum);
+        }
       }
       // Compute "sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls"
       sum = NEG_INFINITY;
@@ -691,7 +880,14 @@ pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe
             Some(&part_func) => {
               match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut sum, part_func_2 + part_func);
+                  let score = part_func_2 + part_func;
+                  if is_viterbi {
+                    if score > sum {
+                      sum = score;
+                    }
+                  } else {
+                    logsumexp(&mut sum, score);
+                  }
                 }, None => {},
               }
             }, None => {},
@@ -701,26 +897,49 @@ pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe
       let pos_pair_2 = (u + 1, v + 1);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func + ba_score);
+          let score = part_func + ba_score;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u + 1, v);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u, v + 1);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       if sum > NEG_INFINITY {
         backward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.insert(pos_pair, sum);
-        logsumexp(&mut tmp_sum, sum);
+        if !is_viterbi {
+          logsumexp(&mut tmp_sum, sum);
+        }
       }
-      if tmp_sum > NEG_INFINITY {
+      if !is_viterbi && tmp_sum > NEG_INFINITY {
         backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.insert(pos_pair, tmp_sum);
       }
       // Compute "sta_inside_part_func_mats.part_func_mat_on_sa"
@@ -728,26 +947,49 @@ pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe
       let pos_pair_2 = (u + 1, v + 1);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func + ba_score);
+          let score = part_func + ba_score;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u + 1, v);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       let pos_pair_2 = (u, v + 1);
       match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
         Some(&part_func) => {
-          logsumexp(&mut sum, part_func);
+          let score = part_func;
+          if is_viterbi {
+            if score > sum {
+              sum = score;
+            }
+          } else {
+            logsumexp(&mut sum, score);
+          }
         }, None => {},
       }
       if sum > NEG_INFINITY {
         backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.insert(pos_pair, sum);
-        logsumexp(&mut tmp_sum, sum);
+        if !is_viterbi {
+          logsumexp(&mut tmp_sum, sum);
+        }
       }
-      if tmp_sum > NEG_INFINITY {
+      if !is_viterbi && tmp_sum > NEG_INFINITY {
         backward_tmp_sta_inside_part_func_mats.part_func_mat_on_mls.insert(pos_pair, tmp_sum);
       }
     }
@@ -1106,7 +1348,7 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                     Some(&part_func_2) => {
                       match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
                         Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
                           logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
                           logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
                         }, None => {},
@@ -1175,9 +1417,9 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                       }
                     }, None => {},
                   }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_4_gap_1) {
+                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_gap_1) {
                     Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
+                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
                         Some(&part_func_3) => {
                           let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
                           logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
@@ -1475,7 +1717,7 @@ fn is_min_gap_ok_2(pos_quadruple: &PosQuadruple, max_gap_num: Pos) -> bool {
   }
 }
 
-pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos) -> ProbMatSets {
+pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos, uses_bpps: bool) -> ProbMatSets {
   let num_of_fasta_records = fasta_records.len();
   let mut bpp_mat_sets = vec![SsProbMats::new(); num_of_fasta_records];
   let mut sparse_bpp_mats = vec![SparseProbMat::new(); num_of_fasta_records];
@@ -1511,8 +1753,8 @@ pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: 
       let bpp_mat_pair = (&sparse_bpp_mats[rna_id_pair.0], &sparse_bpp_mats[rna_id_pair.1]);
       let ss_free_energy_mat_set_pair = (&ss_free_energy_mat_sets[rna_id_pair.0], &ss_free_energy_mat_sets[rna_id_pair.1]);
       scope.execute(move || {
-        let sta_fe_params = StaFeParams::new(&seq_pair, &seq_len_pair, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair);
-        *prob_mats = io_algo_4_prob_mats(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, &ss_free_energy_mat_set_pair);
+        let sta_fe_params = StaFeParams::new(&seq_pair, &seq_len_pair, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, uses_bpps);
+        *prob_mats = io_algo_4_prob_mats(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, &ss_free_energy_mat_set_pair, uses_bpps);
       });
     }
   });

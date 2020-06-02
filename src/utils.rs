@@ -15,7 +15,6 @@ lazy_static! {
       (UA, -1.39), (UC, -1.05), (UG, -1.74), (UU, 1.65),
     ].iter().map(|(base_pair, ba_score)| {(*base_pair, ba_score / LOG2_E)}).collect()
   };
-  pub static ref EXP_BA_SCORE_MAT: BaScoreMat = BA_SCORE_MAT.iter().map(|(base_pair, &ba_score)| {(*base_pair, ba_score.exp())}).collect();
   pub static ref BPA_SCORE_MAT: BpaScoreMat = {
     [
       ((AU, AU), 4.49), ((AU, CG), 1.67), ((AU, GC), 2.70), ((AU, GU), 0.59), ((AU, UA), 1.61), ((AU, UG), -0.51),
@@ -26,5 +25,4 @@ lazy_static! {
       ((UG, AU), -0.51), ((UG, CG), 1.32), ((UG, GC), -0.08), ((UG, GU), -2.09), ((UG, UA), 1.14), ((UG, UG), 3.36),
     ].iter().map(|(base_quadruple, bpa_score)| {(*base_quadruple, bpa_score / LOG2_E)}).collect()
   };
-  pub static ref EXP_BPA_SCORE_MAT: BpaScoreMat = BPA_SCORE_MAT.iter().map(|(base_quadruple, &bpa_score)| {(*base_quadruple, bpa_score.exp())}).collect();
 }
