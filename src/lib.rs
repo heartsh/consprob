@@ -4,6 +4,8 @@ extern crate lazy_static;
 extern crate getopts;
 extern crate scoped_threadpool;
 extern crate itertools;
+extern crate bio;
+extern crate num_cpus;
 
 pub mod utils;
 
@@ -12,6 +14,12 @@ pub use getopts::Options;
 pub use self::scoped_threadpool::Pool;
 pub use itertools::multizip;
 pub use utils::*;
+pub use std::path::Path;
+pub use bio::io::fasta::Reader;
+pub use std::io::prelude::*;
+pub use std::io::BufWriter;
+pub use std::fs::File;
+pub use std::fs::create_dir;
 
 pub type Prob4dMat = HashMap<PosQuadruple, Prob>;
 type PartFunc4dMat = HashMap<PosQuadruple, PartFunc>;
@@ -80,6 +88,7 @@ pub struct PctStaProbMats {
   pub access_bpp_mat_4_2l: SparseProbMat,
   pub access_bpp_mat_4_ml: SparseProbMat,
   pub bpp_mat_4_el: SparseProbMat,
+  pub bpp_mat_on_ss: SparseProbMat,
   pub max_upp_mat: Probs,
   pub upp_mat: Probs,
   pub upp_mat_4_hl: Probs,
@@ -135,7 +144,8 @@ impl PctStaProbMats {
       bpp_mat: prob_mat.clone(),
       access_bpp_mat_4_2l: prob_mat.clone(),
       access_bpp_mat_4_ml: prob_mat.clone(),
-      bpp_mat_4_el: prob_mat,
+      bpp_mat_4_el: prob_mat.clone(),
+      bpp_mat_on_ss: prob_mat,
       max_upp_mat: probs.clone(),
       upp_mat: probs.clone(),
       upp_mat_4_hl: probs.clone(),
@@ -152,7 +162,8 @@ impl PctStaProbMats {
       bpp_mat: prob_mat.clone(),
       access_bpp_mat_4_2l: prob_mat.clone(),
       access_bpp_mat_4_ml: prob_mat.clone(),
-      bpp_mat_4_el: prob_mat,
+      bpp_mat_4_el: prob_mat.clone(),
+      bpp_mat_on_ss: prob_mat,
       max_upp_mat: probs.clone(),
       upp_mat: probs.clone(),
       upp_mat_4_hl: probs.clone(),
@@ -262,13 +273,24 @@ pub const MAX_GAP_NUM_4_IL: Pos = 100;
 pub const MIN_GAP_NUM_4_IL: Pos = 5;
 pub const DEFAULT_MIN_BPP: Prob = 0.005;
 pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: Pos = 0;
+pub const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
+pub const ACCESS_BPP_MAT_ON_2L_FILE_NAME: &'static str = "access_bpp_mats_on_2l.dat";
+pub const ACCESS_BPP_MAT_ON_ML_FILE_NAME: &'static str = "access_bpp_mats_on_ml.dat";
+pub const BPP_MAT_ON_EL_FILE_NAME: &'static str = "bpp_mats_on_el.dat";
+pub const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
+pub const UPP_MAT_FILE_NAME: &'static str = "upp_mats.dat";
+pub const UPP_MAT_ON_HL_FILE_NAME: &'static str = "upp_mats_on_hl.dat";
+pub const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
+pub const UPP_MAT_ON_ML_FILE_NAME: &'static str = "upp_mats_on_ml.dat";
+pub const UPP_MAT_ON_EL_FILE_NAME: &'static str = "upp_mats_on_el.dat";
 
-pub fn io_algo_4_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, uses_bpps: bool) -> StaProbMats {
-  let sta_inside_part_func_mats = get_sta_inside_part_func_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, ss_free_energy_mat_set_pair, false);
-  get_sta_prob_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_inside_part_func_mats, bpp_mat_pair, ss_free_energy_mat_set_pair)
+
+pub fn io_algo_4_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, uses_bpps: bool, produces_access_probs: bool) -> StaProbMats {
+  let sta_inside_part_func_mats = get_sta_inside_part_func_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, ss_free_energy_mat_set_pair, false, uses_bpps);
+  get_sta_prob_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_inside_part_func_mats, bpp_mat_pair, ss_free_energy_mat_set_pair, uses_bpps, produces_access_probs)
 }
 
-pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, is_viterbi: bool) -> StaInsidePartFuncMats {
+pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, is_viterbi: bool, uses_bpps: bool) -> StaInsidePartFuncMats {
   let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
   let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut sta_inside_part_func_mats = StaInsidePartFuncMats::new();
@@ -281,19 +303,23 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
       if !bpp_mat_pair.0.contains_key(&(i, j)) {continue;}
       let invert_base_pair = invert_bp(&base_pair);
       let invert_stacking_base_pair = invert_bp(&(seq_pair.0[long_i + 1], seq_pair.0[long_j - 1]));
-      let ml_tm_delta_fe = ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_base_pair.0][invert_stacking_base_pair.1];
+      let ml_tm_delta_fe = if uses_bpps {0.} else {ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_base_pair.0][invert_stacking_base_pair.1]};
       let stacking_bp = (seq_pair.0[long_i - 1], seq_pair.0[long_j + 1]);
-      let ml_tm_or_de_delta_fe = if i > 1 && j < seq_len_pair.0 - 2 {
-        ML_TM_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.0][stacking_bp.1]
-      } else if i > 1 {
-        FIVE_PRIME_DE_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.0]
-      } else if j < seq_len_pair.0 - 2 {
-        THREE_PRIME_DE_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.1]
-      } else {
-        0.
+      let ml_tm_or_de_delta_fe = if uses_bpps {0.} else {
+          if i > 1 && j < seq_len_pair.0 - 2 {
+          ML_TM_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.0][stacking_bp.1]
+        } else if i > 1 {
+          FIVE_PRIME_DE_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.0]
+        } else if j < seq_len_pair.0 - 2 {
+          THREE_PRIME_DE_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.1]
+        } else {
+          0.
+        }
       };
-      let au_or_gu_end_penalty_delta_fe = if is_au_or_gu(&base_pair) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.};
-      let hl_fe = ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)];
+      let au_or_gu_end_penalty_delta_fe = if uses_bpps {0.} else {
+        if is_au_or_gu(&base_pair) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.}
+      };
+      let hl_fe = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)]};
       for substr_len_2 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.1 + 1 {
         let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
         if min_gap_num_4_il > max_gap_num_4_il {continue;}
@@ -313,7 +339,7 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
               let pos_pair = (j - 1, l - 1);
               match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair) {
                 Some(&part_func) => {
-                  let score = bpa_score + hl_fe + ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)] + part_func;
+                  let score = bpa_score + hl_fe + if uses_bpps {0.} else {ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)]} + part_func;
                   if is_viterbi {
                     if score > sum {
                       sum = score;
@@ -331,7 +357,7 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
                   if !is_canonical(&base_pair_3) {continue;}
                   if !bpp_mat_pair.0.contains_key(&(m, n)) {continue;}
                   if long_m - long_i - 1 + long_j - long_n - 1 > MAX_2_LOOP_LEN {continue;}
-                  let twoloop_fe = ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(i, j, m, n)];
+                  let twoloop_fe = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(i, j, m, n)]};
                   for o in k + 1 .. l {
                     if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
                     let long_o = o as usize;
@@ -348,7 +374,7 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
                             Some(&part_func_2) => {
                               match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&(n + 1, p + 1)) {
                                 Some(&part_func_3) => {
-                                  let twoloop_fe_2 = ss_free_energy_mat_set_pair.1.twoloop_fe_4d_mat[&(k, l, o, p)];
+                                  let twoloop_fe_2 = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.1.twoloop_fe_4d_mat[&(k, l, o, p)]};
                                   let score = bpa_score + part_func_2 + twoloop_fe + twoloop_fe_2 + part_func + part_func_3;
                                   if is_viterbi {
                                     if score > sum {
@@ -367,13 +393,17 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
                   }
                 }
               }
-              let au_or_gu_end_penalty_delta_fe_2 = if is_au_or_gu(&base_pair_2) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.};
+              let au_or_gu_end_penalty_delta_fe_2 = if uses_bpps {0.} else {
+                if is_au_or_gu(&base_pair_2) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.}
+              };
               match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair) {
                 Some(&part_func) => {
                   let invert_base_pair_2 = invert_bp(&base_pair_2);
                   let invert_stacking_base_pair_2 = invert_bp(&(seq_pair.1[long_k + 1], seq_pair.1[long_l - 1]));
-                  let ml_tm_delta_fe_2 = ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_base_pair_2.0][invert_stacking_base_pair_2.1];
-                  let score = bpa_score + 2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2 + part_func;
+                  let ml_tm_delta_fe_2 = if uses_bpps {0.} else {ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_base_pair_2.0][invert_stacking_base_pair_2.1]};
+                  let score = bpa_score + if uses_bpps {0.} else {
+                    2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2
+                  } + part_func;
                   if is_viterbi {
                     if score > sum {
                       sum = score;
@@ -386,14 +416,16 @@ pub fn get_sta_inside_part_func_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, 
               if sum > NEG_INFINITY {
                 sta_inside_part_func_mats.part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
                 let stacking_bp_2 = (seq_pair.1[long_k - 1], seq_pair.1[long_l + 1]);
-                let ml_tm_or_de_delta_fe_2 = if k > 1 && l < seq_len_pair.1 - 2 {
-                  ML_TM_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.0][stacking_bp_2.1]
-                } else if k > 1 {
-                  FIVE_PRIME_DE_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.0]
-                } else if l < seq_len_pair.1 - 2 {
-                  THREE_PRIME_DE_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.1]
-                } else {
-                  0.
+                let ml_tm_or_de_delta_fe_2 = if uses_bpps {0.} else {
+                  if k > 1 && l < seq_len_pair.1 - 2 {
+                    ML_TM_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.0][stacking_bp_2.1]
+                  } else if k > 1 {
+                    FIVE_PRIME_DE_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.0]
+                  } else if l < seq_len_pair.1 - 2 {
+                    THREE_PRIME_DE_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.1]
+                  } else {
+                    0.
+                  }
                 };
                 sum += ml_tm_or_de_delta_fe + ml_tm_or_de_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2;
                 sta_inside_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_els.insert(pos_quadruple, sum);
@@ -997,7 +1029,7 @@ pub fn get_backward_tmp_sta_inside_part_func_mats(seq_len_pair: &PosPair, sta_fe
   backward_tmp_sta_inside_part_func_mats
 }
 
-pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, sta_inside_part_func_mats: &StaInsidePartFuncMats, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair) -> StaProbMats {
+pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, sta_inside_part_func_mats: &StaInsidePartFuncMats, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, uses_bpps: bool, produces_access_probs: bool) -> StaProbMats {
   let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
   let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let mut sta_outside_part_func_4d_mat_4_bpas = PartFunc4dMat::default();
@@ -1061,7 +1093,7 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                   let pos_pair_3 = (m, n);
                   if !bpp_mat_pair.0.contains_key(&pos_pair_3) {continue;}
                   if long_n - long_j - 1 + long_i - long_m - 1 > MAX_2_LOOP_LEN {continue;}
-                  let twoloop_fe = ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(m, n, i, j)];
+                  let twoloop_fe = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(m, n, i, j)]};
                   for o in 1 .. k {
                     if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
                     let long_o = o as usize;
@@ -1081,35 +1113,37 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                               match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&(j + 1, l + 1)) {
                                 Some(&part_func_3) => {
                                   let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
-                                  let twoloop_fe_2 = ss_free_energy_mat_set_pair.1.twoloop_fe_4d_mat[&(o, p, k, l)];
+                                  let twoloop_fe_2 = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.1.twoloop_fe_4d_mat[&(o, p, k, l)]};
                                   let part_func_4_2l = part_func_2 + bpa_score + twoloop_fe + twoloop_fe_2 + part_func + part_func_3;
                                   logsumexp(&mut sum, part_func_4_2l);
-                                  let bpap_4_2l = prob_coeff + part_func_4_2l;
-                                  match sta_prob_mats.access_bpp_mat_pair_4_2l.0.get_mut(&pos_pair) {
-                                    Some(bpp_4_2l) => {
-                                      logsumexp(bpp_4_2l, bpap_4_2l);
-                                    }, None => {
-                                      sta_prob_mats.access_bpp_mat_pair_4_2l.0.insert(pos_pair, bpap_4_2l);
-                                    },
-                                  }
-                                  match sta_prob_mats.access_bpp_mat_pair_4_2l.1.get_mut(&pos_pair_2) {
-                                    Some(bpp_4_2l) => {
-                                      logsumexp(bpp_4_2l, bpap_4_2l);
-                                    }, None => {
-                                      sta_prob_mats.access_bpp_mat_pair_4_2l.1.insert(pos_pair_2, bpap_4_2l);
-                                    },
-                                  }
-                                  for q in long_m + 1 .. long_i {
-                                    logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
-                                  }
-                                  for q in long_j + 1 .. long_n {
-                                    logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
-                                  }
-                                  for q in long_o + 1 .. long_k {
-                                    logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
-                                  }
-                                  for q in long_l + 1 .. long_p {
-                                    logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                                  if produces_access_probs {
+                                    let bpap_4_2l = prob_coeff + part_func_4_2l;
+                                    match sta_prob_mats.access_bpp_mat_pair_4_2l.0.get_mut(&pos_pair) {
+                                      Some(bpp_4_2l) => {
+                                        logsumexp(bpp_4_2l, bpap_4_2l);
+                                      }, None => {
+                                        sta_prob_mats.access_bpp_mat_pair_4_2l.0.insert(pos_pair, bpap_4_2l);
+                                      },
+                                    }
+                                    match sta_prob_mats.access_bpp_mat_pair_4_2l.1.get_mut(&pos_pair_2) {
+                                      Some(bpp_4_2l) => {
+                                        logsumexp(bpp_4_2l, bpap_4_2l);
+                                      }, None => {
+                                        sta_prob_mats.access_bpp_mat_pair_4_2l.1.insert(pos_pair_2, bpap_4_2l);
+                                      },
+                                    }
+                                    for q in long_m + 1 .. long_i {
+                                      logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
+                                    }
+                                    for q in long_j + 1 .. long_n {
+                                      logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
+                                    }
+                                    for q in long_o + 1 .. long_k {
+                                      logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                                    }
+                                    for q in long_l + 1 .. long_p {
+                                      logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                                    }
                                   }
                                 }, None => {},
                               }
@@ -1133,8 +1167,12 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                   let base_pair = (seq_pair.0[long_m], seq_pair.0[long_n]);
                   let invert_base_pair = invert_bp(&base_pair);
                   let invert_stacking_bp = invert_bp(&(seq_pair.0[long_m + 1], seq_pair.0[long_n - 1]));
-                  let ml_tm_delta_fe = ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_bp.0][invert_stacking_bp.1];
-                  let au_or_gu_end_penalty_delta_fe = if is_au_or_gu(&base_pair) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.};
+                  let ml_tm_delta_fe = if uses_bpps {0.} else {
+                    ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_bp.0][invert_stacking_bp.1]
+                  };
+                  let au_or_gu_end_penalty_delta_fe = if uses_bpps {0.} else {
+                    if is_au_or_gu(&base_pair) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.}
+                  };
                   for o in 1 .. k {
                     if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
                     let long_o = o as usize;
@@ -1152,9 +1190,13 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                           let ref forward_tmp_sta_inside_part_func_mats = sta_inside_part_func_mats.forward_tmp_sta_inside_part_func_mats_with_pos_quadruples[&pos_quadruple_2];
                           let ref backward_tmp_sta_inside_part_func_mats = sta_inside_part_func_mats.backward_tmp_sta_inside_part_func_mats_with_pos_quadruples[&pos_quadruple_2];
                           let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
-                          let ml_tm_delta_fe_2 = ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_bp_2.0][invert_stacking_bp_2.1];
-                          let au_or_gu_end_penalty_delta_fe_2 = if is_au_or_gu(&base_pair_2) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.};
-                          let coefficient = part_func_ratio + bpa_score + 2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2 + part_func_4_bpa_2;
+                          let ml_tm_delta_fe_2 = if uses_bpps {0.} else {
+                            ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_bp_2.0][invert_stacking_bp_2.1]
+                          };
+                          let au_or_gu_end_penalty_delta_fe_2 = if uses_bpps {0.} else {
+                            if is_au_or_gu(&base_pair_2) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.}
+                          };
+                          let coefficient = part_func_ratio + bpa_score + if uses_bpps {0.} else {2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2} + part_func_4_bpa_2;
                           let mut part_func_4_ml = NEG_INFINITY;
                           match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&(i - 1, k - 1)) {
                             Some(&part_func) => {
@@ -1178,20 +1220,22 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
                           }
                           if part_func_4_ml > NEG_INFINITY {
                             logsumexp(&mut sum, part_func_4_ml);
-                            let bpap_4_ml = prob_coeff + part_func_4_ml;
-                            match sta_prob_mats.access_bpp_mat_pair_4_ml.0.get_mut(&pos_pair) {
-                              Some(bpp_4_ml) => {
-                                logsumexp(bpp_4_ml, bpap_4_ml);
-                              }, None => {
-                                sta_prob_mats.access_bpp_mat_pair_4_ml.0.insert(pos_pair, bpap_4_ml);
-                              },
-                            }
-                            match sta_prob_mats.access_bpp_mat_pair_4_ml.1.get_mut(&pos_pair_2) {
-                              Some(bpp_4_ml) => {
-                                logsumexp(bpp_4_ml, bpap_4_ml);
-                              }, None => {
-                                sta_prob_mats.access_bpp_mat_pair_4_ml.1.insert(pos_pair_2, bpap_4_ml);
-                              },
+                            if produces_access_probs {
+                              let bpap_4_ml = prob_coeff + part_func_4_ml;
+                              match sta_prob_mats.access_bpp_mat_pair_4_ml.0.get_mut(&pos_pair) {
+                                Some(bpp_4_ml) => {
+                                  logsumexp(bpp_4_ml, bpap_4_ml);
+                                }, None => {
+                                  sta_prob_mats.access_bpp_mat_pair_4_ml.0.insert(pos_pair, bpap_4_ml);
+                                },
+                              }
+                              match sta_prob_mats.access_bpp_mat_pair_4_ml.1.get_mut(&pos_pair_2) {
+                                Some(bpp_4_ml) => {
+                                  logsumexp(bpp_4_ml, bpap_4_ml);
+                                }, None => {
+                                  sta_prob_mats.access_bpp_mat_pair_4_ml.1.insert(pos_pair_2, bpap_4_ml);
+                                },
+                              }
                             }
                           }
                         }, None => {},
@@ -1229,268 +1273,280 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
       }
     }
   }
-  for u in 0 .. seq_len_pair.0 - 1 {
-    for v in 0 .. seq_len_pair.1 - 1 {
-      if u == 0 && v == 0 {continue;}
-      let pos_pair = (u, v);
-      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
-      let (long_u, long_v) = (u as usize, v as usize);
-      let pos_pair_4_ba = (u - 1, v - 1);
-      let pos_pair_4_gap_1 = (u - 1, v);
-      let pos_pair_4_gap_2 = (u, v - 1);
-      let pos_pair_2 = (u + 1, v + 1);
-      if u > 0 && v > 0 {
-        match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_4_ba) {
-          Some(&part_func_2) => {
-            match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
-              Some(&part_func_3) => {
-                let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-                let upp_4_el = part_func_2 + part_func_3 - global_part_func + ba_score;
-                logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], upp_4_el);
-                logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], upp_4_el);
-              }, None => {},
-            }
-          }, None => {},
-        }
-      }
-      if u > 0 {
-        match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_4_gap_1) {
-          Some(&part_func_2) => {
-            match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
-              Some(&part_func_3) => {
-                let upp_4_el = part_func_2 + part_func_3 - global_part_func;
-                logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], upp_4_el);
-              }, None => {},
-            }
-          }, None => {},
-        }
-      }
-      if v > 0 {
-        match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_4_gap_2) {
-          Some(&part_func_2) => {
-            match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
-              Some(&part_func_3) => {
-                let upp_4_el = part_func_2 + part_func_3 - global_part_func;
-                logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], upp_4_el);
-              }, None => {},
-            }
-          }, None => {},
-        }
-      }
-      if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-      if !(u > 0 && v > 0) {continue;}
-      let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-      for i in 1 .. u {
-        for j in u + 1 .. seq_len_pair.0 - 1 {
-          let (long_i, long_j) = (i as usize, j as usize);
-          let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
-          if !is_canonical(&base_pair) {continue;}
-          if !bpp_mat_pair.0.contains_key(&(i, j)) {continue;}
-          let hl_fe = ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)];
-          let invert_base_pair = invert_bp(&base_pair);
-          let invert_stacking_bp = invert_bp(&(seq_pair.0[long_i + 1], seq_pair.0[long_j - 1]));
-          let ml_tm_delta_fe = ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_bp.0][invert_stacking_bp.1];
-          let au_or_gu_end_penalty_delta_fe = if is_au_or_gu(&base_pair) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.};
-          for k in 1 .. v {
-            if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-            for l in v + 1 .. seq_len_pair.1 - 1 {
-              let (long_k, long_l) = (k as usize, l as usize);
-              if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-              let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
-              if !is_canonical(&base_pair_2) {continue;}
-              if !bpp_mat_pair.1.contains_key(&(k, l)) {continue;}
-              let hl_fe_2 = ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)];
-              let invert_base_pair_2 = invert_bp(&base_pair_2);
-              let invert_stacking_bp_2 = invert_bp(&(seq_pair.1[long_k + 1], seq_pair.1[long_l - 1]));
-              let ml_tm_delta_fe_2 = ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_bp_2.0][invert_stacking_bp_2.1];
-              let au_or_gu_end_penalty_delta_fe_2 = if is_au_or_gu(&base_pair_2) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.};
-              let pos_quadruple = (i, j, k, l);
-              match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple) {
-                Some(&part_func_4_bpa) => {
-                  let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple];
-                  let prob_coeff = part_func_4_bpa - global_part_func + bpa_score;
-                  let ref forward_tmp_sta_inside_part_func_mats = sta_inside_part_func_mats.forward_tmp_sta_inside_part_func_mats_with_pos_quadruples[&pos_quadruple];
-                  let ref backward_tmp_sta_inside_part_func_mats = sta_inside_part_func_mats.backward_tmp_sta_inside_part_func_mats_with_pos_quadruples[&pos_quadruple];
-                  let prob_coeff_2 = prob_coeff + hl_fe + hl_fe_2;
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_ba) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_hl = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], upp_4_hl);
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], upp_4_hl);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_1) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_hl = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], upp_4_hl);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_2) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_hl = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], upp_4_hl);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  let prob_coeff_2 = prob_coeff + 2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2;
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_4_ba) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_4_gap_1) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_4_gap_2) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_ba) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_1) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_2) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_ba) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_gap_1) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
-                  match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_gap_2) {
-                    Some(&part_func_2) => {
-                      match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
-                        Some(&part_func_3) => {
-                          let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
-                          logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
-                        }, None => {},
-                      }
-                    }, None => {},
-                  }
+  if produces_access_probs {
+    for u in 0 .. seq_len_pair.0 - 1 {
+      for v in 0 .. seq_len_pair.1 - 1 {
+        if u == 0 && v == 0 {continue;}
+        let pos_pair = (u, v);
+        if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
+        let (long_u, long_v) = (u as usize, v as usize);
+        let pos_pair_4_ba = (u - 1, v - 1);
+        let pos_pair_4_gap_1 = (u - 1, v);
+        let pos_pair_4_gap_2 = (u, v - 1);
+        let pos_pair_2 = (u + 1, v + 1);
+        if u > 0 && v > 0 {
+          match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_4_ba) {
+            Some(&part_func_2) => {
+              match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
+                Some(&part_func_3) => {
+                  let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
+                  let upp_4_el = part_func_2 + part_func_3 - global_part_func + ba_score;
+                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], upp_4_el);
+                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], upp_4_el);
                 }, None => {},
+              }
+            }, None => {},
+          }
+        }
+        if u > 0 {
+          match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_4_gap_1) {
+            Some(&part_func_2) => {
+              match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
+                Some(&part_func_3) => {
+                  let upp_4_el = part_func_2 + part_func_3 - global_part_func;
+                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], upp_4_el);
+                }, None => {},
+              }
+            }, None => {},
+          }
+        }
+        if v > 0 {
+          match sta_inside_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_4_gap_2) {
+            Some(&part_func_2) => {
+              match sta_inside_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
+                Some(&part_func_3) => {
+                  let upp_4_el = part_func_2 + part_func_3 - global_part_func;
+                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], upp_4_el);
+                }, None => {},
+              }
+            }, None => {},
+          }
+        }
+        if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
+        if !(u > 0 && v > 0) {continue;}
+        let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
+        for i in 1 .. u {
+          for j in u + 1 .. seq_len_pair.0 - 1 {
+            let (long_i, long_j) = (i as usize, j as usize);
+            let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
+            if !is_canonical(&base_pair) {continue;}
+            if !bpp_mat_pair.0.contains_key(&(i, j)) {continue;}
+            let hl_fe = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)]};
+            let invert_base_pair = invert_bp(&base_pair);
+            let invert_stacking_bp = invert_bp(&(seq_pair.0[long_i + 1], seq_pair.0[long_j - 1]));
+            let ml_tm_delta_fe = if uses_bpps {0.} else {
+              ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_bp.0][invert_stacking_bp.1]
+            };
+            let au_or_gu_end_penalty_delta_fe = if uses_bpps {0.} else{
+              if is_au_or_gu(&base_pair) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.}
+            };
+            for k in 1 .. v {
+              if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
+              for l in v + 1 .. seq_len_pair.1 - 1 {
+                let (long_k, long_l) = (k as usize, l as usize);
+                if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
+                let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
+                if !is_canonical(&base_pair_2) {continue;}
+                if !bpp_mat_pair.1.contains_key(&(k, l)) {continue;}
+                let hl_fe_2 = if uses_bpps {0.} else {ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)]};
+                let invert_base_pair_2 = invert_bp(&base_pair_2);
+                let invert_stacking_bp_2 = invert_bp(&(seq_pair.1[long_k + 1], seq_pair.1[long_l - 1]));
+                let ml_tm_delta_fe_2 = if uses_bpps {0.} else {
+                  ML_TM_DELTA_FES[invert_base_pair_2.0][invert_base_pair_2.1][invert_stacking_bp_2.0][invert_stacking_bp_2.1]
+                };
+                let au_or_gu_end_penalty_delta_fe_2 = if uses_bpps {0.} else {
+                  if is_au_or_gu(&base_pair_2) {HELIX_AU_OR_GU_END_PENALTY_DELTA_FE} else {0.}
+                };
+                let pos_quadruple = (i, j, k, l);
+                match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple) {
+                  Some(&part_func_4_bpa) => {
+                    let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple];
+                    let prob_coeff = part_func_4_bpa - global_part_func + bpa_score;
+                    let ref forward_tmp_sta_inside_part_func_mats = sta_inside_part_func_mats.forward_tmp_sta_inside_part_func_mats_with_pos_quadruples[&pos_quadruple];
+                    let ref backward_tmp_sta_inside_part_func_mats = sta_inside_part_func_mats.backward_tmp_sta_inside_part_func_mats_with_pos_quadruples[&pos_quadruple];
+                    let prob_coeff_2 = prob_coeff + hl_fe + hl_fe_2;
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_ba) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_hl = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], upp_4_hl);
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], upp_4_hl);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_1) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_hl = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], upp_4_hl);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_2) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_hl = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], upp_4_hl);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    let prob_coeff_2 = prob_coeff + if uses_bpps {0.} else {
+                      2. * CONST_4_INIT_ML_DELTA_FE + ml_tm_delta_fe + ml_tm_delta_fe_2 + au_or_gu_end_penalty_delta_fe + au_or_gu_end_penalty_delta_fe_2
+                    };
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_4_ba) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_4_gap_1) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_4_gap_2) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_ba) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_1) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_on_sa.get(&pos_pair_4_gap_2) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_internal_multiloop.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_ba) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3 + ba_score;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_gap_1) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.0[long_u], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                    match forward_tmp_sta_inside_part_func_mats.part_func_mat_4_first_bpas_on_mls.get(&pos_pair_4_gap_2) {
+                      Some(&part_func_2) => {
+                        match backward_tmp_sta_inside_part_func_mats.part_func_mat_4_bpas_on_mls.get(&pos_pair_2) {
+                          Some(&part_func_3) => {
+                            let upp_4_ml = prob_coeff_2 + part_func_2 + part_func_3;
+                            logsumexp(&mut sta_prob_mats.upp_mat_pair_4_ml.1[long_v], upp_4_ml);
+                          }, None => {},
+                        }
+                      }, None => {},
+                    }
+                  }, None => {},
+                }
               }
             }
           }
         }
       }
     }
-  }
-  for bpp in sta_prob_mats.access_bpp_mat_pair_4_2l.0.values_mut() {
-    *bpp = bpp.exp()
-  }
-  for bpp in sta_prob_mats.access_bpp_mat_pair_4_2l.1.values_mut() {
-    *bpp = bpp.exp()
-  }
-  for bpp in sta_prob_mats.access_bpp_mat_pair_4_ml.0.values_mut() {
-    *bpp = bpp.exp()
-  }
-  for bpp in sta_prob_mats.access_bpp_mat_pair_4_ml.1.values_mut() {
-    *bpp = bpp.exp()
-  }
-  for bpp in sta_prob_mats.bpp_mat_pair_4_el.0.values_mut() {
-    *bpp = bpp.exp()
-  }
-  for bpp in sta_prob_mats.bpp_mat_pair_4_el.1.values_mut() {
-    *bpp = bpp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_hl.0.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_hl.1.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_ml.0.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_ml.1.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_2l.0.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_2l.1.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_el.0.iter_mut() {
-    *upp = upp.exp()
-  }
-  for upp in sta_prob_mats.upp_mat_pair_4_el.1.iter_mut() {
-    *upp = upp.exp()
+    for bpp in sta_prob_mats.access_bpp_mat_pair_4_2l.0.values_mut() {
+      *bpp = bpp.exp()
+    }
+    for bpp in sta_prob_mats.access_bpp_mat_pair_4_2l.1.values_mut() {
+      *bpp = bpp.exp()
+    }
+    for bpp in sta_prob_mats.access_bpp_mat_pair_4_ml.0.values_mut() {
+      *bpp = bpp.exp()
+    }
+    for bpp in sta_prob_mats.access_bpp_mat_pair_4_ml.1.values_mut() {
+      *bpp = bpp.exp()
+    }
+    for bpp in sta_prob_mats.bpp_mat_pair_4_el.0.values_mut() {
+      *bpp = bpp.exp()
+    }
+    for bpp in sta_prob_mats.bpp_mat_pair_4_el.1.values_mut() {
+      *bpp = bpp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_hl.0.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_hl.1.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_ml.0.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_ml.1.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_2l.0.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_2l.1.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_el.0.iter_mut() {
+      *upp = upp.exp()
+    }
+    for upp in sta_prob_mats.upp_mat_pair_4_el.1.iter_mut() {
+      *upp = upp.exp()
+    }
   }
   sta_prob_mats
 }
 
-pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, bpp_mats: &SsProbMats, upp_mat_len: usize) -> PctStaProbMats {
+pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, bpp_mats: &SsProbMats, upp_mat_len: usize, produces_access_probs: bool) -> PctStaProbMats {
   let weight = 1. / (num_of_rnas - 1) as Prob;
   let mut pct_prob_mats = PctStaProbMats::new(upp_mat_len);
   for rna_id_2 in 0 .. num_of_rnas {
@@ -1513,54 +1569,6 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
         },
       }
     }
-    let ref_2_access_bpp_mat_4_2l = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.access_bpp_mat_pair_4_2l.0
-    } else {
-      &ref_2_prob_mats.access_bpp_mat_pair_4_2l.1
-    };
-    for (pos_pair, &bpp) in ref_2_access_bpp_mat_4_2l.iter() {
-      let weighted_bpp = weight * bpp;
-      match pct_prob_mats.access_bpp_mat_4_2l.get_mut(pos_pair) {
-        Some(bpp_4_2l) => {
-          *bpp_4_2l += weighted_bpp;
-        },
-        None => {
-          pct_prob_mats.access_bpp_mat_4_2l.insert(*pos_pair, weighted_bpp);
-        },
-      }
-    }
-    let ref_2_access_bpp_mat_4_ml = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.access_bpp_mat_pair_4_ml.0
-    } else {
-      &ref_2_prob_mats.access_bpp_mat_pair_4_ml.1
-    };
-    for (pos_pair, &bpp) in ref_2_access_bpp_mat_4_ml.iter() {
-      let weighted_bpp = weight * bpp;
-      match pct_prob_mats.access_bpp_mat_4_ml.get_mut(pos_pair) {
-        Some(bpp_4_ml) => {
-          *bpp_4_ml += weighted_bpp;
-        },
-        None => {
-          pct_prob_mats.access_bpp_mat_4_ml.insert(*pos_pair, weighted_bpp);
-        },
-      }
-    }
-    let ref_2_bpp_mat_4_el = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.bpp_mat_pair_4_el.0
-    } else {
-      &ref_2_prob_mats.bpp_mat_pair_4_el.1
-    };
-    for (pos_pair, &bpp) in ref_2_bpp_mat_4_el.iter() {
-      let weighted_bpp = weight * bpp;
-      match pct_prob_mats.bpp_mat_4_el.get_mut(pos_pair) {
-        Some(bpp_4_el) => {
-          *bpp_4_el += weighted_bpp;
-        },
-        None => {
-          pct_prob_mats.bpp_mat_4_el.insert(*pos_pair, weighted_bpp);
-        },
-      }
-    }
     let ref_2_upp_mat = if rna_id < rna_id_2 {
       &ref_2_prob_mats.upp_mat_pair.0
     } else {
@@ -1570,81 +1578,91 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
       let weighted_upp = weight * upp;
       pct_prob_mats.upp_mat[i] += weighted_upp;
     }
-    let ref_2_upp_mat = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.upp_mat_pair_4_hl.0
-    } else {
-      &ref_2_prob_mats.upp_mat_pair_4_hl.1
-    };
-    for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
-      let weighted_upp = weight * upp;
-      pct_prob_mats.upp_mat_4_hl[i] += weighted_upp;
-    }
-    let ref_2_upp_mat = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.upp_mat_pair_4_2l.0
-    } else {
-      &ref_2_prob_mats.upp_mat_pair_4_2l.1
-    };
-    for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
-      let weighted_upp = weight * upp;
-      pct_prob_mats.upp_mat_4_2l[i] += weighted_upp;
-    }
-    let ref_2_upp_mat = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.upp_mat_pair_4_ml.0
-    } else {
-      &ref_2_prob_mats.upp_mat_pair_4_ml.1
-    };
-    for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
-      let weighted_upp = weight * upp;
-      pct_prob_mats.upp_mat_4_ml[i] += weighted_upp;
-    }
-    let ref_2_upp_mat = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.upp_mat_pair_4_el.0
-    } else {
-      &ref_2_prob_mats.upp_mat_pair_4_el.1
-    };
-    for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
-      let weighted_upp = weight * upp;
-      pct_prob_mats.upp_mat_4_el[i] += weighted_upp;
-    }
-  }
-  for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_2l.iter() {
-    pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
-  }
-  for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_ml.iter() {
-    match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
-      Some(old_bpp) => {
-        if bpp > *old_bpp {
-          *old_bpp = bpp;
+    if produces_access_probs {
+      let ref_2_access_bpp_mat_4_2l = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.access_bpp_mat_pair_4_2l.0
+      } else {
+        &ref_2_prob_mats.access_bpp_mat_pair_4_2l.1
+      };
+      for (pos_pair, &bpp) in ref_2_access_bpp_mat_4_2l.iter() {
+        let weighted_bpp = weight * bpp;
+        match pct_prob_mats.access_bpp_mat_4_2l.get_mut(pos_pair) {
+          Some(bpp_4_2l) => {
+            *bpp_4_2l += weighted_bpp;
+          },
+          None => {
+            pct_prob_mats.access_bpp_mat_4_2l.insert(*pos_pair, weighted_bpp);
+          },
         }
-      }, None => {
-        pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
       }
-    }
-  }
-  for (pos_pair, &bpp) in pct_prob_mats.bpp_mat_4_el.iter() {
-    match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
-      Some(old_bpp) => {
-        if bpp > *old_bpp {
-          *old_bpp = bpp;
+      let ref_2_access_bpp_mat_4_ml = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.access_bpp_mat_pair_4_ml.0
+      } else {
+        &ref_2_prob_mats.access_bpp_mat_pair_4_ml.1
+      };
+      for (pos_pair, &bpp) in ref_2_access_bpp_mat_4_ml.iter() {
+        let weighted_bpp = weight * bpp;
+        match pct_prob_mats.access_bpp_mat_4_ml.get_mut(pos_pair) {
+          Some(bpp_4_ml) => {
+            *bpp_4_ml += weighted_bpp;
+          },
+          None => {
+            pct_prob_mats.access_bpp_mat_4_ml.insert(*pos_pair, weighted_bpp);
+          },
         }
-      }, None => {
-        pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
       }
-    }
-  }
-  for (i, &upp) in pct_prob_mats.upp_mat_4_hl.iter().enumerate() {
-    pct_prob_mats.max_upp_mat[i] = upp;
-  }
-  for (i, &upp) in pct_prob_mats.upp_mat_4_2l.iter().enumerate() {
-    let old_upp = pct_prob_mats.max_upp_mat[i];
-    if upp > old_upp {
-      pct_prob_mats.max_upp_mat[i] = upp;
-    }
-  }
-  for (i, &upp) in pct_prob_mats.upp_mat_4_ml.iter().enumerate() {
-    let old_upp = pct_prob_mats.max_upp_mat[i];
-    if upp > old_upp {
-      pct_prob_mats.max_upp_mat[i] = upp;
+      let ref_2_bpp_mat_4_el = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.bpp_mat_pair_4_el.0
+      } else {
+        &ref_2_prob_mats.bpp_mat_pair_4_el.1
+      };
+      for (pos_pair, &bpp) in ref_2_bpp_mat_4_el.iter() {
+        let weighted_bpp = weight * bpp;
+        match pct_prob_mats.bpp_mat_4_el.get_mut(pos_pair) {
+          Some(bpp_4_el) => {
+            *bpp_4_el += weighted_bpp;
+          },
+          None => {
+            pct_prob_mats.bpp_mat_4_el.insert(*pos_pair, weighted_bpp);
+          },
+        }
+      }
+      let ref_2_upp_mat = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.upp_mat_pair_4_hl.0
+      } else {
+        &ref_2_prob_mats.upp_mat_pair_4_hl.1
+      };
+      for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
+        let weighted_upp = weight * upp;
+        pct_prob_mats.upp_mat_4_hl[i] += weighted_upp;
+      }
+      let ref_2_upp_mat = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.upp_mat_pair_4_2l.0
+      } else {
+        &ref_2_prob_mats.upp_mat_pair_4_2l.1
+      };
+      for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
+        let weighted_upp = weight * upp;
+        pct_prob_mats.upp_mat_4_2l[i] += weighted_upp;
+      }
+      let ref_2_upp_mat = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.upp_mat_pair_4_ml.0
+      } else {
+        &ref_2_prob_mats.upp_mat_pair_4_ml.1
+      };
+      for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
+        let weighted_upp = weight * upp;
+        pct_prob_mats.upp_mat_4_ml[i] += weighted_upp;
+      }
+      let ref_2_upp_mat = if rna_id < rna_id_2 {
+        &ref_2_prob_mats.upp_mat_pair_4_el.0
+      } else {
+        &ref_2_prob_mats.upp_mat_pair_4_el.1
+      };
+      for (i, &upp) in ref_2_upp_mat.iter().enumerate() {
+        let weighted_upp = weight * upp;
+        pct_prob_mats.upp_mat_4_el[i] += weighted_upp;
+      }
     }
   }
   for (i, &upp) in pct_prob_mats.upp_mat_4_el.iter().enumerate() {
@@ -1659,29 +1677,67 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
       pct_prob_mats.bpp_mat.insert(pos_pair, bpp);
     }
   }
-  for (&(i, j), &bpp) in &bpp_mats.access_bpp_mat_4_2l {
-    let pos_pair = (i + 1, j + 1);
-    if !pct_prob_mats.access_bpp_mat_4_2l.contains_key(&pos_pair) {
-      pct_prob_mats.access_bpp_mat_4_2l.insert(pos_pair, bpp);
+  if produces_access_probs {
+    for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_2l.iter() {
+      pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
     }
-  }
-  for (&(i, j), &bpp) in &bpp_mats.access_bpp_mat_4_ml {
-    let pos_pair = (i + 1, j + 1);
-    if !pct_prob_mats.access_bpp_mat_4_ml.contains_key(&pos_pair) {
-      pct_prob_mats.access_bpp_mat_4_ml.insert(pos_pair, bpp);
+    for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_ml.iter() {
+      match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
+        Some(old_bpp) => {
+          if bpp > *old_bpp {
+            *old_bpp = bpp;
+          }
+        }, None => {
+          pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
+        }
+      }
     }
-  }
-  for (&(i, j), &bpp) in &bpp_mats.bpp_mat_4_el {
-    let pos_pair = (i + 1, j + 1);
-    if !pct_prob_mats.bpp_mat_4_el.contains_key(&pos_pair) {
-      pct_prob_mats.bpp_mat_4_el.insert(pos_pair, bpp);
+    for (pos_pair, &bpp) in pct_prob_mats.bpp_mat_4_el.iter() {
+      match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
+        Some(old_bpp) => {
+          if bpp > *old_bpp {
+            *old_bpp = bpp;
+          }
+        }, None => {
+          pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
+        }
+      }
+    }
+    for (i, &upp) in pct_prob_mats.upp_mat_4_hl.iter().enumerate() {
+      pct_prob_mats.max_upp_mat[i] = upp;
+    }
+    for (i, &upp) in pct_prob_mats.upp_mat_4_2l.iter().enumerate() {
+      let old_upp = pct_prob_mats.max_upp_mat[i];
+      if upp > old_upp {
+        pct_prob_mats.max_upp_mat[i] = upp;
+      }
+    }
+    for (i, &upp) in pct_prob_mats.upp_mat_4_ml.iter().enumerate() {
+      let old_upp = pct_prob_mats.max_upp_mat[i];
+      if upp > old_upp {
+        pct_prob_mats.max_upp_mat[i] = upp;
+      }
+    }
+    for (&(i, j), &bpp) in &bpp_mats.access_bpp_mat_4_2l {
+      let pos_pair = (i + 1, j + 1);
+      if !pct_prob_mats.access_bpp_mat_4_2l.contains_key(&pos_pair) {
+        pct_prob_mats.access_bpp_mat_4_2l.insert(pos_pair, bpp);
+      }
+    }
+    for (&(i, j), &bpp) in &bpp_mats.access_bpp_mat_4_ml {
+      let pos_pair = (i + 1, j + 1);
+      if !pct_prob_mats.access_bpp_mat_4_ml.contains_key(&pos_pair) {
+        pct_prob_mats.access_bpp_mat_4_ml.insert(pos_pair, bpp);
+      }
+    }
+    for (&(i, j), &bpp) in &bpp_mats.bpp_mat_4_el {
+      let pos_pair = (i + 1, j + 1);
+      if !pct_prob_mats.bpp_mat_4_el.contains_key(&pos_pair) {
+        pct_prob_mats.bpp_mat_4_el.insert(pos_pair, bpp);
+      }
     }
   }
   pct_prob_mats
-}
-
-pub fn remove_small_bpps_from_bpp_mat(sparse_bpp_mat: &SparseProbMat, min_bpp: Prob) -> SparseProbMat {
-  sparse_bpp_mat.iter().filter(|(_, &bpp)| {bpp >= min_bpp}).map(|(&(i, j), &bpp)| {((i + 1, j + 1), bpp)}).collect()
 }
 
 pub fn get_max_bp_span(sparse_bpp_mat: &SparseProbMat) -> Pos {
@@ -1717,7 +1773,11 @@ fn is_min_gap_ok_2(pos_quadruple: &PosQuadruple, max_gap_num: Pos) -> bool {
   }
 }
 
-pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos, uses_bpps: bool) -> ProbMatSets {
+pub fn remove_small_bpps_from_bpp_mat(sparse_bpp_mat: &SparseProbMat, min_bpp: Prob) -> SparseProbMat {
+  sparse_bpp_mat.iter().filter(|(_, &bpp)| {bpp >= min_bpp}).map(|(&(i, j), &bpp)| {((i + 1, j + 1), bpp)}).collect()
+}
+
+pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos, uses_bpps: bool, produces_access_probs: bool) -> ProbMatSets {
   let num_of_fasta_records = fasta_records.len();
   let mut bpp_mat_sets = vec![SsProbMats::new(); num_of_fasta_records];
   let mut sparse_bpp_mats = vec![SparseProbMat::new(); num_of_fasta_records];
@@ -1754,7 +1814,7 @@ pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: 
       let ss_free_energy_mat_set_pair = (&ss_free_energy_mat_sets[rna_id_pair.0], &ss_free_energy_mat_sets[rna_id_pair.1]);
       scope.execute(move || {
         let sta_fe_params = StaFeParams::new(&seq_pair, &seq_len_pair, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, uses_bpps);
-        *prob_mats = io_algo_4_prob_mats(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, &ss_free_energy_mat_set_pair, uses_bpps);
+        *prob_mats = io_algo_4_prob_mats(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, &ss_free_energy_mat_set_pair, uses_bpps, produces_access_probs);
       });
     }
   });
@@ -1763,10 +1823,139 @@ pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: 
     for (rna_id, prob_mats, bpp_mats) in multizip((0 .. num_of_fasta_records, prob_mat_sets.iter_mut(), bpp_mat_sets.iter_mut())) {
       let ref ref_2_prob_mats_with_rna_id_pairs = prob_mats_with_rna_id_pairs;
       let seq_len = fasta_records[rna_id].seq.len();
+      prob_mats.bpp_mat_on_ss = bpp_mats.bpp_mat.clone();
       scope.execute(move || {
-        *prob_mats = pct_of_prob_mats(ref_2_prob_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mats, seq_len);
+        *prob_mats = pct_of_prob_mats(ref_2_prob_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mats, seq_len, produces_access_probs);
       });
     }
   });
   prob_mat_sets
+}
+
+pub fn write_prob_mat_sets(output_dir_path: &Path, prob_mat_sets: &ProbMatSets, produces_access_probs: bool) {
+  if !output_dir_path.exists() {
+    let _ = create_dir(output_dir_path);
+  }
+  let bpp_mat_file_path = output_dir_path.join(BPP_MAT_FILE_NAME);
+  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
+  let mut buf_4_writer_2_bpp_mat_file = String::new();
+  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (&(i, j), &bpp) in prob_mats.bpp_mat.iter() {
+      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
+    }
+    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+  }
+  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+  let bpp_mat_file_path = output_dir_path.join(ACCESS_BPP_MAT_ON_2L_FILE_NAME);
+  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
+  let mut buf_4_writer_2_bpp_mat_file = String::new();
+  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (&(i, j), &bpp) in prob_mats.access_bpp_mat_4_2l.iter() {
+      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
+    }
+    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+  }
+  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+  let upp_mat_file_path = output_dir_path.join(UPP_MAT_FILE_NAME);
+  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
+  let mut buf_4_writer_2_upp_mat_file = String::new();
+  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+    let seq_len = prob_mats.upp_mat.len();
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (i, &upp) in prob_mats.upp_mat.iter().enumerate() {
+      if i == 0 || i == seq_len - 1 {continue;}
+      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+    }
+    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+  }
+  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+  let bpp_mat_file_path = output_dir_path.join(BPP_MAT_ON_SS_FILE_NAME);
+  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
+  let mut buf_4_writer_2_bpp_mat_file = String::new();
+  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+    for (&(i, j), &bpp) in prob_mats.bpp_mat_on_ss.iter() {
+      buf_4_rna_id.push_str(&format!("{},{},{} ", i, j, bpp));
+    }
+    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+  }
+  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+  if produces_access_probs {
+    let bpp_mat_file_path = output_dir_path.join(ACCESS_BPP_MAT_ON_ML_FILE_NAME);
+    let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_bpp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (&(i, j), &bpp) in prob_mats.access_bpp_mat_4_ml.iter() {
+        buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
+      }
+      buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+    let bpp_mat_file_path = output_dir_path.join(BPP_MAT_ON_EL_FILE_NAME);
+    let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_bpp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (&(i, j), &bpp) in prob_mats.bpp_mat_4_el.iter() {
+        buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
+      }
+      buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+    let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_HL_FILE_NAME);
+    let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_upp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let seq_len = prob_mats.upp_mat_4_hl.len();
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (i, &upp) in prob_mats.upp_mat_4_hl.iter().enumerate() {
+        if i == 0 || i == seq_len - 1 {continue;}
+        buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+      }
+      buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+    let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_2L_FILE_NAME);
+    let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_upp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let seq_len = prob_mats.upp_mat_4_2l.len();
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (i, &upp) in prob_mats.upp_mat_4_2l.iter().enumerate() {
+        if i == 0 || i == seq_len - 1 {continue;}
+        buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+      }
+      buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+    let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_ML_FILE_NAME);
+    let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_upp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let seq_len = prob_mats.upp_mat_4_ml.len();
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (i, &upp) in prob_mats.upp_mat_4_ml.iter().enumerate() {
+        if i == 0 || i == seq_len - 1 {continue;}
+        buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+      }
+      buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+    let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_EL_FILE_NAME);
+    let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_upp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let seq_len = prob_mats.upp_mat_4_el.len();
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (i, &upp) in prob_mats.upp_mat_4_el.iter().enumerate() {
+        if i == 0 || i == seq_len - 1 {continue;}
+        buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+      }
+      buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+  }
 }

@@ -1,25 +1,7 @@
 extern crate phyloprob;
-extern crate bio;
-extern crate num_cpus;
 
 use phyloprob::*;
 use std::env;
-use std::path::Path;
-use bio::io::fasta::Reader;
-use std::io::prelude::*;
-use std::io::BufWriter;
-use std::fs::File;
-use std::fs::create_dir;
-
-const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
-const ACCESS_BPP_MAT_ON_2L_FILE_NAME: &'static str = "access_bpp_mats_on_2l.dat";
-const ACCESS_BPP_MAT_ON_ML_FILE_NAME: &'static str = "access_bpp_mats_on_ml.dat";
-const BPP_MAT_ON_EL_FILE_NAME: &'static str = "bpp_mats_on_el.dat";
-const UPP_MAT_FILE_NAME: &'static str = "upp_mats.dat";
-const UPP_MAT_ON_HL_FILE_NAME: &'static str = "upp_mats_on_hl.dat";
-const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
-const UPP_MAT_ON_ML_FILE_NAME: &'static str = "upp_mats_on_ml.dat";
-const UPP_MAT_ON_EL_FILE_NAME: &'static str = "upp_mats_on_el.dat";
 
 fn main() {
   let args = env::args().collect::<Args>();
@@ -31,6 +13,7 @@ fn main() {
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
   opts.optflag("u", "uses_bpp_score", "Uses base-pairing probabilities as scores of secondary structures (Not recommended due to poor accuracy)");
+  opts.optflag("a", "produces_access_probs", &format!("Also compute accessible probabilities"));
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -60,6 +43,7 @@ fn main() {
     num_cpus::get() as NumOfThreads
   };
   let uses_bpps = matches.opt_present("u");
+  let produces_access_probs = matches.opt_present("a");
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
   let mut fasta_records = FastaRecords::new();
   for fasta_record in fasta_file_reader.records() {
@@ -70,118 +54,6 @@ fn main() {
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
   let mut thread_pool = Pool::new(num_of_threads);
-  let prob_mat_sets = phyloprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, uses_bpps);
-  if !output_dir_path.exists() {
-    let _ = create_dir(output_dir_path);
-  }
-  let bpp_mat_file_path = output_dir_path.join(BPP_MAT_FILE_NAME);
-  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_bpp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (&(i, j), &bpp) in prob_mats.bpp_mat.iter() {
-      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
-    }
-    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
-  let bpp_mat_file_path = output_dir_path.join(ACCESS_BPP_MAT_ON_2L_FILE_NAME);
-  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_bpp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (&(i, j), &bpp) in prob_mats.access_bpp_mat_4_2l.iter() {
-      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
-    }
-    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
-  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
-  let bpp_mat_file_path = output_dir_path.join(ACCESS_BPP_MAT_ON_ML_FILE_NAME);
-  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_bpp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (&(i, j), &bpp) in prob_mats.access_bpp_mat_4_ml.iter() {
-      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
-    }
-    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
-  let bpp_mat_file_path = output_dir_path.join(BPP_MAT_ON_EL_FILE_NAME);
-  let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_bpp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (&(i, j), &bpp) in prob_mats.bpp_mat_4_el.iter() {
-      buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
-    }
-    buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
-  let upp_mat_file_path = output_dir_path.join(UPP_MAT_FILE_NAME);
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_upp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let seq_len = prob_mats.upp_mat.len();
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &upp) in prob_mats.upp_mat.iter().enumerate() {
-      if i == 0 || i == seq_len - 1 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
-    }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
-  let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_HL_FILE_NAME);
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_upp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let seq_len = prob_mats.upp_mat_4_hl.len();
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &upp) in prob_mats.upp_mat_4_hl.iter().enumerate() {
-      if i == 0 || i == seq_len - 1 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
-    }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
-  let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_2L_FILE_NAME);
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_upp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let seq_len = prob_mats.upp_mat_4_2l.len();
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &upp) in prob_mats.upp_mat_4_2l.iter().enumerate() {
-      if i == 0 || i == seq_len - 1 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
-    }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
-  let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_ML_FILE_NAME);
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_upp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let seq_len = prob_mats.upp_mat_4_ml.len();
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &upp) in prob_mats.upp_mat_4_ml.iter().enumerate() {
-      if i == 0 || i == seq_len - 1 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
-    }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
-  let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_EL_FILE_NAME);
-  let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
-  let mut buf_4_writer_2_upp_mat_file = String::new();
-  for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
-    let seq_len = prob_mats.upp_mat_4_el.len();
-    let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
-    for (i, &upp) in prob_mats.upp_mat_4_el.iter().enumerate() {
-      if i == 0 || i == seq_len - 1 {continue;}
-      buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
-    }
-    buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
-  }
-  let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
+  let prob_mat_sets = phyloprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, uses_bpps, produces_access_probs);
+  write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
 }
