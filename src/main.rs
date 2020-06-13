@@ -7,7 +7,7 @@ fn main() {
   let args = env::args().collect::<Args>();
   let program_name = args[0].clone();
   let mut opts = Options::new();
-  opts.reqopt("i", "input_file_path", "The path to an input FASTA file containing RNA sequences", "STR");
+  opts.reqopt("i", "input_file_path", "The path to an input FASTA file containing RNA sequences to predict probabilities", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
@@ -25,8 +25,6 @@ fn main() {
   }
   let input_file_path = matches.opt_str("i").unwrap();
   let input_file_path = Path::new(&input_file_path);
-  let output_dir_path = matches.opt_str("o").unwrap();
-  let output_dir_path = Path::new(&output_dir_path);
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
   } else {
@@ -44,6 +42,8 @@ fn main() {
   };
   let uses_bpps = matches.opt_present("u");
   let produces_access_probs = matches.opt_present("a");
+  let output_dir_path = matches.opt_str("o").unwrap();
+  let output_dir_path = Path::new(&output_dir_path);
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
   let mut fasta_records = FastaRecords::new();
   for fasta_record in fasta_file_reader.records() {
