@@ -1,9 +1,9 @@
 [package]
-name = "phyloprob"
+name = "consprob"
 version = "0.1.2"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "PhyloProb Program, which Predicts Average Posterior Probabilities on RNA Structural Alignment"
-repository = "https://github.com/heartsh/phyloprob"
+description = "ConsProb, which Predicts Average Posterior Probabilities on Sparse RNA Structural Alignment"
+repository = "https://github.com/heartsh/consprob"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "structural-alignment"]
 license = "MIT"
@@ -20,4 +20,4 @@ itertools = "0.7"
 
 [lib]
 path = "src/lib.rs"
-name = "phyloprob"
+name = "consprob"

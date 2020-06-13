@@ -1909,7 +1909,7 @@ pub fn sumormax(sum: &mut FreeEnergy, new_term: FreeEnergy, is_viterbi: bool) {
   }
 }
 
-pub fn phyloprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos, uses_bpps: bool, produces_access_probs: bool) -> ProbMatSets {
+pub fn consprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos, uses_bpps: bool, produces_access_probs: bool) -> ProbMatSets {
   let num_of_fasta_records = fasta_records.len();
   let mut bpp_mat_sets = vec![SsProbMats::new(); num_of_fasta_records];
   let mut sparse_bpp_mats = vec![SparseProbMat::new(); num_of_fasta_records];

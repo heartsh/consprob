@@ -1,6 +1,6 @@
-extern crate phyloprob;
+extern crate consprob;
 
-use phyloprob::*;
+use consprob::*;
 use std::env;
 
 fn main() {
@@ -54,6 +54,6 @@ fn main() {
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
   let mut thread_pool = Pool::new(num_of_threads);
-  let prob_mat_sets = phyloprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, uses_bpps, produces_access_probs);
+  let prob_mat_sets = consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, uses_bpps, produces_access_probs);
   write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
 }
