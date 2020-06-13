@@ -3,7 +3,7 @@ pub use rna_algos::mccaskill_algo::*;
 use std::f32::consts::LOG2_E;
 
 pub type BaScoreMat = HashMap<BasePair, FreeEnergy>;
-pub type BpaScoreMat = HashMap<(BasePair, BasePair), FreeEnergy>;
+pub type CovScoreMat = HashMap<(BasePair, BasePair), FreeEnergy>;
 pub type InsertScores = [FreeEnergy; NUM_OF_BASES];
 
 pub const PSEUDO_BASE: Base = U + 1 as Base;
