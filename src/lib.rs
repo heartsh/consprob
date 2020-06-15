@@ -219,7 +219,7 @@ impl StaFeParams {
         let pos_pair = (i, j);
         if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max) {continue;}
         let base_pair = (base, seq_pair.1[long_j]);
-        sta_fe_params.ba_score_mat.insert(pos_pair, BA_SCORE_MAT[&base_pair]);
+        sta_fe_params.ba_score_mat.insert(pos_pair, BA_SCORE_MAT[&base_pair] + RIBOSUM_BA_SCORE_MAT[&base_pair]);
       }
       let upper_j = if i + max_bp_span_pair.0 >= seq_len_pair.0 - 1 {seq_len_pair.0 - 1} else {i + max_bp_span_pair.0};
       for j in i + 1 .. upper_j {
@@ -244,7 +244,7 @@ impl StaFeParams {
             if !is_canonical(&base_pair_2) {continue;}
             if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num_4_il) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
             let bpp_2 = if uses_bpps {bpp_mat_pair.1[&pos_pair_2].ln()} else {0.};
-            sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&(base_pair.1, base_pair_2.1)] + bpp + bpp_2 + if base_pair == base_pair_2 {1.} else {0.});
+            sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&(base_pair.1, base_pair_2.1)] + bpp + bpp_2 + RIBOSUM_BPA_SCORE_MAT[&(base_pair, base_pair_2)]);
           }
         }
       }
@@ -307,11 +307,13 @@ pub const MIN_GAP_NUM_4_IL: Pos = 5;
 pub const DEFAULT_MIN_BPP: Prob = 0.005;
 pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: Pos = 5;
 pub const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
+pub const MAX_BPP_MAT_FILE_NAME: &'static str = "max_bpp_mats.dat";
 pub const ACCESS_BPP_MAT_ON_2L_FILE_NAME: &'static str = "access_bpp_mats_on_2l.dat";
 pub const ACCESS_BPP_MAT_ON_ML_FILE_NAME: &'static str = "access_bpp_mats_on_ml.dat";
 pub const BPP_MAT_ON_EL_FILE_NAME: &'static str = "bpp_mats_on_el.dat";
 pub const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
 pub const UPP_MAT_FILE_NAME: &'static str = "upp_mats.dat";
+pub const MAX_UPP_MAT_FILE_NAME: &'static str = "max_upp_mats.dat";
 pub const UPP_MAT_ON_HL_FILE_NAME: &'static str = "upp_mats_on_hl.dat";
 pub const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
 pub const UPP_MAT_ON_ML_FILE_NAME: &'static str = "upp_mats_on_ml.dat";
@@ -1782,12 +1784,6 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
       }
     }
   }
-  for (i, &upp) in pct_prob_mats.upp_mat_4_el.iter().enumerate() {
-    let old_upp = pct_prob_mats.max_upp_mat[i];
-    if upp > old_upp {
-      pct_prob_mats.max_upp_mat[i] = upp;
-    }
-  }
   for (&(i, j), &bpp) in &bpp_mats.bpp_mat {
     let pos_pair = (i + 1, j + 1);
     if !pct_prob_mats.bpp_mat.contains_key(&pos_pair) {
@@ -1830,6 +1826,12 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
       }
     }
     for (i, &upp) in pct_prob_mats.upp_mat_4_ml.iter().enumerate() {
+      let old_upp = pct_prob_mats.max_upp_mat[i];
+      if upp > old_upp {
+        pct_prob_mats.max_upp_mat[i] = upp;
+      }
+    }
+    for (i, &upp) in pct_prob_mats.upp_mat_4_el.iter().enumerate() {
       let old_upp = pct_prob_mats.max_upp_mat[i];
       if upp > old_upp {
         pct_prob_mats.max_upp_mat[i] = upp;
@@ -2015,6 +2017,17 @@ pub fn write_prob_mat_sets(output_dir_path: &Path, prob_mat_sets: &ProbMatSets, 
   }
   let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
   if produces_access_probs {
+    let bpp_mat_file_path = output_dir_path.join(MAX_BPP_MAT_FILE_NAME);
+    let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_bpp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (&(i, j), &bpp) in prob_mats.max_bpp_mat.iter() {
+        buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
+      }
+      buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
     let bpp_mat_file_path = output_dir_path.join(ACCESS_BPP_MAT_ON_ML_FILE_NAME);
     let mut writer_2_bpp_mat_file = BufWriter::new(File::create(bpp_mat_file_path).unwrap());
     let mut buf_4_writer_2_bpp_mat_file = String::new();
@@ -2037,6 +2050,19 @@ pub fn write_prob_mat_sets(output_dir_path: &Path, prob_mat_sets: &ProbMatSets, 
       buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
     }
     let _ = writer_2_bpp_mat_file.write_all(buf_4_writer_2_bpp_mat_file.as_bytes());
+    let upp_mat_file_path = output_dir_path.join(MAX_UPP_MAT_FILE_NAME);
+    let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
+    let mut buf_4_writer_2_upp_mat_file = String::new();
+    for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
+      let seq_len = prob_mats.max_upp_mat.len();
+      let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
+      for (i, &upp) in prob_mats.max_upp_mat.iter().enumerate() {
+        if i == 0 || i == seq_len - 1 {continue;}
+        buf_4_rna_id.push_str(&format!("{},{} ", i - 1, upp));
+      }
+      buf_4_writer_2_upp_mat_file.push_str(&buf_4_rna_id);
+    }
+    let _ = writer_2_upp_mat_file.write_all(buf_4_writer_2_upp_mat_file.as_bytes());
     let upp_mat_file_path = output_dir_path.join(UPP_MAT_ON_HL_FILE_NAME);
     let mut writer_2_upp_mat_file = BufWriter::new(File::create(upp_mat_file_path).unwrap());
     let mut buf_4_writer_2_upp_mat_file = String::new();
