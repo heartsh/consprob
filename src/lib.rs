@@ -1668,6 +1668,7 @@ pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_
 pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, bpp_mats: &SsProbMats, upp_mat_len: usize, produces_access_probs: bool) -> PctStaProbMats {
   let weight = 1. / (num_of_rnas - 1) as Prob;
   let mut pct_prob_mats = PctStaProbMats::new(upp_mat_len);
+  pct_prob_mats.bpp_mat_on_ss = bpp_mats.bpp_mat.clone();
   for rna_id_2 in 0 .. num_of_rnas {
     if rna_id == rna_id_2 {continue;}
     let rna_id_pair = if rna_id < rna_id_2 {(rna_id, rna_id_2)} else {(rna_id_2, rna_id)};
@@ -1957,7 +1958,6 @@ pub fn consprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: P
     for (rna_id, prob_mats, bpp_mats) in multizip((0 .. num_of_fasta_records, prob_mat_sets.iter_mut(), bpp_mat_sets.iter_mut())) {
       let ref ref_2_prob_mats_with_rna_id_pairs = prob_mats_with_rna_id_pairs;
       let seq_len = fasta_records[rna_id].seq.len();
-      prob_mats.bpp_mat_on_ss = bpp_mats.bpp_mat.clone();
       scope.execute(move || {
         *prob_mats = pct_of_prob_mats(ref_2_prob_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mats, seq_len, produces_access_probs);
       });
