@@ -41,7 +41,7 @@ fn main() {
     num_cpus::get() as NumOfThreads
   };
   let is_posterior_model = matches.opt_present("u");
-  let produces_access_probs = matches.opt_present("a") & !is_posterior_model;
+  let produces_access_probs = matches.opt_present("a") && !is_posterior_model;
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();

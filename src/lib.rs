@@ -328,10 +328,10 @@ impl FastaRecord {
   }
 }
 
-pub const MAX_GAP_NUM_4_IL: Pos = 100;
-pub const MIN_GAP_NUM_4_IL: Pos = 5;
+pub const MAX_GAP_NUM_4_IL: Pos = 20;
+pub const MIN_GAP_NUM_4_IL: Pos = 2;
 pub const DEFAULT_MIN_BPP: Prob = 0.005;
-pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: Pos = 5;
+pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: Pos = 1;
 pub const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
 pub const MAX_BPP_MAT_FILE_NAME: &'static str = "max_bpp_mats.dat";
 pub const ACCESS_BPP_MAT_ON_2L_FILE_NAME: &'static str = "access_bpp_mats_on_2l.dat";
@@ -2341,31 +2341,6 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
     }
   }
   if produces_access_probs {
-    for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_2l.iter() {
-      pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
-    }
-    for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_ml.iter() {
-      match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
-        Some(old_bpp) => {
-          if bpp > *old_bpp {
-            *old_bpp = bpp;
-          }
-        }, None => {
-          pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
-        }
-      }
-    }
-    for (pos_pair, &bpp) in pct_prob_mats.bpp_mat_4_el.iter() {
-      match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
-        Some(old_bpp) => {
-          if bpp > *old_bpp {
-            *old_bpp = bpp;
-          }
-        }, None => {
-          pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
-        }
-      }
-    }
     for (i, &upp) in pct_prob_mats.upp_mat_4_hl.iter().enumerate() {
       pct_prob_mats.max_upp_mat[i] = upp;
     }
@@ -2403,6 +2378,31 @@ pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs,
       let pos_pair = (i + 1, j + 1);
       if !pct_prob_mats.bpp_mat_4_el.contains_key(&pos_pair) {
         pct_prob_mats.bpp_mat_4_el.insert(pos_pair, bpp);
+      }
+    }
+    for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_2l.iter() {
+      pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
+    }
+    for (pos_pair, &bpp) in pct_prob_mats.access_bpp_mat_4_ml.iter() {
+      match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
+        Some(old_bpp) => {
+          if bpp > *old_bpp {
+            *old_bpp = bpp;
+          }
+        }, None => {
+          pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
+        }
+      }
+    }
+    for (pos_pair, &bpp) in pct_prob_mats.bpp_mat_4_el.iter() {
+      match pct_prob_mats.max_bpp_mat.get_mut(pos_pair) {
+        Some(old_bpp) => {
+          if bpp > *old_bpp {
+            *old_bpp = bpp;
+          }
+        }, None => {
+          pct_prob_mats.max_bpp_mat.insert(*pos_pair, bpp);
+        }
       }
     }
   }
