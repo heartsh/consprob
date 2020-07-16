@@ -1,17 +1,17 @@
-extern crate phyloprob;
+extern crate consprob;
 extern crate time;
 
 use time::precise_time_s;
 use std::process::{Command, Output};
 
 #[test]
-fn test_phyloprob_program() {
+fn test_consprob_program() {
   let input_fasta_file_path = "assets/sampled_trnas.fa";
   let args = ["-i", input_fasta_file_path, "-o", "assets/sampled_trnas"];
   let begin = precise_time_s();
-  run_command("target/release/phyloprob", &args, "Failed to run the PhyloProb program.");
+  run_command("target/release/consprob", &args, "Failed to run the ConsProb program.");
   let elapsed_time = precise_time_s() - begin;
-  println!("The elapsed time for computing the posterior probabilities on structural alignment given each pair of RNA sequences in the FASTA file \"{}\" = {} [s].", input_fasta_file_path, elapsed_time);
+  println!("The elapsed time in order to process the FASTA file \"{}\" = {}s.", input_fasta_file_path, elapsed_time);
 }
 
 #[inline]
