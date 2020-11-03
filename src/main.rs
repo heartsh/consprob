@@ -12,7 +12,6 @@ fn main() {
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
-  opts.optflag("u", "is_posterior_model", "Uses posterior model to score secondary structures (Not recommended due to poor accuracy)");
   opts.optflag("a", "produces_access_probs", &format!("Also compute accessible probabilities (only for Turner model)"));
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
@@ -40,20 +39,30 @@ fn main() {
   } else {
     num_cpus::get() as NumOfThreads
   };
-  let is_posterior_model = matches.opt_present("u");
-  let produces_access_probs = matches.opt_present("a") && !is_posterior_model;
+  let produces_access_probs = matches.opt_present("a");
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
   let mut fasta_records = FastaRecords::new();
+  let mut max_seq_len = 0;
   for fasta_record in fasta_file_reader.records() {
     let fasta_record = fasta_record.unwrap();
     let mut seq = convert(fasta_record.seq());
     seq.insert(0, PSEUDO_BASE);
     seq.push(PSEUDO_BASE);
+    let seq_len = seq.len();
+    if seq_len > max_seq_len {
+      max_seq_len = seq_len;
+    }
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
   let mut thread_pool = Pool::new(num_of_threads);
-  let prob_mat_sets = consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, is_posterior_model, produces_access_probs);
-  write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
+  // let prob_mat_sets = consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, is_posterior_model, produces_access_probs);
+  if max_seq_len <= u8::MAX as usize {
+    let prob_mat_sets = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u8, produces_access_probs);
+    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
+  } else {
+    let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u16, produces_access_probs);
+    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
+  }
 }
