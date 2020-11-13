@@ -23,12 +23,8 @@ pub use std::fs::create_dir;
 pub use std::cmp::Ord;
 pub use std::marker::{Sync, Send};
 
-// pub type Prob4dMat = HashMap<PosQuadruple, Prob>;
 pub type Prob4dMat<T> = HashMap<PosQuadruple<T>, Prob>;
-// pub type PartFunc4dMat = HashMap<PosQuadruple, PartFunc>;
 pub type PartFunc4dMat<T> = HashMap<PosQuadruple<T>, PartFunc>;
-// pub type TmpPartFuncSetMat4Posterior = HashMap<PosPair, TmpPartFuncs>;
-// pub type TmpPartFuncSetMat = HashMap<PosPair, TmpPartFuncSets>;
 pub type TmpPartFuncSetMat<T> = HashMap<PosPair<T>, TmpPartFuncSets>;
 #[derive(Clone)]
 pub struct TmpPartFuncSets {
@@ -44,7 +40,6 @@ pub struct TmpPartFuncs {
   pub part_func_4_insert: PartFunc,
   pub part_func_4_insert_2: PartFunc,
 }
-// pub type TmpPartFuncSetMat4El = HashMap<PosPair, TmpPartFuncs>;
 pub type TmpPartFuncSetMat4El<T> = HashMap<PosPair<T>, TmpPartFuncs>;
 #[derive(Clone)]
 pub struct StaPartFuncMats<T> {
@@ -56,16 +51,7 @@ pub struct StaPartFuncMats<T> {
   pub forward_tmp_part_func_set_mats_with_pos_quadruples: TmpPartFuncSetMatsWithPosQuadruples<T>,
   pub backward_tmp_part_func_set_mats_with_pos_quadruples: TmpPartFuncSetMatsWithPosQuadruples<T>,
 }
-/* #[derive(Clone)]
-pub struct StaPartFuncMats4Posterior {
-  pub part_func_4d_mat_4_bpas: PartFunc4dMat,
-  pub forward_part_func_set_mat_4_external_loop: TmpPartFuncSetMat4El,
-  pub backward_part_func_set_mat_4_external_loop: TmpPartFuncSetMat4El,
-  pub forward_tmp_part_func_set_mats_with_pos_quadruples: TmpPartFuncSetMatsWithPosQuadruples4Posterior,
-  pub backward_tmp_part_func_set_mats_with_pos_quadruples: TmpPartFuncSetMatsWithPosQuadruples4Posterior,
-} */
 pub type TmpPartFuncSetMatsWithPosQuadruples<T> = HashMap<PosQuadruple<T>, TmpPartFuncSetMat<T>>;
-// pub type TmpPartFuncSetMatsWithPosQuadruples4Posterior = HashMap<PosQuadruple, TmpPartFuncSetMat4Posterior>;
 pub struct StaFeParams<T> {
   pub ba_score_mat: SparseFreeEnergyMat<T>,
   pub bpa_score_mat: FreeEnergy4dMat<T>,
@@ -74,11 +60,8 @@ pub struct StaFeParams<T> {
 }
 pub type RnaId = usize;
 pub type RnaIdPair = (RnaId, RnaId);
-// pub type StaFeParamSetsWithRnaIdPairs = HashMap<RnaIdPair, StaFeParams>;
 pub type StaFeParamSetsWithRnaIdPairs<T> = HashMap<RnaIdPair, StaFeParams<T>>;
-// pub type Prob4dMatsWithRnaIdPairs = HashMap<RnaIdPair, Prob4dMat>;
 pub type Prob4dMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, Prob4dMat<T>>;
-// pub type ProbMats = Vec<SparseProbMat>;
 pub type ProbMats<T> = Vec<SparseProbMat<T>>;
 pub type Prob1dMats = Vec<Probs>;
 pub type Arg = String;
@@ -92,15 +75,10 @@ pub struct FastaRecord {
 pub type FastaRecords = Vec<FastaRecord>;
 pub type SeqPair<'a> = (SeqSlice<'a>, SeqSlice<'a>);
 pub type FreeEnergyPair = (FreeEnergy, FreeEnergy);
-// pub type SparseFreeEnergyMat = HashMap<PosPair, FreeEnergy>;
 pub type SparseFreeEnergyMat<T> = HashMap<PosPair<T>, FreeEnergy>;
-// pub type PosPairsWithPosPairs = HashMap<PosPair, PosPair>;
 pub type PosPairsWithPosPairs<T> = HashMap<PosPair<T>, PosPair<T>>;
-// pub type BoolsWithPosPairs = HashMap<PosPair, bool>;
 pub type BoolsWithPosPairs<T> = HashMap<PosPair<T>, bool>;
-// pub type ProbMatPair<'a> =  (&'a SparseProbMat, &'a SparseProbMat);
 pub type ProbMatPair<'a, T> =  (&'a SparseProbMat<T>, &'a SparseProbMat<T>);
-// pub type SsFreeEnergyMatSetPair<'a> =  (&'a SsFreeEnergyMats, &'a SsFreeEnergyMats);
 pub type SsFreeEnergyMatSetPair<'a, T> =  (&'a SsFreeEnergyMats<T>, &'a SsFreeEnergyMats<T>);
 pub type NumOfThreads = u32;
 pub type FreeEnergySetPair<'a> = (&'a FreeEnergies, &'a FreeEnergies);
@@ -130,18 +108,13 @@ pub struct PctStaProbMats<T> {
   pub upp_mat_4_ml: Probs,
   pub upp_mat_4_el: Probs,
 }
-// pub type SparseProbMatPair = (SparseProbMat, SparseProbMat);
 pub type SparseProbMatPair<T> = (SparseProbMat<T>, SparseProbMat<T>);
 pub type ProbSetPair = (Probs, Probs);
-// pub type ProbMatSets = Vec<PctStaProbMats>;
 pub type ProbMatSets<T> = Vec<PctStaProbMats<T>>;
-// pub type StaProbMatsWithRnaIdPairs = HashMap<RnaIdPair, StaProbMats>;
 pub type StaProbMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, StaProbMats<T>>;
 pub type ProbSeqPair<'a> = (&'a Probs, &'a Probs);
 pub type Poss<T> = Vec<T>;
-// pub type TmpPartFuncSetMatsWithPosPairs = HashMap<PosPair, TmpPartFuncSetMat>;
 pub type TmpPartFuncSetMatsWithPosPairs<T> = HashMap<PosPair<T>, TmpPartFuncSetMat<T>>;
-// pub type TmpPartFuncSetMatsWithPosPairs4Posterior = HashMap<PosPair, TmpPartFuncSetMat4Posterior>;
 
 impl<T: Hash + ToPrimitive + Clone> StaProbMats<T> {
   pub fn origin() -> StaProbMats<T> {
@@ -237,62 +210,40 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       let base = seq_pair.1[j];
       sta_fe_params.insert_scores_2[j] = INSERT_SCORES[base];
     }
-    // let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
     let seq_len_pair = (T::from_usize(seq_len_pair.0).unwrap(), T::from_usize(seq_len_pair.1).unwrap());
-    // let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
     let pseudo_pos_quadruple = (T::zero(), seq_len_pair.0 - T::one(), T::zero(), seq_len_pair.1 - T::one());
-    // for i in 1 .. seq_len_pair.0 - 1 {
-    // for i in range(T::one(), seq_len_pair.0 - T::one()) {
     for i in range(T::one(), seq_len_pair.0 - T::one()) {
-      // let long_i = i as usize;
       let long_i = i.to_usize().unwrap();
       let base = seq_pair.0[long_i];
       sta_fe_params.insert_scores[long_i] = INSERT_SCORES[base];
-      // for j in 1 .. seq_len_pair.1 - 1 {
-      // for j in range(T::one(), seq_len_pair.1 - T::one()) {
       for j in range(T::one(), seq_len_pair.1 - T::one()) {
-        // let long_j = j as usize;
         let long_j = j.to_usize().unwrap();
         let pos_pair = (i, j);
         if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max) {continue;}
         let base_pair = (base, seq_pair.1[long_j]);
         sta_fe_params.ba_score_mat.insert(pos_pair, BA_SCORE_MAT[&base_pair] + RIBOSUM_BA_SCORE_MAT[&base_pair]);
       }
-      // let upper_j = if i + max_bp_span_pair.0 >= seq_len_pair.0 - 1 {seq_len_pair.0 - 1} else {i + max_bp_span_pair.0};
       let upper_j = if i + max_bp_span_pair.0 >= seq_len_pair.0 - T::one() {seq_len_pair.0 - T::one()} else {i + max_bp_span_pair.0};
-      // for j in i + 1 .. upper_j {
-      // for j in range(i + T::one(), upper_j) {
       for j in range(i + T::one(), upper_j) {
-        // let long_j = j as usize;
         let long_j = j.to_usize().unwrap();
         let pos_pair = (i, j);
         let base_pair = (base, seq_pair.0[long_j]);
         if !is_canonical(&base_pair) {continue;}
         if !bpp_mat_pair.0.contains_key(&pos_pair) {continue;}
-        // let bpp = if is_posterior_model {bpp_mat_pair.0[&pos_pair].ln()} else {0.};
-        // for k in 1 .. seq_len_pair.1 - 1 {
-        // for k in range(T::one(), seq_len_pair.1 - T::one()) {
         for k in range(T::one(), seq_len_pair.1 - T::one()) {
           if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-          // let long_k = k as usize;
           let long_k = k.to_usize().unwrap();
           let base_2 = seq_pair.1[long_k];
           let align_score = BA_SCORE_MAT[&(base, base_2)];
-          // let upper_l = if k + max_bp_span_pair.1 >= seq_len_pair.1 - 1 {seq_len_pair.1 - 1} else {k + max_bp_span_pair.1};
           let upper_l = if k + max_bp_span_pair.1 >= seq_len_pair.1 - T::one() {seq_len_pair.1 - T::one()} else {k + max_bp_span_pair.1};
-          // for l in k + 1 .. upper_l {
-          // for l in range(k + T::one(), upper_l) {
           for l in range(k + T::one(), upper_l) {
             if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
             let pos_pair_2 = (k, l);
             let pos_quadruple = (pos_pair.0, pos_pair.1, pos_pair_2.0, pos_pair_2.1);
-            // let long_l = l as usize;
             let long_l = l.to_usize().unwrap();
             let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
             if !is_canonical(&base_pair_2) {continue;}
             if !(is_min_gap_ok_2(&pos_quadruple, max_gap_num_4_il) && bpp_mat_pair.1.contains_key(&pos_pair_2)) {continue;}
-            // let bpp_2 = if is_posterior_model {bpp_mat_pair.1[&pos_pair_2].ln()} else {0.};
-            // sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&(base_pair.1, base_pair_2.1)] + bpp + bpp_2 + RIBOSUM_BPA_SCORE_MAT[&(base_pair, base_pair_2)]);
             sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&(base_pair.1, base_pair_2.1)] + RIBOSUM_BPA_SCORE_MAT[&(base_pair, base_pair_2)]);
           }
         }
@@ -342,21 +293,6 @@ impl<T: Hash + Clone> StaPartFuncMats<T> {
   }
 }
 
-/* impl StaPartFuncMats4Posterior {
-  pub fn new() -> StaPartFuncMats4Posterior {
-    let part_func_4d_mat = PartFunc4dMat::default();
-    let part_func_set_mat = TmpPartFuncSetMat4El::new();
-    let tmp_part_func_set_mats_with_pos_quadruples = TmpPartFuncSetMatsWithPosQuadruples4Posterior::default();
-    StaPartFuncMats4Posterior {
-      part_func_4d_mat_4_bpas: part_func_4d_mat.clone(),
-      forward_part_func_set_mat_4_external_loop: part_func_set_mat.clone(),
-      backward_part_func_set_mat_4_external_loop: part_func_set_mat,
-      forward_tmp_part_func_set_mats_with_pos_quadruples: tmp_part_func_set_mats_with_pos_quadruples.clone(),
-      backward_tmp_part_func_set_mats_with_pos_quadruples: tmp_part_func_set_mats_with_pos_quadruples,
-    }
-  }
-} */
-
 impl FastaRecord {
   pub fn new(fasta_id: FastaId, seq: Seq) -> FastaRecord {
     FastaRecord {
@@ -366,9 +302,9 @@ impl FastaRecord {
   }
 }
 
-pub const MAX_GAP_NUM_4_IL: usize = 20;
+pub const MAX_GAP_NUM_4_IL: usize = 15;
 pub const MIN_GAP_NUM_4_IL: usize = 2;
-pub const DEFAULT_MIN_BPP: Prob = 0.005;
+pub const DEFAULT_MIN_BPP: Prob = 0.04;
 pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: usize = 1;
 pub const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
 pub const MAX_BPP_MAT_FILE_NAME: &'static str = "max_bpp_mats.dat";
@@ -383,18 +319,10 @@ pub const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
 pub const UPP_MAT_ON_ML_FILE_NAME: &'static str = "upp_mats_on_ml.dat";
 pub const UPP_MAT_ON_EL_FILE_NAME: &'static str = "upp_mats_on_el.dat";
 
-// pub fn io_algo_4_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, is_posterior_model: bool, produces_access_probs: bool) -> StaProbMats {
 pub fn io_algo_4_prob_mats<T>(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, bpp_mat_pair: &ProbMatPair<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_access_probs: bool) -> StaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  /* if is_posterior_model {
-    let (sta_part_func_mats, global_part_func) = get_sta_inside_part_func_mats_4_posterior(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, false);
-    get_sta_prob_mats_4_posterior(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num_4_il, &sta_part_func_mats, bpp_mat_pair, global_part_func)
-  } else {
-    let (sta_part_func_mats, global_part_func) = get_sta_inside_part_func_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, ss_free_energy_mat_set_pair, false);
-    get_sta_prob_mats(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_part_func_mats, bpp_mat_pair, ss_free_energy_mat_set_pair, produces_access_probs, global_part_func)
-  } */
   let (sta_part_func_mats, global_part_func) = get_sta_inside_part_func_mats::<T>(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, bpp_mat_pair, ss_free_energy_mat_set_pair, false);
   get_sta_prob_mats::<T>(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_part_func_mats, bpp_mat_pair, ss_free_energy_mat_set_pair, produces_access_probs, global_part_func)
 }
@@ -403,22 +331,14 @@ pub fn get_sta_inside_part_func_mats<T>(seq_pair: &SeqPair, seq_len_pair: &(usiz
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  // let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
   let seq_len_pair = (T::from_usize(seq_len_pair.0).unwrap(), T::from_usize(seq_len_pair.1).unwrap());
-  // let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let pseudo_pos_quadruple = (T::zero(), seq_len_pair.0 - T::one(), T::zero(), seq_len_pair.1 - T::one());
   let mut sta_part_func_mats = StaPartFuncMats::<T>::new();
   let mut forward_tmp_part_func_set_mats_with_pos_pairs = TmpPartFuncSetMatsWithPosPairs::<T>::default();
   let mut backward_tmp_part_func_set_mats_with_pos_pairs = forward_tmp_part_func_set_mats_with_pos_pairs.clone();
-  // for substr_len_1 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.0 + 1 {
-  // for substr_len_1 in range(T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap(), max_bp_span_pair.0 + T::one()) {
   for substr_len_1 in range_inclusive(T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap(), max_bp_span_pair.0) {
-    // for i in 1 .. seq_len_pair.0 - substr_len_1 {
-    // for i in range(T::one(), seq_len_pair.0 - substr_len_1) {
     for i in range(T::one(), seq_len_pair.0 - substr_len_1) {
-      // let j = i + substr_len_1 - 1;
       let j = i + substr_len_1 - T::one();
-      // let (long_i, long_j) = (i as usize, j as usize);
       let (long_i, long_j) = (i.to_usize().unwrap(), j.to_usize().unwrap());
       let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
       if !is_canonical(&base_pair) {continue;}
@@ -427,13 +347,10 @@ where
       let invert_stacking_base_pair = invert_bp(&(seq_pair.0[long_i + 1], seq_pair.0[long_j - 1]));
       let ml_tm_delta_fe = ML_TM_DELTA_FES[invert_base_pair.0][invert_base_pair.1][invert_stacking_base_pair.0][invert_stacking_base_pair.1];
       let stacking_bp = (seq_pair.0[long_i - 1], seq_pair.0[long_j + 1]);
-      // let ml_tm_or_de_delta_fe = if i > 1 && j < seq_len_pair.0 - 2 {
       let ml_tm_or_de_delta_fe = if i > T::one() && j < seq_len_pair.0 - T::from_usize(2).unwrap() {
         ML_TM_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.0][stacking_bp.1]
-      // } else if i > 1 {
       } else if i > T::one() {
         FIVE_PRIME_DE_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.0]
-      // } else if j < seq_len_pair.0 - 2 {
       } else if j < seq_len_pair.0 - T::from_usize(2).unwrap() {
         THREE_PRIME_DE_DELTA_FES[base_pair.0][base_pair.1][stacking_bp.1]
       } else {
@@ -443,58 +360,38 @@ where
         HELIX_AU_OR_GU_END_PENALTY_DELTA_FE
       } else {0.};
       let hl_fe = ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)];
-      // for substr_len_2 in MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.1 + 1 {
-      // for substr_len_2 in range(T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap(), max_bp_span_pair.1 + T::one()) {
       for substr_len_2 in range_inclusive(T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap(), max_bp_span_pair.1) {
         let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
         if min_gap_num_4_il > max_gap_num_4_il {continue;}
-        // for k in 1 .. seq_len_pair.1 - substr_len_2 {
-        // for k in range(T::one(), seq_len_pair.1 - substr_len_2) {
         for k in range(T::one(), seq_len_pair.1 - substr_len_2) {
           if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-          // let l = k + substr_len_2 - 1;
           let l = k + substr_len_2 - T::one();
           if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-          // let (long_k, long_l) = (k as usize, l as usize);
           let (long_k, long_l) = (k.to_usize().unwrap(), l.to_usize().unwrap());
           let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
           if !is_canonical(&base_pair_2) {continue;}
           let pos_quadruple = (i, j, k, l);
           match sta_fe_params.bpa_score_mat.get(&pos_quadruple) {
             Some(&bpa_score) => {
-              // let (forward_tmp_part_func_set_mat, part_func_on_sa, part_func_4_ml) = get_tmp_part_func_set_mat(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_part_func_mats, bpp_mat_pair, is_viterbi, true, &forward_tmp_part_func_set_mats_with_pos_pairs);
               let (forward_tmp_part_func_set_mat, part_func_on_sa, part_func_4_ml) = get_tmp_part_func_set_mat::<T>(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_part_func_mats, bpp_mat_pair, is_viterbi, true, &forward_tmp_part_func_set_mats_with_pos_pairs);
-              // let (backward_tmp_part_func_set_mat, _, _) = get_tmp_part_func_set_mat(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_part_func_mats, bpp_mat_pair, is_viterbi, false, &backward_tmp_part_func_set_mats_with_pos_pairs);
               let (backward_tmp_part_func_set_mat, _, _) = get_tmp_part_func_set_mat::<T>(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_part_func_mats, bpp_mat_pair, is_viterbi, false, &backward_tmp_part_func_set_mats_with_pos_pairs);
               let mut sum = NEG_INFINITY;
               let score = bpa_score + hl_fe + ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)] + part_func_on_sa;
               sumormax(&mut sum, score, is_viterbi);
-              // for m in i + 1 .. j {
-              // for m in range(i + T::one(), j) {
               for m in range(i + T::one(), j) {
-                // let long_m = m as usize;
                 let long_m = m.to_usize().unwrap();
-                // for n in m + 1 .. j {
-                // for n in range(m + T::one(), j) {
                 for n in range(m + T::one(), j) {
-                  // let long_n = n as usize;
                   let long_n = n.to_usize().unwrap();
                   let base_pair_3 = (seq_pair.0[long_m], seq_pair.0[long_n]);
                   if !is_canonical(&base_pair_3) {continue;}
                   if !bpp_mat_pair.0.contains_key(&(m, n)) {continue;}
                   if long_m - long_i - 1 + long_j - long_n - 1 > MAX_2_LOOP_LEN {continue;}
                   let twoloop_fe = ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(i, j, m, n)];
-                  // for o in k + 1 .. l {
-                  // for o in range(k + T::one(), l) {
                   for o in range(k + T::one(), l) {
                     if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                    // let long_o = o as usize;
                     let long_o = o.to_usize().unwrap();
-                    // for p in o + 1 .. l {
-                    // for p in range(o + T::one(), l) {
                     for p in range(o + T::one(), l) {
                        if !is_min_gap_ok_1(&(n, p), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                      // let long_p = p as usize;
                       let long_p = p.to_usize().unwrap();
                       let base_pair_4 = (seq_pair.1[long_o], seq_pair.1[long_p]);
                       if !is_canonical(&base_pair_4) {continue;}
@@ -515,7 +412,6 @@ where
                               sumormax(&mut forward_term, term, is_viterbi);
                             }, None => {},
                           }
-                          // match backward_tmp_part_func_set_mat.get(&(n + 1, p + 1)) {
                           match backward_tmp_part_func_set_mat.get(&(n + T::one(), p + T::one())) {
                             Some(part_func_sets) => {
                               let ref part_funcs = part_func_sets.part_funcs_on_sa;
@@ -548,13 +444,10 @@ where
               if sum > NEG_INFINITY {
                 sta_part_func_mats.part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
                 let stacking_bp_2 = (seq_pair.1[long_k - 1], seq_pair.1[long_l + 1]);
-                // let ml_tm_or_de_delta_fe_2 = if k > 1 && l < seq_len_pair.1 - 2 {
                 let ml_tm_or_de_delta_fe_2 = if k > T::one() && l < seq_len_pair.1 - T::from_usize(2).unwrap() {
                   ML_TM_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.0][stacking_bp_2.1]
-                // } else if k > 1 {
                 } else if k > T::one() {
                   FIVE_PRIME_DE_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.0]
-                // } else if l < seq_len_pair.1 - 2 {
                 } else if l < seq_len_pair.1 - T::from_usize(2).unwrap() {
                   THREE_PRIME_DE_DELTA_FES[base_pair_2.0][base_pair_2.1][stacking_bp_2.1]
                 } else {
@@ -588,37 +481,24 @@ where
       }
     }
   }
-  // let leftmost_pos_pair = (0, 0);
   let leftmost_pos_pair = (T::zero(), T::zero());
-  // let rightmost_pos_pair = (seq_len_pair.0 - 1, seq_len_pair.1 - 1);
   let rightmost_pos_pair = (seq_len_pair.0 - T::one(), seq_len_pair.1 - T::one());
   let mut part_funcs = TmpPartFuncs::new();
   part_funcs.part_func_4_align = 0.;
   sta_part_func_mats.forward_part_func_set_mat_4_external_loop.insert(leftmost_pos_pair, part_funcs.clone());
   sta_part_func_mats.backward_part_func_set_mat_4_external_loop.insert(rightmost_pos_pair, part_funcs);
-  // for i in 0 .. seq_len_pair.0 - 1 {
-  // for i in range(T::zero(), seq_len_pair.0 - T::one()) {
   for i in range(T::zero(), seq_len_pair.0 - T::one()) {
-    // let long_i = i as usize;
     let long_i = i.to_usize().unwrap();
     let insert_score = sta_fe_params.insert_scores[long_i];
-    // for j in 0 .. seq_len_pair.1 - 1 {
-    // for j in range(T::zero(), seq_len_pair.1 - T::one()) {
     for j in range(T::zero(), seq_len_pair.1 - T::one()) {
       let pos_pair = (i, j);
-      // if pos_pair == (0, 0) {continue;}
       if pos_pair == (T::zero(), T::zero()) {continue;}
       if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
       let mut part_funcs = TmpPartFuncs::new();
       let mut sum = NEG_INFINITY;
-      // for k in 1 .. i {
-      // for k in range(T::one(), i) {
       for k in range(T::one(), i) {
         if !bpp_mat_pair.0.contains_key(&(k, i)) {continue;}
-        // for l in 1 .. j {
-        // for l in range(T::one(), j) {
         for l in range(T::one(), j) {
-          // let pos_pair_2 = (k - 1, l - 1);
           let pos_pair_2 = (k - T::one(), l - T::one());
           if !is_min_gap_ok_1(&pos_pair_2, &pseudo_pos_quadruple, max_gap_num) {continue;}
           let pos_quadruple = (k, i, l, j);
@@ -639,10 +519,8 @@ where
           }
         }
       }
-      // if i > 0 && j > 0 {
       if i > T::zero() && j > T::zero() {
         let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-        // let pos_pair_2 = (i - 1, j - 1);
         let pos_pair_2 = (i - T::one(), j - T::one());
         let is_begin = pos_pair_2 == leftmost_pos_pair;
         match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&pos_pair_2) {
@@ -657,10 +535,8 @@ where
         }
         part_funcs.part_func_4_align = sum;
       }
-      // if i > 0 {
       if i > T::zero() {
         sum = NEG_INFINITY;
-        // let pos_pair_2 = (i - 1, j);
         let pos_pair_2 = (i - T::one(), j);
         let is_begin = pos_pair_2 == leftmost_pos_pair;
         match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&pos_pair_2) {
@@ -676,10 +552,8 @@ where
         let sum = sum + insert_score;
         part_funcs.part_func_4_insert = sum;
       }
-      // if j > 0 {
       if j > T::zero() {
         sum = NEG_INFINITY;
-        // let pos_pair_2 = (i, j - 1);
         let pos_pair_2 = (i, j - T::one());
         let is_begin = pos_pair_2 == leftmost_pos_pair;
         match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&pos_pair_2) {
@@ -692,7 +566,6 @@ where
             sumormax(&mut sum, score, is_viterbi);
           }, None => {},
         }
-        // let long_j = j as usize;
         let long_j = j.to_usize().unwrap();
         let insert_score_2 = sta_fe_params.insert_scores_2[long_j];
         let sum = sum + insert_score_2;
@@ -702,34 +575,22 @@ where
     }
   }
   let mut final_sum = NEG_INFINITY;
-  // let ref part_funcs = sta_part_func_mats.forward_part_func_set_mat_4_external_loop[&(seq_len_pair.0 - 2, seq_len_pair.1 - 2)];
   let ref part_funcs = sta_part_func_mats.forward_part_func_set_mat_4_external_loop[&(seq_len_pair.0 - T::from_usize(2).unwrap(), seq_len_pair.1 - T::from_usize(2).unwrap())];
   sumormax(&mut final_sum, part_funcs.part_func_4_align, is_viterbi);
   sumormax(&mut final_sum, part_funcs.part_func_4_insert, is_viterbi);
   sumormax(&mut final_sum, part_funcs.part_func_4_insert_2, is_viterbi);
-  // for i in (1 .. seq_len_pair.0).rev() {
-  // for i in range(T::one(), seq_len_pair.0).rev() {
   for i in range(T::one(), seq_len_pair.0).rev() {
-    // let long_i = i as usize;
     let long_i = i.to_usize().unwrap();
     let insert_score = sta_fe_params.insert_scores[long_i];
-    // for j in (1 .. seq_len_pair.1).rev() {
-    // for j in range(T::one(), seq_len_pair.1).rev() {
     for j in range(T::one(), seq_len_pair.1).rev() {
       let pos_pair = (i, j);
-      // if pos_pair == (seq_len_pair.0 - 1, seq_len_pair.1 - 1) {continue;}
       if pos_pair == (seq_len_pair.0 - T::one(), seq_len_pair.1 - T::one()) {continue;}
       if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
       let mut part_funcs = TmpPartFuncs::new();
       let mut sum = NEG_INFINITY;
-      // for k in i + 1 .. seq_len_pair.0 - 1 {
-      // for k in range(i + T::one(), seq_len_pair.0 - T::one()) {
       for k in range(i + T::one(), seq_len_pair.0 - T::one()) {
         if !bpp_mat_pair.0.contains_key(&(i, k)) {continue;}
-        // for l in j + 1 .. seq_len_pair.1 - 1 {
-        // for l in range(j + T::one(), seq_len_pair.1 - T::one()) {
         for l in range(j + T::one(), seq_len_pair.1 - T::one()) {
-          // let pos_pair_2 = (k + 1, l + 1);
           let pos_pair_2 = (k + T::one(), l + T::one());
           if !is_min_gap_ok_1(&pos_pair_2, &pseudo_pos_quadruple, max_gap_num) {continue;}
           let pos_quadruple = (i, k, j, l);
@@ -750,9 +611,7 @@ where
           }
         }
       }
-      // if i < seq_len_pair.0 - 1 && j < seq_len_pair.1 - 1 {
       if i < seq_len_pair.0 - T::one() && j < seq_len_pair.1 - T::one() {
-        // let pos_pair_2 = (i + 1, j + 1);
         let pos_pair_2 = (i + T::one(), j + T::one());
         let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
         let is_end = pos_pair_2 == rightmost_pos_pair;
@@ -768,10 +627,8 @@ where
         }
         part_funcs.part_func_4_align = sum;
       }
-      // if i < seq_len_pair.0 - 1 {
       if i < seq_len_pair.0 - T::one() {
         sum = NEG_INFINITY;
-        // let pos_pair_2 = (i + 1, j);
         let pos_pair_2 = (i + T::one(), j);
         let is_end = pos_pair_2 == rightmost_pos_pair;
         match sta_part_func_mats.backward_part_func_set_mat_4_external_loop.get(&pos_pair_2) {
@@ -786,10 +643,8 @@ where
         }
         part_funcs.part_func_4_insert = sum + insert_score;
       }
-      // if j < seq_len_pair.1 - 1 {
       if j < seq_len_pair.1 - T::one() {
         sum = NEG_INFINITY;
-        // let pos_pair_2 = (i, j + 1);
         let pos_pair_2 = (i, j + T::one());
         let is_end = pos_pair_2 == rightmost_pos_pair;
         match sta_part_func_mats.backward_part_func_set_mat_4_external_loop.get(&pos_pair_2) {
@@ -802,7 +657,6 @@ where
             sumormax(&mut sum, score, is_viterbi);
           }, None => {},
         }
-        // let long_j = j as usize;
         let long_j = j.to_usize().unwrap();
         let insert_score_2 = sta_fe_params.insert_scores_2[long_j];
         part_funcs.part_func_4_insert_2 = sum + insert_score_2;
@@ -817,30 +671,22 @@ pub fn get_tmp_part_func_set_mat<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &S
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// pub fn get_tmp_part_func_set_mat(seq_len_pair: &PosPair, sta_fe_params: &StaFeParams, max_gap_num_4_il: Pos, pos_quadruple: &PosQuadruple, sta_part_func_mats: &StaPartFuncMats, bpp_mat_pair: &ProbMatPair, is_viterbi: bool, is_forward: bool, tmp_part_func_set_mats_with_pos_pairs: &TmpPartFuncSetMatsWithPosPairs) -> (TmpPartFuncSetMat, PartFunc, PartFunc) {
-  // let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let pseudo_pos_quadruple = (T::zero(), seq_len_pair.0 - T::one(), T::zero(), seq_len_pair.1 - T::one());
   let mut cache_is_used = false;
   let &(i, j, k, l) = pos_quadruple;
-  // let leftmost_pos_pair = if is_forward {(i, k)} else {(i + 1, k + 1)};
   let leftmost_pos_pair = if is_forward {(i, k)} else {(i + T::one(), k + T::one())};
-  // let rightmost_pos_pair = if is_forward {(j - 1, l - 1)} else {(j, l)};
   let rightmost_pos_pair = if is_forward {(j - T::one(), l - T::one())} else {(j, l)};
   let mut tmp_part_func_set_mat = match tmp_part_func_set_mats_with_pos_pairs.get(&if is_forward {leftmost_pos_pair} else {rightmost_pos_pair}) {
     Some(cache) => {
       cache_is_used = true;
       cache.clone()
     }, None => {
-      // TmpPartFuncSetMat::new()
       TmpPartFuncSetMat::<T>::new()
     },
   };
-  // let iter: Poss = if is_forward {(i .. j).collect()} else {(i + 1 .. j + 1).rev().collect()};
   let iter: Poss<T> = if is_forward {range(i, j).collect()} else {range_inclusive(i + T::one(), j).rev().collect()};
-  // let iter_2: Poss = if is_forward {(k .. l).collect()} else {(k + 1 .. l + 1).rev().collect()};
   let iter_2: Poss<T> = if is_forward {range(k, l).collect()} else {range_inclusive(k + T::one(), l).rev().collect()};
   for &u in iter.iter() {
-    // let long_u = u as usize;
     let long_u = u.to_usize().unwrap();
     let insert_score = sta_fe_params.insert_scores[long_u];
     for &v in iter_2.iter() {
@@ -855,19 +701,15 @@ where
         tmp_part_func_set_mat.insert(pos_pair, tmp_part_func_sets);
         continue;
       }
-      // let long_v = v as usize;
       let long_v = v.to_usize().unwrap();
       let mut sum_on_sa = NEG_INFINITY;
       let mut sum_4_ml = sum_on_sa;
       let mut sum_4_first_bpas_on_mls = sum_on_sa;
       let mut tmp_sum = sum_on_sa;
       // For alignments.
-      // for m in if is_forward {i + 1 .. u} else {u + 1 .. j} {
       for m in if is_forward {range(i + T::one(), u)} else {range(u + T::one(), j)} {
         if !bpp_mat_pair.0.contains_key(&if is_forward{(m, u)} else {(u, m)}) {continue;}
-        // for n in if is_forward {k + 1 .. v} else {v + 1 .. l} {
         for n in if is_forward {range(k + T::one(), v)} else {range(v + T::one(), l)} {
-          // let pos_pair_2 = if is_forward {(m - 1, n - 1)} else {(m + 1, n + 1)};
           let pos_pair_2 = if is_forward {(m - T::one(), n - T::one())} else {(m + T::one(), n + T::one())};
           if !is_min_gap_ok_1(&pos_pair_2, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
           let pos_quadruple_2 = if is_forward {(m, u, n, v)} else {(u, m, v, n)};
@@ -912,7 +754,6 @@ where
           }
         }
       }
-      // let pos_pair_2 = if is_forward {(u - 1, v - 1)} else {(u + 1, v + 1)};
       let pos_pair_2 = if is_forward {(u - T::one(), v - T::one())} else {(u + T::one(), v + T::one())};
       let is_begin = if is_forward {pos_pair_2 == leftmost_pos_pair} else {pos_pair_2 == rightmost_pos_pair};
       let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
@@ -979,7 +820,6 @@ where
       let mut sum_4_ml = sum_on_sa;
       let mut sum_4_first_bpas_on_mls = sum_on_sa;
       let mut tmp_sum = sum_on_sa;
-      // let pos_pair_2 = if is_forward {(u - 1, v)} else {(u + 1, v)};
       let pos_pair_2 = if is_forward {(u - T::one(), v)} else {(u + T::one(), v)};
       let is_begin = pos_pair_2 == if is_forward {leftmost_pos_pair} else {rightmost_pos_pair};
       match tmp_part_func_set_mat.get(&pos_pair_2) {
@@ -1041,7 +881,6 @@ where
       let mut sum_4_ml = sum_on_sa;
       let mut sum_4_first_bpas_on_mls = sum_on_sa;
       let mut tmp_sum = sum_on_sa;
-      // let pos_pair_2 = if is_forward {(u, v - 1)} else {(u, v + 1)};
       let pos_pair_2 = if is_forward {(u, v - T::one())} else {(u, v + T::one())};
       let is_begin = pos_pair_2 == if is_forward {leftmost_pos_pair} else {rightmost_pos_pair};
       let insert_score = sta_fe_params.insert_scores_2[long_v];
@@ -1122,39 +961,26 @@ pub fn get_sta_prob_mats<T>(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), s
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// pub fn get_sta_prob_mats(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num: Pos, max_gap_num_4_il: Pos, sta_part_func_mats: &StaPartFuncMats, bpp_mat_pair: &ProbMatPair, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair, produces_access_probs: bool, global_part_func: PartFunc) -> StaProbMats {
   let is_viterbi = false;
-  // let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
   let seq_len_pair = (T::from_usize(seq_len_pair.0).unwrap(), T::from_usize(seq_len_pair.1).unwrap());
-  // let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
   let pseudo_pos_quadruple = (T::zero(), seq_len_pair.0 - T::one(), T::zero(), seq_len_pair.1 - T::one());
-  // let mut sta_outside_part_func_4d_mat_4_bpas = PartFunc4dMat::default();
   let mut sta_outside_part_func_4d_mat_4_bpas = PartFunc4dMat::<T>::default();
-  // let mut sta_prob_mats = StaProbMats::new(&seq_len_pair);
   let mut sta_prob_mats = StaProbMats::<T>::new(&seq_len_pair);
-  // for substr_len_1 in (MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.0 + 1).rev() {
   for substr_len_1 in range_inclusive(T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap(), max_bp_span_pair.0).rev() {
-    // for i in 1 .. seq_len_pair.0 - substr_len_1 {
     for i in range(T::one(), seq_len_pair.0 - substr_len_1) {
-      // let j = i + substr_len_1 - 1;
       let j = i + substr_len_1 - T::one();
-      // let (long_i, long_j) = (i as usize, j as usize);
       let (long_i, long_j) = (i.to_usize().unwrap(), j.to_usize().unwrap());
       let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
       if !is_canonical(&base_pair) {continue;}
       let pos_pair = (i, j);
       if !bpp_mat_pair.0.contains_key(&pos_pair) {continue;}
-      // for substr_len_2 in (MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.1 + 1).rev() {
       for substr_len_2 in range_inclusive(T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap(), max_bp_span_pair.1).rev() {
         let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
         if min_gap_num_4_il > max_gap_num_4_il {continue;}
-        // for k in 1 .. seq_len_pair.1 - substr_len_2 {
         for k in range(T::one(), seq_len_pair.1 - substr_len_2) {
-          // let l = k + substr_len_2 - 1;
           let l = k + substr_len_2 - T::one();
           if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
           if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-          // let (long_k, long_l) = (k as usize, l as usize);
           let (long_k, long_l) = (k.to_usize().unwrap(), l.to_usize().unwrap());
           let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
           if !is_canonical(&base_pair_2) {continue;}
@@ -1166,11 +992,8 @@ where
               let mut sum = NEG_INFINITY;
               let mut forward_term = sum;
               let mut backward_term = sum;
-              // let is_begin = i == 1 && k == 1;
               let is_begin = i == T::one() && k == T::one();
-              // let is_end = j == seq_len_pair.0 - 2 && l == seq_len_pair.1 - 2;
               let is_end = j == seq_len_pair.0 - T::from_usize(2).unwrap() && l == seq_len_pair.1 - T::from_usize(2).unwrap();
-              // match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&(i - 1, k - 1)) {
               match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&(i - T::one(), k - T::one())) {
                 Some(part_funcs) => {
                   let term = part_funcs.part_func_4_align + if is_begin {INIT_MATCH_SCORE} else {MATCH_2_MATCH_SCORE};
@@ -1181,7 +1004,6 @@ where
                   sumormax(&mut forward_term, term, is_viterbi);
                 }, None => {},
               }
-              // match sta_part_func_mats.backward_part_func_set_mat_4_external_loop.get(&(j + 1, l + 1)) {
               match sta_part_func_mats.backward_part_func_set_mat_4_external_loop.get(&(j + T::one(), l + T::one())) {
                 Some(part_funcs) => {
                   let term = part_funcs.part_func_4_align + if is_end {0.} else {MATCH_2_MATCH_SCORE};
@@ -1214,13 +1036,9 @@ where
                   }
                 }
               }
-              // for m in 1 .. i {
               for m in range(T::one(), i) {
-                // let long_m = m as usize;
                 let long_m = m.to_usize().unwrap();
-                // for n in j + 1 .. seq_len_pair.0 - 1 {
                 for n in range(j + T::one(), seq_len_pair.0 - T::one()) {
-                  // let long_n = n as usize;
                   let long_n = n.to_usize().unwrap();
                   let base_pair_3 = (seq_pair.0[long_m], seq_pair.0[long_n]);
                   if !is_canonical(&base_pair_3) {continue;}
@@ -1228,15 +1046,11 @@ where
                   if long_n - long_j - 1 + long_i - long_m - 1 > MAX_2_LOOP_LEN {continue;}
                   if !bpp_mat_pair.0.contains_key(&pos_pair_3) {continue;}
                   let twoloop_fe = ss_free_energy_mat_set_pair.0.twoloop_fe_4d_mat[&(m, n, i, j)];
-                  // for o in 1 .. k {
                   for o in range(T::one(), k) {
                     if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                    // let long_o = o as usize;
                     let long_o = o.to_usize().unwrap();
-                    // for p in l + 1 .. seq_len_pair.1 - 1 {
                     for p in range(l + T::one(), seq_len_pair.1 - T::one()) {
                       if !is_min_gap_ok_1(&(n, p), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                      // let long_p = p as usize;
                       let long_p = p.to_usize().unwrap();
                       let base_pair_4 = (seq_pair.1[long_o], seq_pair.1[long_p]);
                       if !is_canonical(&base_pair_4) {continue;}
@@ -1248,7 +1062,6 @@ where
                           let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_quadruples[&pos_quadruple_2];
                           let mut forward_term = NEG_INFINITY;
                           let mut backward_term = forward_term;
-                          // match forward_tmp_part_func_set_mat.get(&(i - 1, k - 1)) {
                           match forward_tmp_part_func_set_mat.get(&(i - T::one(), k - T::one())) {
                             Some(part_func_sets) => {
                               let ref part_funcs = part_func_sets.part_funcs_on_sa;
@@ -1260,7 +1073,6 @@ where
                               sumormax(&mut forward_term, term, is_viterbi);
                             }, None => {},
                           }
-                          // match backward_tmp_part_func_set_mat.get(&(j + 1, l + 1)) {
                           match backward_tmp_part_func_set_mat.get(&(j + T::one(), l + T::one())) {
                             Some(part_func_sets) => {
                               let ref part_funcs = part_func_sets.part_funcs_on_sa;
@@ -1316,13 +1128,9 @@ where
                 }
               }
               let part_func_ratio = sta_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_mls[&pos_quadruple] - part_func_4_bpa;
-              // for m in 1 .. i {
               for m in range(T::one(), i) {
-                // let long_m = m as usize;
                 let long_m = m.to_usize().unwrap();
-                // for n in j + 1 .. seq_len_pair.0 - 1 {
                 for n in range(j + T::one(), seq_len_pair.0 - T::one()) {
-                  // let long_n = n as usize;
                   let long_n = n.to_usize().unwrap();
                   let base_pair_3 = (seq_pair.0[long_m], seq_pair.0[long_n]);
                   if !is_canonical(&base_pair_3) {continue;}
@@ -1335,15 +1143,11 @@ where
                   let au_or_gu_end_penalty_delta_fe = if is_au_or_gu(&base_pair) {
                     HELIX_AU_OR_GU_END_PENALTY_DELTA_FE
                   } else {0.};
-                  // for o in 1 .. k {
                   for o in range(T::one(), k) {
                     if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                    // let long_o = o as usize;
                     let long_o = o.to_usize().unwrap();
-                    // for p in l + 1 .. seq_len_pair.1 - 1 {
                     for p in range(l + T::one(), seq_len_pair.1 - T::one()) {
                       if !is_min_gap_ok_1(&(n, p), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                      // let long_p = p as usize;
                       let long_p = p.to_usize().unwrap();
                       let base_pair_4 = (seq_pair.1[long_o], seq_pair.1[long_p]);
                       if !is_canonical(&base_pair_4) {continue;}
@@ -1364,7 +1168,6 @@ where
                           let mut forward_term_2 = forward_term;
                           let mut backward_term = forward_term;
                           let mut backward_term_2 = forward_term;
-                          // match forward_tmp_part_func_set_mat.get(&(i - 1, k - 1)) {
                           match forward_tmp_part_func_set_mat.get(&(i - T::one(), k - T::one())) {
                             Some(part_func_sets) => {
                               let ref part_funcs = part_func_sets.part_funcs_4_bpas_on_mls;
@@ -1383,7 +1186,6 @@ where
                               sumormax(&mut forward_term_2, term, is_viterbi);
                             }, None => {},
                           }
-                          // match backward_tmp_part_func_set_mat.get(&(j + 1, l + 1)) {
                           match backward_tmp_part_func_set_mat.get(&(j + T::one(), l + T::one())) {
                             Some(part_func_sets) => {
                               let ref part_funcs = part_func_sets.part_funcs_on_mls;
@@ -1462,31 +1264,20 @@ where
     }
   }
   if produces_access_probs {
-    // let leftmost_pos_pair = (0, 0);
     let leftmost_pos_pair = (T::zero(), T::zero());
-    // let rightmost_pos_pair = (seq_len_pair.0 - 1, seq_len_pair.1 - 1);
     let rightmost_pos_pair = (seq_len_pair.0 - T::one(), seq_len_pair.1 - T::one());
-    // for u in 0 .. seq_len_pair.0 - 1 {
     for u in range(T::zero(), seq_len_pair.0 - T::one()) {
-      // let long_u = u as usize;
       let long_u = u.to_usize().unwrap();
       let insert_score = sta_fe_params.insert_scores[long_u];
-      // for v in 0 .. seq_len_pair.1 - 1 {
       for v in range(T::zero(), seq_len_pair.1 - T::one()) {
-        // if u == 0 && v == 0 {continue;}
         if u == T::zero() && v == T::zero() {continue;}
         let pos_pair = (u, v);
         if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num) {continue;}
-        // let long_v = v as usize;
         let long_v = v.to_usize().unwrap();
         let insert_score_2 = sta_fe_params.insert_scores_2[long_v];
-        // let pos_pair_4_ba = (u - 1, v - 1);
         let pos_pair_4_ba = (u - T::one(), v - T::one());
-        // let pos_pair_4_gap_1 = (u - 1, v);
         let pos_pair_4_gap_1 = (u - T::one(), v);
-        // let pos_pair_4_gap_2 = (u, v - 1);
         let pos_pair_4_gap_2 = (u, v - T::one());
-        // let pos_pair_2 = (u + 1, v + 1);
         let pos_pair_2 = (u + T::one(), v + T::one());
         let is_end = pos_pair_2 == rightmost_pos_pair;
         let mut backward_term_4_align = NEG_INFINITY;
@@ -1494,7 +1285,6 @@ where
         let mut backward_term_4_insert_2 = backward_term_4_align;
         match sta_part_func_mats.backward_part_func_set_mat_4_external_loop.get(&pos_pair_2) {
           Some(part_funcs) => {
-            // if u > 0 && v > 0 {
             if u > T::zero() && v > T::zero() {
               let term = part_funcs.part_func_4_align + if is_end {0.} else {MATCH_2_MATCH_SCORE};
               sumormax(&mut backward_term_4_align, term, is_viterbi);
@@ -1503,7 +1293,6 @@ where
               let term = part_funcs.part_func_4_insert_2 + MATCH_2_INSERT_SCORE;
               sumormax(&mut backward_term_4_align, term, is_viterbi);
             }
-            // if u > 0 {
             if u > T::zero() {
               let term = part_funcs.part_func_4_align + if is_end {0.} else {INSERT_2_MATCH_SCORE};
               sumormax(&mut backward_term_4_insert, term, is_viterbi);
@@ -1512,7 +1301,6 @@ where
               let term = part_funcs.part_func_4_insert_2 + INSERT_SWITCH_SCORE;
               sumormax(&mut backward_term_4_insert, term, is_viterbi);
             }
-            // if v > 0 {
             if v > T::zero() {
               let term = part_funcs.part_func_4_align + if is_end {0.} else {INSERT_2_MATCH_SCORE};
               sumormax(&mut backward_term_4_insert_2, term, is_viterbi);
@@ -1523,7 +1311,6 @@ where
             }
           }, None => {},
         }
-        // if u > 0 && v > 0 {
         if u > T::zero() && v > T::zero() {
           match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&pos_pair_4_ba) {
             Some(part_funcs) => {
@@ -1542,7 +1329,6 @@ where
             }, None => {},
           }
         }
-        // if u > 0 {
         if u > T::zero() {
           match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&pos_pair_4_gap_1) {
             Some(part_funcs) => {
@@ -1559,7 +1345,6 @@ where
             }, None => {},
           }
         }
-        // if v > 0 {
         if v > T::zero() {
           match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&pos_pair_4_gap_2) {
             Some(part_funcs) => {
@@ -1577,14 +1362,10 @@ where
           }
         }
         if !is_min_gap_ok_1(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-        // if !(u > 0 && v > 0) {continue;}
         if !(u > T::zero() && v > T::zero()) {continue;}
         let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-        // for i in 1 .. u {
         for i in range(T::one(), u) {
-          // for j in u + 1 .. seq_len_pair.0 - 1 {
           for j in range(u + T::one(), seq_len_pair.0 - T::one()) {
-            // let (long_i, long_j) = (i as usize, j as usize);
             let (long_i, long_j) = (i.to_usize().unwrap(), j.to_usize().unwrap());
             let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
             if !is_canonical(&base_pair) {continue;}
@@ -1596,12 +1377,9 @@ where
             let au_or_gu_end_penalty_delta_fe = if is_au_or_gu(&base_pair) {
               HELIX_AU_OR_GU_END_PENALTY_DELTA_FE
             } else {0.};
-            // for k in 1 .. v {
             for k in range(T::one(), v) {
               if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-              // for l in v + 1 .. seq_len_pair.1 - 1 {
               for l in range(v + T::one(), seq_len_pair.1 - T::one()) {
-                // let (long_k, long_l) = (k as usize, l as usize);
                 let (long_k, long_l) = (k.to_usize().unwrap(), l.to_usize().unwrap());
                 if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
                 let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
@@ -1883,156 +1661,10 @@ where
   sta_prob_mats
 }
 
-/* pub fn get_sta_prob_mats_4_posterior(seq_pair: &SeqPair, seq_len_pair: &(usize, usize), sta_fe_params: &StaFeParams, max_bp_span_pair: &PosPair, max_gap_num_4_il: Pos, sta_part_func_mats: &StaPartFuncMats4Posterior, bpp_mat_pair: &ProbMatPair, global_part_func: PartFunc) -> StaProbMats {
-  let is_viterbi = false;
-  let seq_len_pair = (seq_len_pair.0 as Pos, seq_len_pair.1 as Pos);
-  let pseudo_pos_quadruple = (0, seq_len_pair.0 - 1, 0, seq_len_pair.1 - 1);
-  let mut sta_outside_part_func_4d_mat_4_bpas = PartFunc4dMat::default();
-  let mut sta_prob_mats = StaProbMats::new(&seq_len_pair);
-  for substr_len_1 in (MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.0 + 1).rev() {
-    for i in 1 .. seq_len_pair.0 - substr_len_1 {
-      let j = i + substr_len_1 - 1;
-      let (long_i, long_j) = (i as usize, j as usize);
-      let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
-      if !is_canonical(&base_pair) {continue;}
-      let pos_pair = (i, j);
-      if !bpp_mat_pair.0.contains_key(&pos_pair) {continue;}
-      for substr_len_2 in (MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL as Pos .. max_bp_span_pair.1 + 1).rev() {
-        let min_gap_num_4_il = max(substr_len_1, substr_len_2) - min(substr_len_1, substr_len_2);
-        if min_gap_num_4_il > max_gap_num_4_il {continue;}
-        for k in 1 .. seq_len_pair.1 - substr_len_2 {
-          let l = k + substr_len_2 - 1;
-          if !is_min_gap_ok_1(&(i, k), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-          if !is_min_gap_ok_1(&(j, l), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-          let (long_k, long_l) = (k as usize, l as usize);
-          let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
-          if !is_canonical(&base_pair_2) {continue;}
-          let pos_quadruple = (i, j, k, l);
-          match sta_part_func_mats.part_func_4d_mat_4_bpas.get(&pos_quadruple) {
-            Some(&part_func_4_bpa) => {
-              let prob_coeff = part_func_4_bpa - global_part_func;
-              let mut sum = NEG_INFINITY;
-              let mut forward_term = sum;
-              let mut backward_term = sum;
-              let is_begin = i == 1 && k == 1;
-              let is_end = j == seq_len_pair.0 - 2 && l == seq_len_pair.1 - 2;
-              match sta_part_func_mats.forward_part_func_set_mat_4_external_loop.get(&(i - 1, k - 1)) {
-                Some(part_funcs) => {
-                  let term = part_funcs.part_func_4_align + if is_begin {INIT_MATCH_SCORE} else {MATCH_2_MATCH_SCORE};
-                  sumormax(&mut forward_term, term, is_viterbi);
-                  let term = part_funcs.part_func_4_insert + if is_begin {INIT_MATCH_SCORE} else {INSERT_2_MATCH_SCORE};
-                  sumormax(&mut forward_term, term, is_viterbi);
-                  let term = part_funcs.part_func_4_insert_2 + if is_begin {INIT_MATCH_SCORE} else {INSERT_2_MATCH_SCORE};
-                  sumormax(&mut forward_term, term, is_viterbi);
-                }, None => {},
-              }
-              match sta_part_func_mats.backward_part_func_set_mat_4_external_loop.get(&(j + 1, l + 1)) {
-                Some(part_funcs) => {
-                  let term = part_funcs.part_func_4_align + if is_end {0.} else {MATCH_2_MATCH_SCORE};
-                  sumormax(&mut backward_term, term, is_viterbi);
-                  let term = part_funcs.part_func_4_insert + if is_end {0.} else {MATCH_2_INSERT_SCORE};
-                  sumormax(&mut backward_term, term, is_viterbi);
-                  let term = part_funcs.part_func_4_insert_2 + if is_end {0.} else {MATCH_2_INSERT_SCORE};
-                  sumormax(&mut backward_term, term, is_viterbi);
-                }, None => {},
-              }
-              let part_func_4_el = forward_term + backward_term;
-              if part_func_4_el > NEG_INFINITY {
-                sum = part_func_4_el;
-              }
-              for m in 1 .. i {
-                let long_m = m as usize;
-                for n in j + 1 .. seq_len_pair.0 - 1 {
-                  let long_n = n as usize;
-                  let base_pair_3 = (seq_pair.0[long_m], seq_pair.0[long_n]);
-                  if !is_canonical(&base_pair_3) {continue;}
-                  let pos_pair_3 = (m, n);
-                  if !bpp_mat_pair.0.contains_key(&pos_pair_3) {continue;}
-                  for o in 1 .. k {
-                    if !is_min_gap_ok_1(&(m, o), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                    let long_o = o as usize;
-                    for p in l + 1 .. seq_len_pair.1 - 1 {
-                      if !is_min_gap_ok_1(&(n, p), &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-                      let long_p = p as usize;
-                      let base_pair_4 = (seq_pair.1[long_o], seq_pair.1[long_p]);
-                      if !is_canonical(&base_pair_4) {continue;}
-                      let pos_quadruple_2 = (m, n, o, p);
-                      match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple_2) {
-                        Some(&part_func) => {
-                          let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_quadruples[&pos_quadruple_2];
-                          let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_quadruples[&pos_quadruple_2];
-                          let mut forward_term = NEG_INFINITY;
-                          let mut backward_term = forward_term;
-                          match forward_tmp_part_func_set_mat.get(&(i - 1, k - 1)) {
-                            Some(part_funcs) => {
-                              let term = part_funcs.part_func_4_align + MATCH_2_MATCH_SCORE;
-                              sumormax(&mut forward_term, term, is_viterbi);
-                              let term = part_funcs.part_func_4_insert + INSERT_2_MATCH_SCORE;
-                              sumormax(&mut forward_term, term, is_viterbi);
-                              let term = part_funcs.part_func_4_insert_2 + INSERT_2_MATCH_SCORE;
-                              sumormax(&mut forward_term, term, is_viterbi);
-                            }, None => {},
-                          }
-                          match backward_tmp_part_func_set_mat.get(&(j + 1, l + 1)) {
-                            Some(part_funcs) => {
-                              let term = part_funcs.part_func_4_align + MATCH_2_MATCH_SCORE;
-                              sumormax(&mut backward_term, term, is_viterbi);
-                              let term = part_funcs.part_func_4_insert + MATCH_2_INSERT_SCORE;
-                              sumormax(&mut backward_term, term, is_viterbi);
-                              let term = part_funcs.part_func_4_insert_2 + MATCH_2_INSERT_SCORE;
-                              sumormax(&mut backward_term, term, is_viterbi);
-                            }, None => {},
-                          }
-                          let part_func_4_il = forward_term + backward_term;
-                          if part_func_4_il > NEG_INFINITY {
-                            let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
-                            let coefficient = bpa_score + part_func;
-                            let part_func_4_il = coefficient + part_func_4_il;
-                            sumormax(&mut sum, part_func_4_il, is_viterbi);
-                          }
-                        }, None => {},
-                      }
-                    }
-                  }
-                }
-              }
-              if sum > NEG_INFINITY {
-                sta_outside_part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
-                let bpap = (prob_coeff + sum).exp();
-                debug_assert!(0. <= bpap && bpap <= 1.);
-                match sta_prob_mats.bpp_mat_pair.0.get_mut(&(i, j)) {
-                  Some(bpp) => {
-                    *bpp += bpap;
-                  }, None => {
-                    sta_prob_mats.bpp_mat_pair.0.insert((i, j), bpap);
-                  },
-                }
-                match sta_prob_mats.bpp_mat_pair.1.get_mut(&(k, l)) {
-                  Some(bpp) => {
-                    *bpp += bpap;
-                  }, None => {
-                    sta_prob_mats.bpp_mat_pair.1.insert((k, l), bpap);
-                  },
-                }
-                sta_prob_mats.upp_mat_pair.0[long_i] -= bpap;
-                sta_prob_mats.upp_mat_pair.0[long_j] -= bpap;
-                sta_prob_mats.upp_mat_pair.1[long_k] -= bpap;
-                sta_prob_mats.upp_mat_pair.1[long_l] -= bpap;
-              }
-            }, None => {},
-          }
-        }
-      }
-    }
-  }
-  sta_prob_mats
-} */
-
 pub fn pct_of_prob_mats<T>(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs<T>, rna_id: RnaId, num_of_rnas: usize, bpp_mats: &SsProbMats<T>, upp_mat_len: usize, produces_access_probs: bool) -> PctStaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// pub fn pct_of_prob_mats(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs, rna_id: RnaId, num_of_rnas: usize, bpp_mats: &SsProbMats, upp_mat_len: usize, produces_access_probs: bool) -> PctStaProbMats {
   let weight = 1. / (num_of_rnas - 1) as Prob;
   let mut pct_prob_mats = PctStaProbMats::new(upp_mat_len);
   pct_prob_mats.bpp_mat_on_ss = bpp_mats.bpp_mat.clone();
@@ -2153,7 +1785,6 @@ where
     }
   }
   for (&(i, j), &bpp) in &bpp_mats.bpp_mat {
-    // let pos_pair = (i + 1, j + 1);
     let pos_pair = (i + T::one(), j + T::one());
     if !pct_prob_mats.bpp_mat.contains_key(&pos_pair) {
       pct_prob_mats.bpp_mat.insert(pos_pair, bpp);
@@ -2182,21 +1813,18 @@ where
       }
     }
     for (&(i, j), &bpp) in &bpp_mats.access_bpp_mat_4_2l {
-      // let pos_pair = (i + 1, j + 1);
       let pos_pair = (i + T::one(), j + T::one());
       if !pct_prob_mats.access_bpp_mat_4_2l.contains_key(&pos_pair) {
         pct_prob_mats.access_bpp_mat_4_2l.insert(pos_pair, bpp);
       }
     }
     for (&(i, j), &bpp) in &bpp_mats.access_bpp_mat_4_ml {
-      // let pos_pair = (i + 1, j + 1);
       let pos_pair = (i + T::one(), j + T::one());
       if !pct_prob_mats.access_bpp_mat_4_ml.contains_key(&pos_pair) {
         pct_prob_mats.access_bpp_mat_4_ml.insert(pos_pair, bpp);
       }
     }
     for (&(i, j), &bpp) in &bpp_mats.bpp_mat_4_el {
-      // let pos_pair = (i + 1, j + 1);
       let pos_pair = (i + T::one(), j + T::one());
       if !pct_prob_mats.bpp_mat_4_el.contains_key(&pos_pair) {
         pct_prob_mats.bpp_mat_4_el.insert(pos_pair, bpp);
@@ -2235,7 +1863,6 @@ pub fn get_max_bp_span<T>(sparse_bpp_mat: &SparseProbMat<T>) -> T
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// pub fn get_max_bp_span(sparse_bpp_mat: &SparseProbMat) -> Pos {
   sparse_bpp_mat.iter().map(|(pos_pair, _)| {pos_pair.1 - pos_pair.0 + T::one()}).max().unwrap()
 }
 
@@ -2248,8 +1875,6 @@ pub fn get_seq_len_diff<T>(pos_quadruple: &PosQuadruple<T>) -> T
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// pub fn get_seq_len_diff(pos_quadruple: &PosQuadruple) -> Pos {
-  // let seq_len_pair = (pos_quadruple.1 + 1 - pos_quadruple.0, pos_quadruple.3 + 1 - pos_quadruple.2);
   let seq_len_pair = (pos_quadruple.1 + T::one() - pos_quadruple.0, pos_quadruple.3 + T::one() - pos_quadruple.2);
   max(seq_len_pair.0, seq_len_pair.1) - min(seq_len_pair.0, seq_len_pair.1)
 }
@@ -2265,7 +1890,6 @@ fn is_min_gap_ok_1<T>(pos_pair: &PosPair<T>, pos_quadruple: &PosQuadruple<T>, ma
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// fn is_min_gap_ok_1(pos_pair: &PosPair, pos_quadruple: &PosQuadruple, max_gap_num: Pos) -> bool {
   let min_gap_num_1 = get_seq_len_diff::<T>(&(pos_quadruple.0, pos_pair.0, pos_quadruple.2, pos_pair.1));
   let min_gap_num_2 = get_seq_len_diff::<T>(&(pos_pair.0, pos_quadruple.1, pos_pair.1, pos_quadruple.3));
   if min_gap_num_1 <= max_gap_num && min_gap_num_2 <= max_gap_num {
@@ -2279,7 +1903,6 @@ fn is_min_gap_ok_2<T>(pos_quadruple: &PosQuadruple<T>, max_gap_num: T) -> bool
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-// fn is_min_gap_ok_2(pos_quadruple: &PosQuadruple, max_gap_num: Pos) -> bool {
   let min_gap_num = get_seq_len_diff::<T>(&pos_quadruple);
   if min_gap_num <= max_gap_num {
     true
@@ -2307,14 +1930,10 @@ pub fn consprob<T>(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send,
 {
-// pub fn consprob(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, offset_4_max_gap_num: Pos, is_posterior_model: bool, produces_access_probs: bool) -> ProbMatSets {
   let num_of_fasta_records = fasta_records.len();
-  // let mut bpp_mat_sets = vec![SsProbMats::new(); num_of_fasta_records];
   let mut bpp_mat_sets = vec![SsProbMats::<T>::new(); num_of_fasta_records];
-  // let mut sparse_bpp_mats = vec![SparseProbMat::new(); num_of_fasta_records];
   let mut sparse_bpp_mats = vec![SparseProbMat::<T>::new(); num_of_fasta_records];
   let mut max_bp_spans = vec![T::zero(); num_of_fasta_records];
-  // let mut ss_free_energy_mat_sets = vec![SsFreeEnergyMats::new(); num_of_fasta_records];
   let mut ss_free_energy_mat_sets = vec![SsFreeEnergyMats::<T>::new(); num_of_fasta_records];
   thread_pool.scoped(|scope| {
     for (bpp_mats, sparse_bpp_mat, max_bp_span, fasta_record, ss_free_energy_mats) in multizip((bpp_mat_sets.iter_mut(), sparse_bpp_mats.iter_mut(), max_bp_spans.iter_mut(), fasta_records.iter(), ss_free_energy_mat_sets.iter_mut())) {
@@ -2340,29 +1959,23 @@ where
     for (rna_id_pair, prob_mats) in prob_mats_with_rna_id_pairs.iter_mut() {
       let seq_pair = (&fasta_records[rna_id_pair.0].seq[..], &fasta_records[rna_id_pair.1].seq[..]);
       let seq_len_pair = (seq_pair.0.len(), seq_pair.1.len());
-      // let max_gap_num = offset_4_max_gap_num + (max(seq_len_pair.0, seq_len_pair.1) - min(seq_len_pair.0, seq_len_pair.1)) as Pos;
       let max_gap_num = offset_4_max_gap_num + T::from_usize(max(seq_len_pair.0, seq_len_pair.1) - min(seq_len_pair.0, seq_len_pair.1)).unwrap();
-      // let max_gap_num_4_il = max(min(max_gap_num, MAX_GAP_NUM_4_IL), MIN_GAP_NUM_4_IL);
       let max_gap_num_4_il = max(min(max_gap_num, T::from_usize(MAX_GAP_NUM_4_IL).unwrap()), T::from_usize(MIN_GAP_NUM_4_IL).unwrap());
       let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
       let bpp_mat_pair = (&sparse_bpp_mats[rna_id_pair.0], &sparse_bpp_mats[rna_id_pair.1]);
       let ss_free_energy_mat_set_pair = (&ss_free_energy_mat_sets[rna_id_pair.0], &ss_free_energy_mat_sets[rna_id_pair.1]);
       scope.execute(move || {
-        // let sta_fe_params = StaFeParams::new(&seq_pair, &seq_len_pair, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, is_posterior_model);
         let sta_fe_params = StaFeParams::<T>::new(&seq_pair, &seq_len_pair, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair);
-        // *prob_mats = io_algo_4_prob_mats(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, &ss_free_energy_mat_set_pair, is_posterior_model, produces_access_probs);
         *prob_mats = io_algo_4_prob_mats::<T>(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &bpp_mat_pair, &ss_free_energy_mat_set_pair, produces_access_probs);
       });
     }
   });
-  // let mut prob_mat_sets = vec![PctStaProbMats::origin(); num_of_fasta_records];
   let mut prob_mat_sets = vec![PctStaProbMats::<T>::origin(); num_of_fasta_records];
   thread_pool.scoped(|scope| {
     for (rna_id, prob_mats, bpp_mats) in multizip((0 .. num_of_fasta_records, prob_mat_sets.iter_mut(), bpp_mat_sets.iter_mut())) {
       let ref ref_2_prob_mats_with_rna_id_pairs = prob_mats_with_rna_id_pairs;
       let seq_len = fasta_records[rna_id].seq.len();
       scope.execute(move || {
-        // *prob_mats = pct_of_prob_mats(ref_2_prob_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mats, seq_len, produces_access_probs);
         *prob_mats = pct_of_prob_mats::<T>(ref_2_prob_mats_with_rna_id_pairs, rna_id, num_of_fasta_records, bpp_mats, seq_len, produces_access_probs);
       });
     }
@@ -2374,7 +1987,6 @@ pub fn write_prob_mat_sets<T>(output_dir_path: &Path, prob_mat_sets: &ProbMatSet
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Display + Ord,
 {
-// pub fn write_prob_mat_sets(output_dir_path: &Path, prob_mat_sets: &ProbMatSets, produces_access_probs: bool) {
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
@@ -2384,7 +1996,6 @@ where
   for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
     let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
     for (&(i, j), &bpp) in prob_mats.bpp_mat.iter() {
-      // buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
       buf_4_rna_id.push_str(&format!("{},{},{} ", i - T::one(), j - T::one(), bpp));
     }
     buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
@@ -2421,7 +2032,6 @@ where
     for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
       let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
       for (&(i, j), &bpp) in prob_mats.max_bpp_mat.iter() {
-        // buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
         buf_4_rna_id.push_str(&format!("{},{},{} ", i - T::one(), j - T::one(), bpp));
       }
       buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
@@ -2433,7 +2043,6 @@ where
     for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
       let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
       for (&(i, j), &bpp) in prob_mats.access_bpp_mat_4_2l.iter() {
-        // buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
         buf_4_rna_id.push_str(&format!("{},{},{} ", i - T::one(), j - T::one(), bpp));
       }
       buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
@@ -2445,7 +2054,6 @@ where
     for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
       let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
       for (&(i, j), &bpp) in prob_mats.access_bpp_mat_4_ml.iter() {
-        // buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
         buf_4_rna_id.push_str(&format!("{},{},{} ", i - T::one(), j - T::one(), bpp));
       }
       buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
@@ -2457,7 +2065,6 @@ where
     for (rna_id, prob_mats) in prob_mat_sets.iter().enumerate() {
       let mut buf_4_rna_id = format!("\n\n>{}\n", rna_id);
       for (&(i, j), &bpp) in prob_mats.bpp_mat_4_el.iter() {
-        // buf_4_rna_id.push_str(&format!("{},{},{} ", i - 1, j - 1, bpp));
         buf_4_rna_id.push_str(&format!("{},{},{} ", i - T::one(), j - T::one(), bpp));
       }
       buf_4_writer_2_bpp_mat_file.push_str(&buf_4_rna_id);
