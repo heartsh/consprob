@@ -17,6 +17,7 @@ getopts = "0.2"
 bio = "0.20"
 num_cpus = "1.0"
 itertools = "0.7"
+hashbrown = "0.3"
 
 [lib]
 path = "src/lib.rs"
