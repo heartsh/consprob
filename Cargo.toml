@@ -9,7 +9,7 @@ keywords = ["bioinformatics", "rna", "structural-alignment"]
 license = "MIT"
 
 [dependencies]
-rna-algos = "0.1"
+rna-algos = "= 0.1.17"
 lazy_static = "0.1"
 time = "0.1"
 scoped_threadpool = "0.1"
