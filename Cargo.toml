@@ -2,7 +2,7 @@
 name = "consprob"
 version = "0.1.3"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "ConsProb, which Estimates Average Posterior Probabilities on Sparse Global Pairwise RNA Structural Alignment"
+description = "Quick Inference Engine to Estimate Average Posterior Probabilities on RNA Pairwise Structural Alignment"
 repository = "https://github.com/heartsh/consprob"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "structural-alignment"]

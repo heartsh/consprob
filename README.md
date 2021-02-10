@@ -1,22 +1,22 @@
-# ConsProb, which Estimates Average Posterior Probabilities on Sparse Global Pairwise RNA Structural Alignment
+# Quick Inference Engine to Estimate Average Posterior Probabilities on RNA Pairwise Structural Alignment
 # Installation
-This project has been written in Rust, a systems programming language.
-You need to install the Rust components, which are rustc (the Rust compiler), cargo (the Rust package manager), and the Rust standard library.
-Visit [the Rust website](https://www.rust-lang.org) to see more about the language.
-You can install the components with one line as follows:
+This project is written in Rust, a systems programming language.
+You need to install Rust components, i.e., rustc (the Rust compiler), cargo (the Rust package manager), and the Rust standard library.
+Visit [the Rust website](https://www.rust-lang.org) to see more about Rust.
+You can install Rust components with the following one line:
 ```bash
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-The installation is arranged by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), which enables to switch easily a compiler in use.
+The above installation is arranged by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), and Rustup enables to easily switch a compiler in use.
 You can install ConsProb: 
 ```bash
 $ cargo install consprob
 ```
-Check if the program has been installed properly:
+Check if you have installed ConsProb properly:
 ```bash
-$ consprob # Its available command options will be displayed.
+$ consprob # Its available command options will be displayed
 ```
-You can run the program with a prepared test set of sampled tRNAs:
+You can run ConsProb with a prepared test set of sampled tRNAs:
 ```bash
 $ git clone https://github.com/heartsh/consprob && cd consprob
 $ cargo test --release -- --nocapture
