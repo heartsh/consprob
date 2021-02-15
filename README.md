@@ -1,4 +1,4 @@
-# Quick Inference Engine to Estimate Average Posterior Probabilities on RNA Pairwise Structural Alignment
+# Quick Inference Engine for Average Posterior Probabilities on RNA Pairwise Structural Alignment
 # Installation
 This project is written in Rust, a systems programming language.
 You need to install Rust components, i.e., rustc (the Rust compiler), cargo (the Rust package manager), and the Rust standard library.
