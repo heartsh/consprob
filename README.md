@@ -10,7 +10,7 @@ $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 The above installation is arranged by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), and Rustup enables to easily switch a compiler in use.
 You can install ConsProb: 
 ```bash
-$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+sse -C target-feature=+mmx' cargo install consprob # AVX, SSE, and MMX enabled for rustc
+$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+ssse3 -C target-feature=+mmx' cargo install consprob # AVX, SSE, and MMX enabled for rustc (another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma')
 ```
 Check if you have installed ConsProb properly:
 ```bash

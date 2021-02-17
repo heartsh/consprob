@@ -292,15 +292,15 @@ pub const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
 pub const UPP_MAT_ON_ML_FILE_NAME: &'static str = "upp_mats_on_ml.dat";
 pub const UPP_MAT_ON_EL_FILE_NAME: &'static str = "upp_mats_on_el.dat";
 
-pub fn io_algo_4_prob_mats<T>(seq_pair: &SeqPair, seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_access_probs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, pos_quadruple_mat: &PosQuadrupleMat<T>,) -> StaProbMats<T>
+pub fn io_algo_4_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_access_probs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, pos_quadruple_mat: &PosQuadrupleMat<T>,) -> StaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  let (sta_part_func_mats, global_part_func) = get_sta_inside_part_func_mats::<T>(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, ss_free_energy_mat_set_pair, forward_pos_pair_mat_set, backward_pos_pair_mat_set, pos_quadruple_mat,);
-  get_sta_prob_mats::<T>(seq_pair, seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_part_func_mats, ss_free_energy_mat_set_pair, produces_access_probs, global_part_func, pos_quadruple_mat,)
+  let (sta_part_func_mats, global_part_func) = get_sta_inside_part_func_mats::<T>(seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, ss_free_energy_mat_set_pair, forward_pos_pair_mat_set, backward_pos_pair_mat_set, pos_quadruple_mat,);
+  get_sta_prob_mats::<T>(seq_len_pair, sta_fe_params, max_bp_span_pair, max_gap_num, max_gap_num_4_il, &sta_part_func_mats, ss_free_energy_mat_set_pair, produces_access_probs, global_part_func, pos_quadruple_mat,)
 }
 
-pub fn get_sta_inside_part_func_mats<T>(seq_pair: &SeqPair, seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, pos_quadruple_mat: &PosQuadrupleMat<T>,) -> (StaPartFuncMats<T>, PartFunc)
+pub fn get_sta_inside_part_func_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, pos_quadruple_mat: &PosQuadrupleMat<T>,) -> (StaPartFuncMats<T>, PartFunc)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
@@ -317,8 +317,6 @@ where
             let (forward_tmp_part_func_set_mat, part_func_on_sa, part_func_4_ml) = get_tmp_part_func_set_mat::<T>(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_part_func_mats, true, forward_pos_pair_mat_set, backward_pos_pair_mat_set);
             let (backward_tmp_part_func_set_mat, _, _) = get_tmp_part_func_set_mat::<T>(&seq_len_pair, sta_fe_params, max_gap_num_4_il, &pos_quadruple, &sta_part_func_mats, false, forward_pos_pair_mat_set, backward_pos_pair_mat_set);
             let mut sum = NEG_INFINITY;
-            let long_pos_pair = (long_i, long_j);
-            let long_pos_pair_2 = (long_k, long_l);
             let score = bpa_score + ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)] + ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)] + part_func_on_sa;
             logsumexp(&mut sum, score);
             for &(m, n, o, p) in pos_quadruple_mat {
@@ -363,31 +361,15 @@ where
                 }, None => {},
               }
             }
-            let multi_loop_closing_basepairing_fe = get_ml_closing_basepairing_fe(
-              seq_pair.0,
-              &long_pos_pair,
-            );
-            let multi_loop_closing_basepairing_fe_2 =
-              get_ml_closing_basepairing_fe(
-                seq_pair.1,
-                &long_pos_pair_2,
-              );
+            let multi_loop_closing_basepairing_fe = ss_free_energy_mat_set_pair.0.ml_closing_bp_fe_mat[&(i, j)];
+            let multi_loop_closing_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.ml_closing_bp_fe_mat[&(k, l)];
             let score = bpa_score + multi_loop_closing_basepairing_fe + multi_loop_closing_basepairing_fe_2 + part_func_4_ml;
             logsumexp(&mut sum, score);
             if sum > NEG_INFINITY {
               sta_part_func_mats.part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
-              let multi_loop_closing_basepairing_fe = get_ml_or_el_accessible_basepairing_fe(
-                seq_pair.0,
-                &long_pos_pair,
-                true,
-              );
-              let multi_loop_closing_basepairing_fe_2 =
-                get_ml_or_el_accessible_basepairing_fe(
-                  seq_pair.1,
-                  &long_pos_pair_2,
-                  true,
-                );
-              sum += multi_loop_closing_basepairing_fe + multi_loop_closing_basepairing_fe_2;
+              let accessible_basepairing_fe = ss_free_energy_mat_set_pair.0.accessible_bp_fe_mat[&(i, j)];
+              let accessible_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.accessible_bp_fe_mat[&(k, l)];
+              sum += accessible_basepairing_fe + accessible_basepairing_fe_2;
               sta_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_els.insert(pos_quadruple, sum);
               sta_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_mls.insert(pos_quadruple, sum + 2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE);
             }
@@ -899,7 +881,7 @@ where
   (tmp_part_func_set_mat, final_sum_on_sa, final_sum_4_ml)
 }
 
-pub fn get_sta_prob_mats<T>(seq_pair: &SeqPair, seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, sta_part_func_mats: &StaPartFuncMats<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_access_probs: bool, global_part_func: PartFunc, pos_quadruple_mat: &PosQuadrupleMat<T>,) -> StaProbMats<T>
+pub fn get_sta_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, sta_part_func_mats: &StaPartFuncMats<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_access_probs: bool, global_part_func: PartFunc, pos_quadruple_mat: &PosQuadrupleMat<T>,) -> StaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
@@ -1045,7 +1027,6 @@ where
               let pos_quadruple_2 = (m, n, o, p);
               match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple_2) {
                 Some(&part_func_4_bpa_2) => {
-                  let (long_m, long_n, long_o, long_p) = (m.to_usize().unwrap(), n.to_usize().unwrap(), o.to_usize().unwrap(), p.to_usize().unwrap());
                   let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(m, o)];
                   let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(n, p)];
                   let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
@@ -1092,15 +1073,8 @@ where
                   let mut part_func_4_ml = forward_term + backward_term;
                   logsumexp(&mut part_func_4_ml, forward_term_2 + backward_term_2);
                   if part_func_4_ml > NEG_INFINITY {
-                    let multi_loop_closing_basepairing_fe = get_ml_closing_basepairing_fe(
-                      seq_pair.0,
-                      &(long_m, long_n),
-                    );
-                    let multi_loop_closing_basepairing_fe_2 =
-                      get_ml_closing_basepairing_fe(
-                        seq_pair.1,
-                        &(long_o, long_p),
-                      );
+                    let multi_loop_closing_basepairing_fe = ss_free_energy_mat_set_pair.0.ml_closing_bp_fe_mat[&(m, n)];
+                    let multi_loop_closing_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.ml_closing_bp_fe_mat[&(o, p)];
                     let coefficient = part_func_ratio + bpa_score + multi_loop_closing_basepairing_fe + multi_loop_closing_basepairing_fe_2 + part_func_4_bpa_2;
                     let part_func_4_ml = coefficient + part_func_4_ml;
                     logsumexp(&mut sum, part_func_4_ml);
@@ -1265,16 +1239,8 @@ where
               let prob_coeff = part_func_4_bpa - global_part_func + bpa_score;
               let hl_fe = ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)];
               let hl_fe_2 = ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)];
-              let (long_i, long_j, long_k, long_l) = (i.to_usize().unwrap(), j.to_usize().unwrap(), k.to_usize().unwrap(), l.to_usize().unwrap());
-              let multi_loop_closing_basepairing_fe = get_ml_closing_basepairing_fe(
-                seq_pair.0,
-                &(long_i, long_j),
-              );
-              let multi_loop_closing_basepairing_fe_2 =
-                get_ml_closing_basepairing_fe(
-                  seq_pair.1,
-                  &(long_k, long_l),
-                );
+              let multi_loop_closing_basepairing_fe = ss_free_energy_mat_set_pair.0.ml_closing_bp_fe_mat[&(i, j)];
+              let multi_loop_closing_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.ml_closing_bp_fe_mat[&(k, l)];
               let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(i, k)];
               let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(j, l)];
               let rightmost_pos_pair = (j, l);
@@ -1807,7 +1773,7 @@ where
       let max = max(max_gap_num, max_gap_num_4_il);
       scope.execute(move || {
         let sta_fe_params = StaFeParams::<T>::new(&seq_pair, &seq_len_pair, max, &pos_quadruple_mat);
-        *prob_mats = io_algo_4_prob_mats::<T>(&seq_pair, &seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &ss_free_energy_mat_set_pair, produces_access_probs, &forward_pos_pair_mat_set, &backward_pos_pair_mat_set, &pos_quadruple_mat,);
+        *prob_mats = io_algo_4_prob_mats::<T>(&seq_len_pair, &sta_fe_params, &max_bp_span_pair, max_gap_num, max_gap_num_4_il, &ss_free_energy_mat_set_pair, produces_access_probs, &forward_pos_pair_mat_set, &backward_pos_pair_mat_set, &pos_quadruple_mat,);
       });
     }
   });
@@ -1831,6 +1797,8 @@ where
   let mut new_ss_free_energy_mats = SsFreeEnergyMats::new();
   new_ss_free_energy_mats.hl_fe_mat = ss_free_energy_mats.hl_fe_mat.iter().filter(|(pos_pair, _)| {bpp_mat[pos_pair] >= min_bpp}).map(|(&(i, j), &free_energy)| {((i + T::one(), j + T::one()), free_energy)}).collect();
   new_ss_free_energy_mats.twoloop_fe_4d_mat = ss_free_energy_mats.twoloop_fe_4d_mat.iter().filter(|(&(i, j, k, l), _)| {bpp_mat[&(i, j)] >= min_bpp && bpp_mat[&(k, l)] >= min_bpp}).map(|(&(i, j, k, l), &free_energy)| {((i + T::one(), j + T::one(), k + T::one(), l + T::one()), free_energy)}).collect();
+  new_ss_free_energy_mats.ml_closing_bp_fe_mat = ss_free_energy_mats.ml_closing_bp_fe_mat.iter().filter(|(pos_pair, _)| {bpp_mat[pos_pair] >= min_bpp}).map(|(&(i, j), &free_energy)| {((i + T::one(), j + T::one()), free_energy)}).collect();
+  new_ss_free_energy_mats.accessible_bp_fe_mat = ss_free_energy_mats.accessible_bp_fe_mat.iter().filter(|(pos_pair, _)| {bpp_mat[pos_pair] >= min_bpp}).map(|(&(i, j), &free_energy)| {((i + T::one(), j + T::one()), free_energy)}).collect();
   new_ss_free_energy_mats
 }
 
