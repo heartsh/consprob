@@ -1,6 +1,6 @@
 [package]
 name = "consprob"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["heartsh <heartsh@heartsh.io>"]
 description = "Quick Inference Engine for Average Posterior Probabilities on RNA Pairwise Structural Alignment"
 repository = "https://github.com/heartsh/consprob"
