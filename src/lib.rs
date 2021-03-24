@@ -113,7 +113,7 @@ pub type ProbMatSets<T> = Vec<PctStaProbMats<T>>;
 pub type StaProbMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, StaProbMats<T>>;
 pub type ProbSeqPair<'a> = (&'a Probs, &'a Probs);
 pub type Poss<T> = Vec<T>;
-pub type TmpPartFuncSetMatsWithPosPairs<T> = HashMap<PosPair<T>, TmpPartFuncSetMat<T>>;
+pub type TmpPartFuncSetMatsWithPosPairs<T> = HashMap<PosPair<T>, (PosPair<T>, TmpPartFuncSetMat<T>)>;
 
 impl<T: Hash + ToPrimitive + Clone> StaProbMats<T> {
   pub fn origin() -> StaProbMats<T> {
@@ -375,8 +375,8 @@ where
             sta_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_els.insert(pos_quadruple, sum);
             sta_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_mls.insert(pos_quadruple, sum + 2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE);
           }
-          sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs.insert((i, k), forward_tmp_part_func_set_mat);
-          sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs.insert((j, l), backward_tmp_part_func_set_mat);
+          sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs.insert((i, k), ((j, l), forward_tmp_part_func_set_mat));
+          sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs.insert((j, l), ((i, k), backward_tmp_part_func_set_mat));
         }, None => {},
       }
     }
@@ -588,12 +588,12 @@ where
   let leftmost_pos_pair = if is_forward {(i, k)} else {(i + T::one(), k + T::one())};
   let rightmost_pos_pair = if is_forward {(j - T::one(), l - T::one())} else {(j, l)};
   let tmp_part_func_set_mats_with_pos_pairs = if is_forward{&sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs} else {&sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs};
-  let mut tmp_part_func_set_mat = match tmp_part_func_set_mats_with_pos_pairs.get(&if is_forward {leftmost_pos_pair} else {rightmost_pos_pair}) {
+  let (last_pos_pair, mut tmp_part_func_set_mat) = match tmp_part_func_set_mats_with_pos_pairs.get(&if is_forward {leftmost_pos_pair} else {rightmost_pos_pair}) {
     Some(cache) => {
       cache_is_used = true;
       cache.clone()
     }, None => {
-      TmpPartFuncSetMat::<T>::new()
+      (if is_forward {(i, k)} else {(j, l)}, TmpPartFuncSetMat::<T>::new())
     },
   };
   let iter: Poss<T> = if is_forward {range(i, j).collect()} else {range_inclusive(i + T::one(), j).rev().collect()};
@@ -609,7 +609,7 @@ where
     for &v in iter_2.iter() {
       let pos_pair = (u, v);
       if !is_min_gap_ok(&pos_pair, &pseudo_pos_quadruple, max_gap_num_4_il) {continue;}
-      if cache_is_used && tmp_part_func_set_mat.contains_key(&pos_pair) {
+      if cache_is_used && !((is_forward && (last_pos_pair.0 <= u || last_pos_pair.1 <= v)) || (!is_forward && (u <= last_pos_pair.0 || v <= last_pos_pair.1))) {
         continue;
       }
       let mut tmp_part_func_sets = TmpPartFuncSets::new();
@@ -954,8 +954,8 @@ where
             let pos_quadruple_2 = (m, n, o, p);
             match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple_2) {
               Some(&part_func) => {
-                let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(m, o)];
-                let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(n, p)];
+                let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(m, o)].1;
+                let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(n, p)].1;
                 let mut forward_term = NEG_INFINITY;
                 let mut backward_term = forward_term;
                 match forward_tmp_part_func_set_mat.get(&(i - T::one(), k - T::one())) {
@@ -1037,8 +1037,8 @@ where
             let pos_quadruple_2 = (m, n, o, p);
             match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple_2) {
               Some(&part_func_4_bpa_2) => {
-                let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(m, o)];
-                let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(n, p)];
+                let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(m, o)].1;
+                let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(n, p)].1;
                 let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple_2];
                 let mut forward_term = NEG_INFINITY;
                 let mut forward_term_2 = forward_term;
@@ -1087,7 +1087,6 @@ where
                   let multi_loop_closing_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.ml_closing_bp_fe_mat[&(o, p)];
                   let coefficient = part_func_ratio + bpa_score + multi_loop_closing_basepairing_fe + multi_loop_closing_basepairing_fe_2 + part_func_4_bpa_2;
                   let part_func_4_ml = coefficient + part_func_4_ml;
-                  // logsumexp(&mut sum, part_func_4_ml);
                   logsumexp(&mut tmp_outside_part_func, part_func_4_ml);
                   if produces_access_probs {
                     let bpap_4_ml = prob_coeff + part_func_4_ml;
@@ -1266,8 +1265,8 @@ where
               let hl_fe_2 = ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)];
               let multi_loop_closing_basepairing_fe = ss_free_energy_mat_set_pair.0.ml_closing_bp_fe_mat[&(i, j)];
               let multi_loop_closing_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.ml_closing_bp_fe_mat[&(k, l)];
-              let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(i, k)];
-              let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(j, l)];
+              let ref forward_tmp_part_func_set_mat = sta_part_func_mats.forward_tmp_part_func_set_mats_with_pos_pairs[&(i, k)].1;
+              let ref backward_tmp_part_func_set_mat = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs[&(j, l)].1;
               let rightmost_pos_pair = (j, l);
               let is_end = pos_pair_2 == rightmost_pos_pair;
               let mut backward_term_4_align_on_sa = NEG_INFINITY;
