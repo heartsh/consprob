@@ -25,7 +25,6 @@ pub use std::cmp::Ord;
 pub use std::marker::{Sync, Send};
 pub use hashbrown::HashSet;
 
-pub type TmpOutsidePartFuncsWithPosPairs<T> = HashMap<PosPair<T>, (PosPair<T>, PartFunc)>;
 pub type PosQuadrupleMat<T> = HashSet<PosQuadruple<T>>;
 pub type PosPairMatSet<T> = HashMap<PosPair<T>, PosPairMat<T>>;
 pub type PosPairMat<T> = HashSet<PosPair<T>>;
@@ -886,9 +885,8 @@ where
   let pseudo_pos_quadruple = (T::zero(), seq_len_pair.0 - T::one(), T::zero(), seq_len_pair.1 - T::one());
   let mut sta_outside_part_func_4d_mat_4_bpas = PartFunc4dMat::<T>::default();
   let mut sta_prob_mats = StaProbMats::<T>::new(&seq_len_pair);
-  let mut tmp_outside_part_funcs_with_pos_pairs = TmpOutsidePartFuncsWithPosPairs::<T>::default();
   let (mut substr_len_1, mut substr_len_2) = (max_bp_span_pair.0, max_bp_span_pair.1);
-  let mut first_substr_len_increases = true;
+  let mut first_substr_len_decreases = true;
   while T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap() <= substr_len_1 && T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap() <= substr_len_2 {
     for &(i, j, k, l) in pos_quadruple_mat {
       if j - i + T::one() != substr_len_1 || l - k + T::one() != substr_len_2 {continue;}
@@ -1022,18 +1020,8 @@ where
             }
           }
           let part_func_ratio = sta_part_func_mats.part_func_4d_mat_4_bpas_accessible_on_mls[&pos_quadruple] - part_func_4_bpa;
-          let mut cache_is_used = false;
-          let (last_pos_pair, mut tmp_outside_part_func) = match tmp_outside_part_funcs_with_pos_pairs.get(&(i, k)) {
-            Some(cache) => {
-              cache_is_used = true;
-              cache.clone()
-            }, None => {
-              ((seq_len_pair.0 - T::one(), seq_len_pair.1 - T::one()), NEG_INFINITY)
-            },
-          };
           for &(m, n, o, p) in pos_quadruple_mat {
             if !(m < i && j < n) || !(o < k && l < p) {continue;}
-            if cache_is_used && !(n <= last_pos_pair.0 || p <= last_pos_pair.1) {continue;}
             let pos_quadruple_2 = (m, n, o, p);
             match sta_outside_part_func_4d_mat_4_bpas.get(&pos_quadruple_2) {
               Some(&part_func_4_bpa_2) => {
@@ -1087,7 +1075,7 @@ where
                   let multi_loop_closing_basepairing_fe_2 = ss_free_energy_mat_set_pair.1.ml_closing_bp_fe_mat[&(o, p)];
                   let coefficient = part_func_ratio + bpa_score + multi_loop_closing_basepairing_fe + multi_loop_closing_basepairing_fe_2 + part_func_4_bpa_2;
                   let part_func_4_ml = coefficient + part_func_4_ml;
-                  logsumexp(&mut tmp_outside_part_func, part_func_4_ml);
+                  logsumexp(&mut sum, part_func_4_ml);
                   if produces_access_probs {
                     let bpap_4_ml = prob_coeff + part_func_4_ml;
                     match sta_prob_mats.access_bpp_mat_pair_4_ml.0.get_mut(&pos_pair) {
@@ -1108,10 +1096,6 @@ where
                 }
               }, None => {},
             }
-          }
-          logsumexp(&mut sum, tmp_outside_part_func);
-          if tmp_outside_part_func > NEG_INFINITY {
-            tmp_outside_part_funcs_with_pos_pairs.insert((i, k), ((j, l), tmp_outside_part_func));
           }
           if sum > NEG_INFINITY {
             sta_outside_part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
@@ -1143,12 +1127,12 @@ where
       substr_len_2 = substr_len_2 - T::one();
     } else if substr_len_2 == T::from_usize(MIN_SPAN_OF_INDEX_PAIR_CLOSING_HL).unwrap() {
       substr_len_1 = substr_len_1 - T::one();
-    } else if first_substr_len_increases {
+    } else if first_substr_len_decreases {
       substr_len_1 = substr_len_1 - T::one();
-      first_substr_len_increases = false;
+      first_substr_len_decreases = false;
     } else {
       substr_len_2 = substr_len_2 - T::one();
-      first_substr_len_increases = true;
+      first_substr_len_decreases = true;
     }
   }
   if produces_access_probs {
