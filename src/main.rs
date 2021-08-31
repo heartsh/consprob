@@ -9,10 +9,11 @@ fn main() {
   let mut opts = Options::new();
   opts.reqopt("i", "input_file_path", "The path to an input FASTA file containing RNA sequences to predict probabilities", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
-  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
+  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} (Turner)/{}(CONTRAfold) by default)", DEFAULT_MIN_BPP, DEFAULT_MIN_BPP_CONTRA), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
-  opts.optflag("a", "produces_access_probs", &format!("Also compute accessible probabilities (only for Turner model)"));
+  opts.optflag("a", "produces_access_probs", &format!("Also compute accessible probabilities"));
+  opts.optflag("c", "uses_contra_model", &format!("Score each possible structural alignment with CONTRAfold model instead of Turner's model"));
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -24,10 +25,11 @@ fn main() {
   }
   let input_file_path = matches.opt_str("i").unwrap();
   let input_file_path = Path::new(&input_file_path);
+  let uses_contra_model = matches.opt_present("c");
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
   } else {
-    DEFAULT_MIN_BPP
+    if uses_contra_model {DEFAULT_MIN_BPP_CONTRA} else {DEFAULT_MIN_BPP}
   };
   let offset_4_max_gap_num = if matches.opt_present("offset_4_max_gap_num") {
     matches.opt_str("offset_4_max_gap_num").unwrap().parse().unwrap()
@@ -57,12 +59,11 @@ fn main() {
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
   let mut thread_pool = Pool::new(num_of_threads);
-  // let prob_mat_sets = consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, is_posterior_model, produces_access_probs);
   if max_seq_len <= u8::MAX as usize {
-    let prob_mat_sets = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u8, produces_access_probs);
+    let prob_mat_sets = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u8, produces_access_probs, uses_contra_model);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
   } else {
-    let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u16, produces_access_probs);
+    let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u16, produces_access_probs, uses_contra_model);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
   }
 }

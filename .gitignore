@@ -7,6 +7,7 @@ target
 !*.afa
 !*.aln
 !*.sth
+!*.png
 !Cargo.toml
 !.gitignore
 !README.md
