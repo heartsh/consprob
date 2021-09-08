@@ -122,7 +122,7 @@ impl<T: Hash + ToPrimitive + Clone> StaProbMats<T> {
 
   pub fn new(seq_len_pair: &PosPair<T>) -> StaProbMats<T> {
     let prob_mat_pair = (SparseProbMat::<T>::default(), SparseProbMat::<T>::default());
-    let prob_set_pair = (vec![NEG_INFINITY; seq_len_pair.0.to_usize().unwrap()], vec![NEG_INFINITY; seq_len_pair.1.to_usize().unwrap()]);
+    let prob_set_pair = (vec![0.; seq_len_pair.0.to_usize().unwrap()], vec![0.; seq_len_pair.1.to_usize().unwrap()]);
     StaProbMats {
       bpp_mat_pair: prob_mat_pair.clone(),
       upp_mat_pair_4_hl: prob_set_pair.clone(),
@@ -1535,18 +1535,18 @@ where
                     let part_func_4_2l = coefficient + part_func_4_2l;
                     logsumexp(&mut sum, part_func_4_2l);
                     if produces_struct_profs {
-                      let bpap_4_2l = prob_coeff + part_func_4_2l;
+                      let bpap_4_2l = expf(prob_coeff + part_func_4_2l);
                       for q in long_m + 1 .. long_i {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.0[q] += bpap_4_2l;
                       }
                       for q in long_j + 1 .. long_n {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.0[q] += bpap_4_2l;
                       }
                       for q in long_o + 1 .. long_k {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.1[q] += bpap_4_2l;
                       }
                       for q in long_l + 1 .. long_p {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.1[q] += bpap_4_2l;
                       }
                     }
                   }
@@ -1616,26 +1616,26 @@ where
             }
             if sum > NEG_INFINITY {
               sta_outside_part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
-              let bpap = prob_coeff + sum;
-              debug_assert!(NEG_INFINITY <= bpap && bpap <= 0.);
+              let bpap = expf(prob_coeff + sum);
+              debug_assert!(0. <= bpap && bpap <= 1.);
               match sta_prob_mats.bpp_mat_pair.0.get_mut(&(i, j)) {
                 Some(bpp) => {
-                  logsumexp(bpp, bpap);
+                  *bpp += bpap;
                 }, None => {
                   sta_prob_mats.bpp_mat_pair.0.insert((i, j), bpap);
                 },
               }
               match sta_prob_mats.bpp_mat_pair.1.get_mut(&(k, l)) {
                 Some(bpp) => {
-                  logsumexp(bpp, bpap);
+                  *bpp += bpap;
                 }, None => {
                   sta_prob_mats.bpp_mat_pair.1.insert((k, l), bpap);
                 },
               }
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.0[long_i], bpap);
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.0[long_j], bpap);
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.1[long_k], bpap);
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.1[long_l], bpap);
+              sta_prob_mats.bpp_mat_pair_2.0[long_i] += bpap;
+              sta_prob_mats.bpp_mat_pair_2.0[long_j] += bpap;
+              sta_prob_mats.bpp_mat_pair_2.1[long_k] += bpap;
+              sta_prob_mats.bpp_mat_pair_2.1[long_l] += bpap;
             }
           }, None => {},
         }
@@ -1700,9 +1700,9 @@ where
               let term = part_funcs.part_func_4_insert_2 + INSERT_2_MATCH_SCORE;
               logsumexp(&mut forward_term, term);
               let ba_score = sta_fe_params.ba_score_mat[&pos_pair];
-              let bap_4_el = ba_score + forward_term + backward_term_4_align - global_part_func;
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], bap_4_el);
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], bap_4_el);
+              let bap_4_el = expf(ba_score + forward_term + backward_term_4_align - global_part_func);
+              sta_prob_mats.upp_mat_pair_4_el.0[long_u] += bap_4_el;
+              sta_prob_mats.upp_mat_pair_4_el.1[long_v] += bap_4_el;
             }, None => {},
           }
         }
@@ -1715,8 +1715,8 @@ where
               logsumexp(&mut forward_term, term);
               let term = part_funcs.part_func_4_insert_2 + INSERT_SWITCH_SCORE;
               logsumexp(&mut forward_term, term);
-              let upp_4_el = insert_score + forward_term + backward_term_4_insert - global_part_func;
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], upp_4_el);
+              let upp_4_el = expf(insert_score + forward_term + backward_term_4_insert - global_part_func);
+              sta_prob_mats.upp_mat_pair_4_el.0[long_u] += upp_4_el;
             }, None => {},
           }
         }
@@ -1729,8 +1729,8 @@ where
               logsumexp(&mut forward_term, term);
               let term = part_funcs.part_func_4_insert_2 + INSERT_EXTEND_SCORE;
               logsumexp(&mut forward_term, term);
-              let upp_4_el = insert_score_2 + forward_term + backward_term_4_insert_2 - global_part_func;
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], upp_4_el);
+              let upp_4_el = expf(insert_score_2 + forward_term + backward_term_4_insert_2 - global_part_func);
+              sta_prob_mats.upp_mat_pair_4_el.1[long_v] += upp_4_el;
             }, None => {},
           }
         }
@@ -1787,9 +1787,9 @@ where
                   logsumexp(&mut forward_term, term);
                   let term = part_funcs.part_func_4_insert_2 + INSERT_2_MATCH_SCORE;
                   logsumexp(&mut forward_term, term);
-                  let bap_4_hl = prob_coeff_4_hl + ba_score + forward_term + backward_term_4_align_on_sa;
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], bap_4_hl);
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], bap_4_hl);
+                  let bap_4_hl = expf(prob_coeff_4_hl + ba_score + forward_term + backward_term_4_align_on_sa);
+                  sta_prob_mats.upp_mat_pair_4_hl.0[long_u] += bap_4_hl;
+                  sta_prob_mats.upp_mat_pair_4_hl.1[long_v] += bap_4_hl;
                 }, None => {},
               }
               match forward_tmp_part_func_set_mat.get(&pos_pair_4_gap_1) {
@@ -1800,8 +1800,8 @@ where
                   logsumexp(&mut forward_term, term);
                   let term = part_funcs.part_func_4_insert_2 + INSERT_SWITCH_SCORE;
                   logsumexp(&mut forward_term, term);
-                  let upp_4_hl = prob_coeff_4_hl + insert_score + forward_term + backward_term_4_insert_on_sa;
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], upp_4_hl);
+                  let upp_4_hl = expf(prob_coeff_4_hl + insert_score + forward_term + backward_term_4_insert_on_sa);
+                  sta_prob_mats.upp_mat_pair_4_hl.0[long_u] += upp_4_hl;
                 }, None => {},
               }
               match forward_tmp_part_func_set_mat.get(&pos_pair_4_gap_2) {
@@ -1812,8 +1812,8 @@ where
                   logsumexp(&mut forward_term, term);
                   let term = part_funcs.part_func_4_insert_2 + INSERT_EXTEND_SCORE;
                   logsumexp(&mut forward_term, term);
-                  let upp_4_hl = prob_coeff_4_hl + insert_score_2 + forward_term + backward_term_4_insert_2_on_sa;
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], upp_4_hl);
+                  let upp_4_hl = expf(prob_coeff_4_hl + insert_score_2 + forward_term + backward_term_4_insert_2_on_sa);
+                  sta_prob_mats.upp_mat_pair_4_hl.1[long_v] += upp_4_hl;
                 }, None => {},
               }
             }, None => {},
@@ -1823,47 +1823,17 @@ where
     }
     for (i, upp) in sta_prob_mats.upp_mat_pair_4_ml.0.iter_mut().enumerate() {
       let mut sum = sta_prob_mats.upp_mat_pair_4_hl.0[i];
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_2l.0[i]);
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_el.0[i]);
-      logsumexp(&mut sum, sta_prob_mats.bpp_mat_pair_2.0[i]);
-      *upp = 1. - expf(sum);
+      sum += sta_prob_mats.upp_mat_pair_4_2l.0[i];
+      sum += sta_prob_mats.upp_mat_pair_4_el.0[i];
+      sum += sta_prob_mats.bpp_mat_pair_2.0[i];
+      *upp = 1. - sum;
     }
     for (i, upp) in sta_prob_mats.upp_mat_pair_4_ml.1.iter_mut().enumerate() {
       let mut sum = sta_prob_mats.upp_mat_pair_4_hl.1[i];
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_2l.1[i]);
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_el.1[i]);
-      logsumexp(&mut sum, sta_prob_mats.bpp_mat_pair_2.1[i]);
-      *upp = 1. - expf(sum);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair.0.values_mut() {
-      *bpp = expf(*bpp);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair.1.values_mut() {
-      *bpp = expf(*bpp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_hl.0.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_hl.1.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_2l.0.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_2l.1.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_el.0.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_el.1.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair_2.0.iter_mut() {
-      *bpp = expf(*bpp);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair_2.1.iter_mut() {
-      *bpp = expf(*bpp);
+      sum += sta_prob_mats.upp_mat_pair_4_2l.1[i];
+      sum += sta_prob_mats.upp_mat_pair_4_el.1[i];
+      sum += sta_prob_mats.bpp_mat_pair_2.1[i];
+      *upp = 1. - sum;
     }
   }
   sta_prob_mats
@@ -1958,18 +1928,18 @@ where
                     let part_func_4_2l = coefficient + part_func_4_2l;
                     logsumexp(&mut sum, part_func_4_2l);
                     if produces_struct_profs {
-                      let bpap_4_2l = prob_coeff + part_func_4_2l;
+                      let bpap_4_2l = expf(prob_coeff + part_func_4_2l);
                       for q in long_m + 1 .. long_i {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.0[q] += bpap_4_2l;
                       }
                       for q in long_j + 1 .. long_n {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.0[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.0[q] += bpap_4_2l;
                       }
                       for q in long_o + 1 .. long_k {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.1[q] += bpap_4_2l;
                       }
                       for q in long_l + 1 .. long_p {
-                        logsumexp(&mut sta_prob_mats.upp_mat_pair_4_2l.1[q], bpap_4_2l);
+                        sta_prob_mats.upp_mat_pair_4_2l.1[q] += bpap_4_2l;
                       }
                     }
                   }
@@ -2039,26 +2009,26 @@ where
             }
             if sum > NEG_INFINITY {
               sta_outside_part_func_4d_mat_4_bpas.insert(pos_quadruple, sum);
-              let bpap = prob_coeff + sum;
-              debug_assert!(NEG_INFINITY <= bpap && bpap <= 0.);
+              let bpap = expf(prob_coeff + sum);
+              debug_assert!(0. <= bpap && bpap <= 1.);
               match sta_prob_mats.bpp_mat_pair.0.get_mut(&(i, j)) {
                 Some(bpp) => {
-                  logsumexp(bpp, bpap);
+                  *bpp += bpap;
                 }, None => {
                   sta_prob_mats.bpp_mat_pair.0.insert((i, j), bpap);
                 },
               }
               match sta_prob_mats.bpp_mat_pair.1.get_mut(&(k, l)) {
                 Some(bpp) => {
-                  logsumexp(bpp, bpap);
+                  *bpp += bpap;
                 }, None => {
                   sta_prob_mats.bpp_mat_pair.1.insert((k, l), bpap);
                 },
               }
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.0[long_i], bpap);
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.0[long_j], bpap);
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.1[long_k], bpap);
-              logsumexp(&mut sta_prob_mats.bpp_mat_pair_2.1[long_l], bpap);
+              sta_prob_mats.bpp_mat_pair_2.0[long_i] += bpap;
+              sta_prob_mats.bpp_mat_pair_2.0[long_j] += bpap;
+              sta_prob_mats.bpp_mat_pair_2.1[long_k] += bpap;
+              sta_prob_mats.bpp_mat_pair_2.1[long_l] += bpap;
             }
           }, None => {},
         }
@@ -2123,9 +2093,9 @@ where
               let term = part_funcs.part_func_4_insert_2 + INSERT_2_MATCH_SCORE;
               logsumexp(&mut forward_term, term);
               let ba_score = sta_fe_params.ba_score_mat[&pos_pair] + 2. * CONTRA_EL_UNPAIRED_FE;
-              let bap_4_el = ba_score + forward_term + backward_term_4_align - global_part_func;
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], bap_4_el);
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], bap_4_el);
+              let bap_4_el = expf(ba_score + forward_term + backward_term_4_align - global_part_func);
+              sta_prob_mats.upp_mat_pair_4_el.0[long_u] += bap_4_el;
+              sta_prob_mats.upp_mat_pair_4_el.1[long_v] += bap_4_el;
             }, None => {},
           }
         }
@@ -2138,8 +2108,8 @@ where
               logsumexp(&mut forward_term, term);
               let term = part_funcs.part_func_4_insert_2 + INSERT_SWITCH_SCORE;
               logsumexp(&mut forward_term, term);
-              let upp_4_el = insert_score + forward_term + backward_term_4_insert - global_part_func;
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.0[long_u], upp_4_el);
+              let upp_4_el = expf(insert_score + forward_term + backward_term_4_insert - global_part_func);
+              sta_prob_mats.upp_mat_pair_4_el.0[long_u] += upp_4_el;
             }, None => {},
           }
         }
@@ -2152,8 +2122,8 @@ where
               logsumexp(&mut forward_term, term);
               let term = part_funcs.part_func_4_insert_2 + INSERT_EXTEND_SCORE;
               logsumexp(&mut forward_term, term);
-              let upp_4_el = insert_score_2 + forward_term + backward_term_4_insert_2 - global_part_func;
-              logsumexp(&mut sta_prob_mats.upp_mat_pair_4_el.1[long_v], upp_4_el);
+              let upp_4_el = expf(insert_score_2 + forward_term + backward_term_4_insert_2 - global_part_func);
+              sta_prob_mats.upp_mat_pair_4_el.1[long_v] += upp_4_el;
             }, None => {},
           }
         }
@@ -2214,9 +2184,9 @@ where
                   logsumexp(&mut forward_term, term);
                   let term = part_funcs.part_func_4_insert_2 + INSERT_2_MATCH_SCORE;
                   logsumexp(&mut forward_term, term);
-                  let bap_4_hl = prob_coeff_4_hl + ba_score + forward_term + backward_term_4_align_on_sa;
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], bap_4_hl);
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], bap_4_hl);
+                  let bap_4_hl = expf(prob_coeff_4_hl + ba_score + forward_term + backward_term_4_align_on_sa);
+                  sta_prob_mats.upp_mat_pair_4_hl.0[long_u] += bap_4_hl;
+                  sta_prob_mats.upp_mat_pair_4_hl.1[long_v] += bap_4_hl;
                 }, None => {},
               }
               match forward_tmp_part_func_set_mat.get(&pos_pair_4_gap_1) {
@@ -2227,8 +2197,8 @@ where
                   logsumexp(&mut forward_term, term);
                   let term = part_funcs.part_func_4_insert_2 + INSERT_SWITCH_SCORE;
                   logsumexp(&mut forward_term, term);
-                  let upp_4_hl = prob_coeff_4_hl + insert_score + forward_term + backward_term_4_insert_on_sa;
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.0[long_u], upp_4_hl);
+                  let upp_4_hl = expf(prob_coeff_4_hl + insert_score + forward_term + backward_term_4_insert_on_sa);
+                  sta_prob_mats.upp_mat_pair_4_hl.0[long_u] += upp_4_hl;
                 }, None => {},
               }
               match forward_tmp_part_func_set_mat.get(&pos_pair_4_gap_2) {
@@ -2239,8 +2209,8 @@ where
                   logsumexp(&mut forward_term, term);
                   let term = part_funcs.part_func_4_insert_2 + INSERT_EXTEND_SCORE;
                   logsumexp(&mut forward_term, term);
-                  let upp_4_hl = prob_coeff_4_hl + insert_score_2 + forward_term + backward_term_4_insert_2_on_sa;
-                  logsumexp(&mut sta_prob_mats.upp_mat_pair_4_hl.1[long_v], upp_4_hl);
+                  let upp_4_hl = expf(prob_coeff_4_hl + insert_score_2 + forward_term + backward_term_4_insert_2_on_sa);
+                  sta_prob_mats.upp_mat_pair_4_hl.1[long_v] += upp_4_hl;
                 }, None => {},
               }
             }, None => {},
@@ -2250,47 +2220,17 @@ where
     }
     for (i, upp) in sta_prob_mats.upp_mat_pair_4_ml.0.iter_mut().enumerate() {
       let mut sum = sta_prob_mats.upp_mat_pair_4_hl.0[i];
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_2l.0[i]);
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_el.0[i]);
-      logsumexp(&mut sum, sta_prob_mats.bpp_mat_pair_2.0[i]);
-      *upp = 1. - expf(sum);
+      sum += sta_prob_mats.upp_mat_pair_4_2l.0[i];
+      sum += sta_prob_mats.upp_mat_pair_4_el.0[i];
+      sum += sta_prob_mats.bpp_mat_pair_2.0[i];
+      *upp = 1. - sum;
     }
     for (i, upp) in sta_prob_mats.upp_mat_pair_4_ml.1.iter_mut().enumerate() {
       let mut sum = sta_prob_mats.upp_mat_pair_4_hl.1[i];
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_2l.1[i]);
-      logsumexp(&mut sum, sta_prob_mats.upp_mat_pair_4_el.1[i]);
-      logsumexp(&mut sum, sta_prob_mats.bpp_mat_pair_2.1[i]);
-      *upp = 1. - expf(sum);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair.0.values_mut() {
-      *bpp = expf(*bpp);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair.1.values_mut() {
-      *bpp = expf(*bpp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_hl.0.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_hl.1.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_2l.0.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_2l.1.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_el.0.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for upp in sta_prob_mats.upp_mat_pair_4_el.1.iter_mut() {
-      *upp = expf(*upp);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair_2.0.iter_mut() {
-      *bpp = expf(*bpp);
-    }
-    for bpp in sta_prob_mats.bpp_mat_pair_2.1.iter_mut() {
-      *bpp = expf(*bpp);
+      sum += sta_prob_mats.upp_mat_pair_4_2l.1[i];
+      sum += sta_prob_mats.upp_mat_pair_4_el.1[i];
+      sum += sta_prob_mats.bpp_mat_pair_2.1[i];
+      *upp = 1. - sum;
     }
   }
   sta_prob_mats
