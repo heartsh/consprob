@@ -33,15 +33,24 @@ My prediction accuracy benchmarking of [ConsAlifold](https://github.com/heartsh/
 |:-:|
 
 In my running time benchmarking of ConsAlifold adopting ConsProb, the CONTRAfold v2.02 model was significantly slower than the Turner 2004 model due to the larger spaces of possible RNA structural alignments:
+
 |![Prediction running time comparison](./assets/images_fixed/fig_2.png)
 |:-:|
 
-# Advanced Computation of Loop Accessibility
-Measuring the loop accessibility of each nucleotide (i.e., the posterior probability that each nucleotide is in each loop type) is beneficial to various structural analyses around functional non-coding RNAs.
-For example, [CapR](https://github.com/fukunagatsu/CapR) computes loop accessibility on RNA secondary structures, distinguishing (1) hairpin loops, (2) stacking, (3) bulge loops, (4) interior loops, (5) multi-loops, and (6) external loops as available loop types.
-Respecting CapR, ConsProb offers the computation of average loop accessibility on RNA structural alignment, distinguishing the above loop types.
-Technically, ConsProb calculates the loop accessibility of each nucleotide pair/quadruple on RNA pairwise structural alignment and averages this loop accessibility over available RNA homologs to an RNA homolog, marginalizing these available RNA homologs.
-ConsProb's loop accessibility computation is available for the Turner 2004 model and the CONTRAfold v2.02 model but is not described in ConsProb's paper. (You can easily derive this loop accessibility computation by customizing ConsProb's main inside-outside algorithm for computing posterior nucleotide pair-matching probabilities, as CapR is based on McCaskill's algorithm.)
+# Advanced Computation of RNA Structural Context Profiles
+Measuring the structural context profile of each RNA nucleotide (i.e., the posterior probability that each nucleotide is in each structural context type) is beneficial to various structural analyses around functional non-coding RNAs.
+For example, [CapR](https://github.com/fukunagatsu/CapR) computes RNA structural context profiles on RNA secondary structures, distinguishing (1) unpairing in hairpin loops, (2) base-pairings, (3) unpairing in 2-loops (e.g., bulge loops and interior loops), (4) unpairing in multi-loops, and (5) unpairing in external loops as available structural context types:
+
+|![CapR's structural context profiles](./assets/images_fixed/fig_3.png)
+|:-:|
+
+Respecting CapR, ConsProb offers the computation of average structural context profiles on RNA structural alignment, distinguishing the above structural context types.
+Technically, ConsProb calculates the structural context profile of each nucleotide pair on RNA pairwise structural alignment and averages this pairwise context profile over available RNA homologs to each RNA homolog, marginalizing these available RNA homologs.
+ConsProb's context profile computation is available for the Turner 2004 model and the CONTRAfold v2.02 model but is not described in ConsProb's paper. (You can easily derive this context profile computation by customizing ConsProb's main inside-outside algorithm for computing posterior nucleotide pair-matching probabilities, as CapR is based on McCaskill's algorithm.)
+The below is examples of ConsProb's average context profiles:
+
+|![ConsProb's average context profiles](./assets/images_fixed/fig_4.png)
+|:-:|
 
 # Author
 [Heartsh](https://github.com/heartsh)
