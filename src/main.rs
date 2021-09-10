@@ -66,4 +66,5 @@ fn main() {
     let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u16, produces_struct_profs, uses_contra_model);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs);
   }
+  write_readme(output_dir_path, &String::from(README_CONTENTS));
 }

@@ -267,6 +267,8 @@ pub const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
 pub const UPP_MAT_ON_ML_FILE_NAME: &'static str = "upp_mats_on_ml.dat";
 pub const UPP_MAT_ON_EL_FILE_NAME: &'static str = "upp_mats_on_el.dat";
 pub const BPP_MAT_FILE_NAME_2: &'static str = "bpp_mats_2.dat";
+pub const README_FILE_NAME: &str = "README.md";
+pub const README_CONTENTS: &str = "# bpp_mats.dat\nThis file contains average probabilistic consistency based on posterior nucleotide pair-matching probabilities. You can treat this average probabilistic consistency like conventional nucleotide base-pairing probabilities. Nucleotide positions are indexed starting from zero.\n\n# bpp_mats_on_ss.dat\nThis file contains McCaskill's nucleotide base-pairing probabilities on RNA secondary structures. These nucleotide base-pairing probabilities are used to accelerate ConsProb's inside-outside algorithm.\n\n# bpp_mats_2.dat\nThis file contains average probabilistic consistency per nucleotide. This average probabilistic consistency is obtained by marginalizing one nucleotide for average probabilistic consistency in \"bpp_mats.dat.\"\n\n# upp_mats_on_x.dat\nThis file type contains average probabilistic consistency per nucleotide. This average probabilistic consistency is for nucleotide unpairing and under the structural context \"x.\" \"hl,\" \"2l,\" \"ml,\" \"el\" stand for hairpin loops, 2-loops, multi-loops, external loops, respectively.";
 
 pub fn io_algo_4_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, max_gap_num: T, max_gap_num_4_il: T, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_struct_profs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, pos_quadruple_mat: &PosQuadrupleMat<T>, uses_contra_model: bool) -> StaProbMats<T>
 where
@@ -2624,4 +2626,11 @@ where
     }
   }
   (forward_pos_pair_mat_set, backward_pos_pair_mat_set, pos_quadruple_mat)
+}
+
+pub fn write_readme(output_dir_path: &Path, readme_contents: &String) {
+  let readme_file_path = output_dir_path.join(README_FILE_NAME);
+  let mut writer_2_readme_file = BufWriter::new(File::create(readme_file_path).unwrap());
+  let buf_4_writer_2_readme_file = String::from(readme_contents);
+  let _ = writer_2_readme_file.write_all(buf_4_writer_2_readme_file.as_bytes());
 }
