@@ -11,7 +11,7 @@ fn test_consprob_program() {
   let begin = precise_time_s();
   run_command("target/release/consprob", &args, "Failed to run the ConsProb program.");
   let elapsed_time = precise_time_s() - begin;
-  println!("The elapsed time in order to process the FASTA file \"{}\" = {}s.", input_fasta_file_path, elapsed_time);
+  println!("The elapsed time to process the FASTA file \"{}\" = {}s.", input_fasta_file_path, elapsed_time);
 }
 
 #[inline]
