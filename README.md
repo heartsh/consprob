@@ -57,7 +57,7 @@ Theoretically, the sum of any structural context profile is one.
 However, the sums of some structural context profiles are not one due to the roughness of ConsProb's context profile computation.
 I adopt [CONTRAfold](http://contra.stanford.edu/contrafold/)'s approximated logsumexp method as a quick computation routine of structural alignment partition functions and posterior structural alignment probabilities, including average structural context profiles.
 
-# Docker playground <img src="https://www.docker.com/sites/default/files/d8/styles/role_icon/public/2019-07/Moby-logo.png?itok=sYH_JEaJ" width="40">
+# Docker Playground <img src="https://www.docker.com/sites/default/files/d8/styles/role_icon/public/2019-07/Moby-logo.png?itok=sYH_JEaJ" width="40">
 Replaying computational experiments in academic papers is the first but troublesome step to understand developed computational methods.
 I provide a Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsProb:
 ```bash
@@ -69,7 +69,7 @@ You can dive into the Docker image "heartsh/consprob" built by the above command
 $ docker run -it heartsh/consprob zsh
 ```
 
-# Method digest
+# Method Digest
 [LocARNA-P](https://github.com/s-will/LocARNA) can compute posterior nucleotide pair-matching probabilities on RNA pairwise structural alignment.
 However, LocARNA-P simplifies scoring possible pairwise structural alignments by utilizing posterior nucleotide base-pairing probabilities on RNA secondary structures.
 In other words, LocARNA-P does not score possible pairwise structural alignments at the same level of scoring complexity as many RNA folding methods.
