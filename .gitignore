@@ -11,3 +11,4 @@ target
 !Cargo.toml
 !.gitignore
 !README.md
+!Dockerfile
