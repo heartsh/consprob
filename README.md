@@ -59,7 +59,7 @@ I adopt [CONTRAfold](http://contra.stanford.edu/contrafold/)'s approximated logs
 
 # Docker Playground <img src="https://www.docker.com/sites/default/files/d8/styles/role_icon/public/2019-07/Moby-logo.png?itok=sYH_JEaJ" width="40">
 Replaying computational experiments in academic papers is the first but troublesome step to understand developed computational methods.
-I provide a Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsProb:
+I provide an Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsProb:
 ```bash
 $ git clone https://github.com/heartsh/consprob && cd consprob
 $ docker build -t heartsh/consprob .
