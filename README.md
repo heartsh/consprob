@@ -27,10 +27,14 @@ $ cargo test --release -- --nocapture
 While ConsProb's paper describes only [the Turner 2004 model](https://rna.urmc.rochester.edu/NNDB/) as an available scoring model of RNA structural alignment, ConsProb also offers [the CONTRAfold v2.02 model](http://contra.stanford.edu/contrafold/).
 These two scoring models are described [here](https://github.com/heartsh/rna-ss-params).
 One of the CONTRAfold v2.02 model's advantages over the Turner 2004 model is considering noncanonical nucleotide base-pairings.
-My prediction accuracy benchmarking of [ConsAlifold](https://github.com/heartsh/consalifold) adopting ConsProb did not show the significant difference between the CONTRAfold v2.02 model and the Turner 2004 model:
+My prediction accuracy benchmarking of [ConsAlifold](https://github.com/heartsh/consalifold) adopting ConsProb showed the marginal difference between the CONTRAfold v2.02 model and the Turner 2004 model:
 
 |![Structure prediction accuracy comparison](./assets/images_fixed/fig_1.png)
 |:-:|
+
+| F1 score-based p-value | MCC-based p-value |
+| --: | --: |
+| 0.036 | 0.0046 |
 
 In my running time benchmarking of ConsAlifold adopting ConsProb, the CONTRAfold v2.02 model was significantly slower than the Turner 2004 model due to the larger spaces of possible RNA structural alignments:
 
