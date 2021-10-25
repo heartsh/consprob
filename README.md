@@ -24,7 +24,7 @@ $ cargo test --release -- --nocapture
 ```
 
 # Structural Alignment Scoring Models
-While ConsProb's paper describes only [the Turner 2004 model](https://rna.urmc.rochester.edu/NNDB/) as an available scoring model of RNA structural alignment, ConsProb also offers [the CONTRAfold v2.02 model](http://contra.stanford.edu/contrafold/).
+While [ConsProb's paper](https://doi.org/10.1093/bioinformatics/btab738) describes only [the Turner 2004 model](https://rna.urmc.rochester.edu/NNDB/) as an available scoring model of RNA structural alignment, ConsProb also offers [the CONTRAfold v2.02 model](http://contra.stanford.edu/contrafold/).
 These two scoring models are described [here](https://github.com/heartsh/rna-ss-params).
 One of the CONTRAfold v2.02 model's advantages over the Turner 2004 model is considering noncanonical nucleotide base-pairings.
 My prediction accuracy benchmarking of [ConsAlifold](https://github.com/heartsh/consalifold) adopting ConsProb showed the marginal difference between the CONTRAfold v2.02 model and the Turner 2004 model:
@@ -77,7 +77,7 @@ $ docker run -it heartsh/consprob zsh
 [LocARNA-P](https://github.com/s-will/LocARNA) can compute posterior nucleotide pair-matching probabilities on RNA pairwise structural alignment.
 However, LocARNA-P simplifies scoring possible pairwise structural alignments by utilizing posterior nucleotide base-pairing probabilities on RNA secondary structures.
 In other words, LocARNA-P does not score possible pairwise structural alignments at the same level of scoring complexity as many RNA folding methods.
-More specifically, many RNA folding methods such as [RNAfold](https://www.tbi.univie.ac.at/RNA/) score possible RNA secondary structures distinguishing RNA loop structures, whereas many structural alignment-based methods such as LocARNA-P do not score possible pairwise structural alignments ignoring RNA loop structures.
+More specifically, many RNA folding methods such as [RNAfold](https://www.tbi.univie.ac.at/RNA/) score possible RNA secondary structures distinguishing RNA loop structures, whereas many structural alignment-based methods such as LocARNA-P score possible pairwise structural alignments ignoring RNA loop structures.
 As an antithesis to these structural alignment-based methods, I developed ConsProb implemented in this repository.
 Distinguishing RNA loop structures, ConsProb rapidly estimates various pairwise posterior probabilities, including posterior nucleotide pair-matching probabilities.
 ConsProb summarizes these estimated pairwise probabilities as average probabilistic consistency, marginalizing multiple RNA homologs to each RNA homolog.
