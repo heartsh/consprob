@@ -197,7 +197,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
         let pos_pair = (i, j);
         if !is_min_gap_ok(&pos_pair, &pseudo_pos_quadruple, max) {continue;}
         let base_pair = (base, seq_pair.1[long_j]);
-        sta_fe_params.ba_score_mat.insert(pos_pair, BA_SCORE_MAT[&base_pair] + RIBOSUM_BA_SCORE_MAT[&base_pair]);
+        sta_fe_params.ba_score_mat.insert(pos_pair, BA_SCORE_MAT[&base_pair]);
       }
     }
     for &(i, j, k, l) in pos_quadruple_mat {
@@ -208,7 +208,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       let base_pair_4 = (seq_pair.1[long_k], seq_pair.1[long_l]);
       let pos_quadruple = (i, j, k, l);
       let align_score = BA_SCORE_MAT[&base_pair];
-      sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&base_pair_2] + RIBOSUM_BPA_SCORE_MAT[&(base_pair_3, base_pair_4)]);
+      sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&base_pair_2]);
     }
     sta_fe_params
   }
@@ -258,7 +258,7 @@ impl<T: Hash + Clone> StaPartFuncMats<T> {
 pub const MAX_GAP_NUM_4_IL: usize = 15;
 pub const MIN_GAP_NUM_4_IL: usize = 2;
 pub const DEFAULT_MIN_BPP: Prob = 0.04;
-pub const DEFAULT_MIN_BPP_CONTRA: Prob = 0.01;
+pub const DEFAULT_MIN_BPP_CONTRA: Prob = DEFAULT_MIN_BPP;
 pub const DEFAULT_OFFSET_4_MAX_GAP_NUM: usize = 1;
 pub const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
 pub const BPP_MAT_ON_SS_FILE_NAME: &'static str = "bpp_mats_on_ss.dat";
