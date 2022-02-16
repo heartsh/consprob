@@ -11,7 +11,7 @@ WORKDIR /root
 RUN curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN sh Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda
 RUN rm Miniconda3-latest-Linux-x86_64.sh
-ENV PATH=/usr/local/miniconda/bin:$PATH
+ENV PATH=$PATH:/usr/local/miniconda/bin
 RUN conda init zsh
 RUN conda update conda -y
 RUN conda update --all -y
@@ -19,7 +19,7 @@ RUN apt-get install build-essential clustalw probcons libboost-all-dev pkg-confi
 RUN conda config --add channels defaults
 RUN conda config --add channels bioconda
 RUN conda config --add channels conda-forge
-RUN conda install numpy matplotlib pandas seaborn scipy biopython locarna mafft contrafold rnastructure -y
+RUN conda install numpy matplotlib pandas seaborn scipy biopython locarna contrafold rnastructure scikit-learn jupyter -y
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN source /root/.cargo/env
 ENV PATH=/root/.cargo/bin:$PATH
@@ -32,6 +32,15 @@ RUN ./configure && make -j$(nproc) && make install
 WORKDIR /root
 RUN rm -rf ViennaRNA-2.4.18
 RUN rm ViennaRNA-2.4.18.tar.gz
+RUN wget https://mafft.cbrc.jp/alignment/software/mafft-7.490-with-extensions-src.tgz
+RUN tar -xf mafft-7.490-with-extensions-src.tgz
+WORKDIR /root/mafft-7.490-with-extensions/core
+RUN make clean && make -j$(nproc) && make install
+WORKDIR /root/mafft-7.490-with-extensions/extensions
+RUN make clean && make -j$(nproc) && make install
+WORKDIR /root
+RUN rm -rf mafft-7.490-with-extensions
+RUN rm mafft-7.490-with-extensions-src.tgz
 RUN wget https://github.com/satoken/centroid-rna-package/archive/refs/tags/v0.0.16.tar.gz
 RUN tar -xf v0.0.16.tar.gz
 WORKDIR /root/centroid-rna-package-0.0.16
@@ -60,7 +69,7 @@ RUN make -j$(nproc)
 RUN cp contralign /usr/local/bin
 WORKDIR /root
 RUN rm -rf contralign-fixed
-RUN echo -e "\nexport CONTRAFOLD_DIR=/usr/local/miniconda/bin/contrafold" >> /root/.zshrc
+RUN echo -e "\nexport CONTRAFOLD_DIR=/usr/local/miniconda/bin" >> /root/.zshrc
 RUN echo -e "\nexport CONTRALIGN_DIR=/usr/local/bin" >> /root/.zshrc
 RUN apt-get clean -y && apt-get autoremove -y
 RUN conda clean --all -y
