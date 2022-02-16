@@ -2250,12 +2250,6 @@ where
       }
     }
   }
-  for (&(i, j), &bpp) in bpp_mat {
-    let pos_pair = (i + T::one(), j + T::one());
-    if !pct_prob_mats.bpp_mat.contains_key(&pos_pair) {
-      pct_prob_mats.bpp_mat.insert(pos_pair, bpp);
-    }
-  }
   pct_prob_mats
 }
 

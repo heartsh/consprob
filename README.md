@@ -33,8 +33,8 @@ My prediction accuracy benchmarking of [ConsAlifold](https://github.com/heartsh/
 |:-:|
 
 | F1 score-based p-value | MCC-based p-value |
-| --: | --: |
-| 0.036 | 0.0046 |
+| :-: | :-: |
+| 1.5 * 10<sup>-4</sup> | 4.4 * 10<sup>-5</sup> |
 
 In my running time benchmarking of ConsAlifold adopting ConsProb, the CONTRAfold v2.02 model was significantly slower than the Turner 2004 model due to the larger spaces of possible RNA structural alignments:
 
