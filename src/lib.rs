@@ -204,8 +204,6 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       let (long_i, long_j, long_k, long_l) = (i.to_usize().unwrap(), j.to_usize().unwrap(), k.to_usize().unwrap(), l.to_usize().unwrap());
       let base_pair = (seq_pair.0[long_i], seq_pair.1[long_k]);
       let base_pair_2 = (seq_pair.0[long_j], seq_pair.1[long_l]);
-      let base_pair_3 = (seq_pair.0[long_i], seq_pair.0[long_j]);
-      let base_pair_4 = (seq_pair.1[long_k], seq_pair.1[long_l]);
       let pos_quadruple = (i, j, k, l);
       let align_score = BA_SCORE_MAT[&base_pair];
       sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_score + BA_SCORE_MAT[&base_pair_2]);
