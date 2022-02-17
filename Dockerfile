@@ -12,10 +12,9 @@ RUN curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
 RUN sh Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda
 RUN rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH=$PATH:/usr/local/miniconda/bin
-RUN conda init zsh
 RUN conda update conda -y
 RUN conda update --all -y
-RUN apt-get install build-essential clustalw probcons libboost-all-dev pkg-config bzip2 -y
+RUN apt-get install build-essential clustalw probcons libboost-all-dev pkg-config bzip2 vim -y
 RUN conda config --add channels defaults
 RUN conda config --add channels bioconda
 RUN conda config --add channels conda-forge
