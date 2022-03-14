@@ -468,7 +468,9 @@ where
         let sum = sum + insert_score_2;
         part_funcs.part_func_4_insert_2 = sum;
       }
-      sta_part_func_mats.forward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      if !is_empty_external(&part_funcs) {
+        sta_part_func_mats.forward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      }
     }
   }
   let mut final_sum = NEG_INFINITY;
@@ -558,7 +560,9 @@ where
         let insert_score_2 = sta_fe_params.insert_scores_2[long_j];
         part_funcs.part_func_4_insert_2 = sum + insert_score_2;
       }
-      sta_part_func_mats.backward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      if !is_empty_external(&part_funcs) {
+        sta_part_func_mats.backward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      }
     }
   }
   (sta_part_func_mats, final_sum)
@@ -750,7 +754,9 @@ where
         let sum = sum + insert_score_2;
         part_funcs.part_func_4_insert_2 = sum;
       }
-      sta_part_func_mats.forward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      if !is_empty_external(&part_funcs) {
+        sta_part_func_mats.forward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      }
     }
   }
   let mut final_sum = NEG_INFINITY;
@@ -840,7 +846,9 @@ where
         let insert_score_2 = sta_fe_params.insert_scores_2[long_j] + CONTRA_EL_UNPAIRED_FE;
         part_funcs.part_func_4_insert_2 = sum + insert_score_2;
       }
-      sta_part_func_mats.backward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      if !is_empty_external(&part_funcs) {
+        sta_part_func_mats.backward_part_func_set_mat_4_external_loop.insert(pos_pair, part_funcs);
+      }
     }
   }
   (sta_part_func_mats, final_sum)
@@ -1049,7 +1057,9 @@ where
       tmp_part_func_sets.part_funcs_on_sa.part_func_4_insert_2 = sum_on_sa;
       logsumexp(&mut tmp_sum, sum_on_sa);
       tmp_part_func_sets.part_funcs_on_mls.part_func_4_insert_2 = tmp_sum;
-      tmp_part_func_set_mat.insert(pos_pair, tmp_part_func_sets);
+      if !is_empty(&tmp_part_func_sets) {
+        tmp_part_func_set_mat.insert(pos_pair, tmp_part_func_sets);
+      }
     }
   }
   let mut final_sum_on_sa = NEG_INFINITY;
@@ -1066,6 +1076,24 @@ where
     logsumexp(&mut final_sum_4_ml, part_funcs.part_func_4_insert_2 + INSERT_2_MATCH_SCORE);
   }
   (tmp_part_func_set_mat, final_sum_on_sa, final_sum_4_ml)
+}
+
+pub fn is_empty(tmp_part_func_sets: &TmpPartFuncSets) -> bool {
+  tmp_part_func_sets.part_funcs_on_sa.part_func_4_align == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_on_sa.part_func_4_insert == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_on_sa.part_func_4_insert_2 == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_4_ml.part_func_4_align == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_4_ml.part_func_4_insert == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_4_ml.part_func_4_insert_2 == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_4_first_bpas_on_mls.part_func_4_align == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_4_first_bpas_on_mls.part_func_4_insert == NEG_INFINITY &&
+  tmp_part_func_sets.part_funcs_4_first_bpas_on_mls.part_func_4_insert_2 == NEG_INFINITY
+}
+
+pub fn is_empty_external(tmp_part_funcs: &TmpPartFuncs) -> bool {
+  tmp_part_funcs.part_func_4_align == NEG_INFINITY &&
+  tmp_part_funcs.part_func_4_insert == NEG_INFINITY &&
+  tmp_part_funcs.part_func_4_insert_2 == NEG_INFINITY
 }
 
 pub fn get_tmp_part_func_set_mat_contra<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_gap_num_4_il: T, pos_quadruple: &PosQuadruple<T>, sta_part_func_mats: &StaPartFuncMats<T>, is_forward: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>,) -> (TmpPartFuncSetMat<T>, PartFunc, PartFunc)
@@ -1305,7 +1333,9 @@ where
       tmp_part_func_sets.part_funcs_on_mls.part_func_4_insert_2 = tmp_sum;
       let sum_on_sa = sum_on_sa + insert_score;
       tmp_part_func_sets.part_funcs_on_sa.part_func_4_insert_2 = sum_on_sa;
-      tmp_part_func_set_mat.insert(pos_pair, tmp_part_func_sets);
+      if !is_empty(&tmp_part_func_sets) {
+        tmp_part_func_set_mat.insert(pos_pair, tmp_part_func_sets);
+      }
     }
   }
   let mut final_sum_on_sa = NEG_INFINITY;
@@ -2257,7 +2287,11 @@ pub fn get_max_bp_span<T>(sparse_bpp_mat: &SparseProbMat<T>) -> T
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  sparse_bpp_mat.iter().map(|(pos_pair, _)| {pos_pair.1 - pos_pair.0 + T::one()}).max().unwrap()
+  let max_bp_span = sparse_bpp_mat.iter().map(|(pos_pair, _)| {pos_pair.1 - pos_pair.0 + T::one()}).max();
+  match max_bp_span {
+    Some(max_bp_span) => {max_bp_span},
+    None => {T::zero()},
+  }
 }
 
 pub fn print_program_usage(program_name: &str, opts: &Options) {
