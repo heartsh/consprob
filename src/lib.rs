@@ -6,13 +6,10 @@ extern crate bio;
 extern crate num_cpus;
 extern crate hashbrown;
 
-pub mod utils;
-
 pub use std::str::from_utf8_unchecked;
 pub use getopts::Options;
 pub use self::scoped_threadpool::Pool;
 pub use itertools::multizip;
-pub use utils::*;
 pub use std::path::Path;
 pub use bio::io::fasta::Reader;
 pub use std::io::prelude::*;
