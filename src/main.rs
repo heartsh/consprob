@@ -9,8 +9,8 @@ fn main() {
   let mut opts = Options::new();
   opts.reqopt("i", "input_file_path", "The path to an input FASTA file containing RNA sequences to predict probabilities", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
-  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} (Turner)/{}(CONTRAfold) by default)", DEFAULT_MIN_BPP, DEFAULT_MIN_BPP_CONTRA), "FLOAT");
-  opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
+  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
+  opts.optopt("", "min_align_prob", &format!("A minimum aligning probability (Uses {} by default)", DEFAULT_MIN_ALIGN_PROB), "FLOAT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
   opts.optflag("s", "produces_struct_profs", &format!("Also compute RNA structural context profiles"));
   opts.optflag("c", "uses_contra_model", &format!("Score each possible structural alignment with CONTRAfold model instead of Turner's model"));
@@ -29,12 +29,12 @@ fn main() {
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
   } else {
-    if uses_contra_model {DEFAULT_MIN_BPP_CONTRA} else {DEFAULT_MIN_BPP}
+    DEFAULT_MIN_BPP
   };
-  let offset_4_max_gap_num = if matches.opt_present("offset_4_max_gap_num") {
-    matches.opt_str("offset_4_max_gap_num").unwrap().parse().unwrap()
+  let min_align_prob = if matches.opt_present("min_align_prob") {
+    matches.opt_str("min_align_prob").unwrap().parse().unwrap()
   } else {
-    DEFAULT_OFFSET_4_MAX_GAP_NUM
+    DEFAULT_MIN_ALIGN_PROB
   };
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
@@ -60,10 +60,10 @@ fn main() {
   }
   let mut thread_pool = Pool::new(num_of_threads);
   if max_seq_len <= u8::MAX as usize {
-    let prob_mat_sets = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u8, produces_struct_profs, uses_contra_model);
+    let prob_mat_sets = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs);
   } else {
-    let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num as u16, produces_struct_profs, uses_contra_model);
+    let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs);
   }
   write_readme(output_dir_path, &String::from(README_CONTENTS));
