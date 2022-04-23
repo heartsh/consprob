@@ -14,6 +14,11 @@ fn main() {
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
   opts.optflag("s", "produces_struct_profs", &format!("Also compute RNA structural context profiles"));
   opts.optflag("c", "uses_contra_model", &format!("Score each possible structural alignment with CONTRAfold model instead of Turner's model"));
+  opts.optflag(
+    "a",
+    "produces_align_probs",
+    &format!("Also compute nucleotide alignment probabilities"),
+  );
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -42,6 +47,7 @@ fn main() {
     num_cpus::get() as NumOfThreads
   };
   let produces_struct_profs = matches.opt_present("s");
+  let produces_align_probs = matches.opt_present("a");
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
@@ -60,11 +66,11 @@ fn main() {
   }
   let mut thread_pool = Pool::new(num_of_threads);
   if max_seq_len <= u8::MAX as usize {
-    let prob_mat_sets = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model);
-    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs);
+    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs);
+    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs, &align_prob_mat_sets_with_rna_id_pairs, produces_align_probs);
   } else {
-    let prob_mat_sets = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model);
-    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs);
+    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs);
+    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs, &align_prob_mat_sets_with_rna_id_pairs, produces_align_probs);
   }
   write_readme(output_dir_path, &String::from(README_CONTENTS));
 }
