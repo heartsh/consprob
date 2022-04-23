@@ -57,11 +57,8 @@ The below is examples of ConsProb's average context profiles:
 |![ConsProb's average context profiles](./assets/images_fixed/fig_4.png)
 |:-:|
 
-Theoretically, the sum of any structural context profile is one.
-However, the sums of some structural context profiles are not one due to the roughness of ConsProb's context profile computation.
-I adopt [CONTRAfold](http://contra.stanford.edu/contrafold/)'s approximated logsumexp method as a quick computation routine of structural alignment partition functions and posterior structural alignment probabilities, including average structural context profiles.
 
-# Docker Playground <img src="https://www.docker.com/sites/default/files/d8/styles/role_icon/public/2019-07/Moby-logo.png?itok=sYH_JEaJ" width="40">
+# Docker Playground <img src="./assets/images_fixed/docker_logo.png" width="40">
 Replaying computational experiments in academic papers is the first but troublesome step to understand developed computational methods.
 I provide an Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsProb:
 ```bash
