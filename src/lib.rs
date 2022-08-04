@@ -262,7 +262,6 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       let base_pair = (seq_pair.0[long_i], seq_pair.1[long_k]);
       let base_pair_2 = (seq_pair.0[long_j], seq_pair.1[long_l]);
       let pos_quadruple = (i, j, k, l);
-      let align_score = MATCH_SCORE_MAT[base_pair.0][base_pair.1];
       let base_pair_3 = (base_pair.0, base_pair_2.0);
       let base_pair_4 = (base_pair.1, base_pair_2.1);
       sta_fe_params.bpa_score_mat.insert(pos_quadruple, RIBOSUM_BPA_SCORE_MAT[&(base_pair_3, base_pair_4)]);
