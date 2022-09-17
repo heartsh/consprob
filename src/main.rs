@@ -64,12 +64,14 @@ fn main() {
     }
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
+  let mut align_feature_score_sets = AlignFeatureCountSets::new(0.);
+  align_feature_score_sets.transfer();
   let mut thread_pool = Pool::new(num_of_threads);
   if max_seq_len <= u8::MAX as usize {
-    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs);
+    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs, &align_feature_score_sets);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs, &align_prob_mat_sets_with_rna_id_pairs, produces_align_probs);
   } else {
-    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs);
+    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs, &align_feature_score_sets);
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs, &align_prob_mat_sets_with_rna_id_pairs, produces_align_probs);
   }
   write_readme(output_dir_path, &String::from(README_CONTENTS));

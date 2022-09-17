@@ -5,8 +5,6 @@ extern crate itertools;
 extern crate bio;
 extern crate num_cpus;
 extern crate hashbrown;
-#[macro_use]
-extern crate lazy_static;
 
 pub use std::str::from_utf8_unchecked;
 pub use getopts::Options;
@@ -25,7 +23,6 @@ pub use rna_algos::utils::*;
 pub use rna_algos::mccaskill_algo::*;
 pub use rna_algos::durbin_algo::*;
 pub use rna_algos::compiled_seq_align_params::*;
-pub use std::f32::consts::LOG2_E;
 
 pub type PosQuadrupleMat<T> = HashSet<PosQuadruple<T>>;
 pub type PosPairMatSet<T> = HashMap<PosPair<T>, PosPairMat<T>>;
@@ -33,6 +30,7 @@ pub type PosPairMat<T> = HashSet<PosPair<T>>;
 pub type Prob4dMat<T> = HashMap<PosQuadruple<T>, Prob>;
 pub type PartFunc4dMat<T> = HashMap<PosQuadruple<T>, PartFunc>;
 pub type TmpPartFuncSetMat<T> = HashMap<PosPair<T>, TmpPartFuncs>;
+
 #[derive(Clone)]
 pub struct TmpPartFuncs {
   pub part_func_on_sa: PartFunc,
@@ -42,6 +40,7 @@ pub struct TmpPartFuncs {
   pub part_func_4_bpas_on_mls: PartFunc,
   pub part_func_on_mls: PartFunc,
 }
+
 #[derive(Clone)]
 pub struct StaPartFuncMats<T> {
   pub part_func_4d_mat_4_bpas: PartFunc4dMat<T>,
@@ -57,6 +56,7 @@ pub struct StaPartFuncMats<T> {
   pub backward_tmp_part_func_set_mats_with_pos_pairs_decode: TmpPartFuncSetMatsWithPosPairs<T>,
 }
 pub type FreeEnergyMat = Vec<FreeEnergies>;
+
 pub struct StaFeParams<T> {
   pub ba_score_mat: SparseFreeEnergyMat<T>,
   pub bpa_score_mat: FreeEnergy4dMat<T>,
@@ -67,6 +67,7 @@ pub struct StaFeParams<T> {
   pub insert_scores_range_4_el_2: FreeEnergyMat,
   pub insert_scores_range_4_ml_2: FreeEnergyMat,
 }
+
 pub type StaFeParamSetsWithRnaIdPairs<T> = HashMap<RnaIdPair, StaFeParams<T>>;
 pub type Prob4dMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, Prob4dMat<T>>;
 pub type ProbMats<T> = Vec<SparseProbMat<T>>;
@@ -83,6 +84,7 @@ pub type ProbMatPair<'a, T> =  (&'a SparseProbMat<T>, &'a SparseProbMat<T>);
 pub type SsFreeEnergyMatSetPair<'a, T> =  (&'a SsFreeEnergyMats<T>, &'a SsFreeEnergyMats<T>);
 pub type NumOfThreads = u32;
 pub type FreeEnergySetPair<'a> = (&'a FreeEnergies, &'a FreeEnergies);
+
 pub struct StaProbMats<T> {
   pub bpp_mat_pair: SparseProbMatPair<T>,
   pub upp_mat_pair_4_hl: ProbSetPair,
@@ -93,6 +95,7 @@ pub struct StaProbMats<T> {
   pub basepair_align_prob_mat: Prob4dMat<T>,
   pub loop_align_prob_mat: SparseProbMat<T>,
 }
+
 #[derive(Clone)]
 pub struct PctStaProbMats<T> {
   pub bpp_mat: SparseProbMat<T>,
@@ -102,6 +105,7 @@ pub struct PctStaProbMats<T> {
   pub upp_mat_4_el: Probs,
   pub bpp_mat_2: Probs,
 }
+
 pub type SparseProbMatPair<T> = (SparseProbMat<T>, SparseProbMat<T>);
 pub type ProbSetPair = (Probs, Probs);
 pub type ProbMatSets<T> = Vec<PctStaProbMats<T>>;
@@ -109,12 +113,14 @@ pub type StaProbMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, StaProbMats<T>>;
 pub type ProbSeqPair<'a> = (&'a Probs, &'a Probs);
 pub type Poss<T> = Vec<T>;
 pub type TmpPartFuncSetMatsWithPosPairs<T> = HashMap<PosPair<T>, TmpPartFuncSetMat<T>>;
+
 #[derive(Clone)]
 pub struct AlignProbMats<T> {
   pub loop_align_prob_mat: SparseProbMat<T>,
   pub basepair_align_prob_mat: Prob4dMat<T>,
   pub align_prob_mat: SparseProbMat<T>,
 }
+
 pub type AlignProbMatSetsWithRnaIdPairs<T> = HashMap<RnaIdPair, AlignProbMats<T>>;
 pub type SparseProbMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, SparseProbMat<T>>;
 pub type PosQuadrupleMatWithLenPairs<T> = HashMap<PosPair<T>, PosPairMat<T>>;
@@ -198,7 +204,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
     }
   }
 
-  pub fn new(seq_pair: &SeqPair, seq_len_pair: &PosPair<T>, pos_quadruple_mat: &PosQuadrupleMat<T>, align_prob_mat: &SparseProbMat<T>, uses_contra_model: bool) -> StaFeParams<T> {
+  pub fn new(seq_pair: &SeqPair, seq_len_pair: &PosPair<T>, pos_quadruple_mat: &PosQuadrupleMat<T>, align_prob_mat: &SparseProbMat<T>, uses_contra_model: bool, align_feature_score_sets: &AlignFeatureCountSets,) -> StaFeParams<T> {
     let mut sta_fe_params = StaFeParams::<T>::origin();
     let mat = vec![vec![NEG_INFINITY; seq_len_pair.0.to_usize().unwrap()]; seq_len_pair.0.to_usize().unwrap()];
     sta_fe_params.insert_scores_range = mat.clone();
@@ -211,7 +217,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
     for i in range(T::one(), seq_len_pair.1 - T::one()) {
       let long_i = i.to_usize().unwrap();
       let base = seq_pair.1[long_i];
-      let mut sum = INSERT_SCORES[base];
+      let mut sum = align_feature_score_sets.insert_counts[base];
       let mut sum_4_el = sum + if !uses_contra_model {0.} else {CONTRA_EL_UNPAIRED_FE};
       let mut sum_4_ml = sum + if !uses_contra_model {0.} else {CONTRA_ML_UNPAIRED_FE};
       sta_fe_params.insert_scores_range_2[long_i][long_i] = sum;
@@ -220,7 +226,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       for j in range(i + T::one(), seq_len_pair.1 - T::one()) {
         let long_j = j.to_usize().unwrap();
         let base = seq_pair.1[long_j];
-        let term = INSERT_SCORES[base] + INSERT_EXTEND_SCORE;
+        let term = align_feature_score_sets.insert_counts[base] + align_feature_score_sets.insert_extend_count;
         sum += term;
         sum_4_el += term + if !uses_contra_model {0.} else {CONTRA_EL_UNPAIRED_FE};
         sum_4_ml += term + if !uses_contra_model {0.} else {CONTRA_ML_UNPAIRED_FE};
@@ -232,7 +238,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
     for i in range(T::one(), seq_len_pair.0 - T::one()) {
       let long_i = i.to_usize().unwrap();
       let base = seq_pair.0[long_i];
-      let term = INSERT_SCORES[base];
+      let term = align_feature_score_sets.insert_counts[base];
       let mut sum = term;
       let mut sum_4_el = sum + if !uses_contra_model {0.} else {CONTRA_EL_UNPAIRED_FE};
       let mut sum_4_ml = sum + if !uses_contra_model {0.} else {CONTRA_ML_UNPAIRED_FE};
@@ -242,7 +248,7 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       for j in range(i + T::one(), seq_len_pair.0 - T::one()) {
         let long_j = j.to_usize().unwrap();
         let base = seq_pair.0[long_j];
-        let term = INSERT_SCORES[base] + INSERT_EXTEND_SCORE;
+        let term = align_feature_score_sets.insert_counts[base] + align_feature_score_sets.insert_extend_count;
         sum += term;
         sum_4_el += term + if !uses_contra_model {0.} else {CONTRA_EL_UNPAIRED_FE};
         sum_4_ml += term + if !uses_contra_model {0.} else {CONTRA_ML_UNPAIRED_FE};
@@ -255,16 +261,14 @@ impl<T: Hash + Eq + Integer + FromPrimitive + PrimInt + Unsigned> StaFeParams<T>
       let &(i, j) = pos_pair;
       let (long_i, long_j) = (i.to_usize().unwrap(), j.to_usize().unwrap());
       let base_pair = (seq_pair.0[long_i], seq_pair.1[long_j]);
-      sta_fe_params.ba_score_mat.insert(*pos_pair, MATCH_SCORE_MAT[base_pair.0][base_pair.1]);
+      sta_fe_params.ba_score_mat.insert(*pos_pair, align_feature_score_sets.align_count_mat[base_pair.0][base_pair.1]);
     }
     for &(i, j, k, l) in pos_quadruple_mat {
       let (long_i, long_j, long_k, long_l) = (i.to_usize().unwrap(), j.to_usize().unwrap(), k.to_usize().unwrap(), l.to_usize().unwrap());
-      let base_pair = (seq_pair.0[long_i], seq_pair.1[long_k]);
-      let base_pair_2 = (seq_pair.0[long_j], seq_pair.1[long_l]);
       let pos_quadruple = (i, j, k, l);
-      let base_pair_3 = (base_pair.0, base_pair_2.0);
-      let base_pair_4 = (base_pair.1, base_pair_2.1);
-      sta_fe_params.bpa_score_mat.insert(pos_quadruple, RIBOSUM_BPA_SCORE_MAT[&(base_pair_3, base_pair_4)]);
+      let base_pair = (seq_pair.0[long_i], seq_pair.0[long_j]);
+      let base_pair_2 = (seq_pair.1[long_k], seq_pair.1[long_l]);
+      sta_fe_params.bpa_score_mat.insert(pos_quadruple, align_feature_score_sets.align_count_mat[base_pair.0][base_pair_2.0] + align_feature_score_sets.align_count_mat[base_pair.1][base_pair_2.1]);
     }
     sta_fe_params
   }
@@ -314,8 +318,8 @@ impl<T: Hash + Clone> AlignProbMats<T> {
   }
 }
 
-pub const DEFAULT_MIN_BPP: Prob = 0.04;
-pub const DEFAULT_MIN_ALIGN_PROB: Prob = 0.02;
+pub const DEFAULT_MIN_BPP: Prob = 0.01;
+pub const DEFAULT_MIN_ALIGN_PROB: Prob = 0.01;
 pub const BPP_MAT_FILE_NAME: &'static str = "bpp_mats.dat";
 pub const UPP_MAT_ON_HL_FILE_NAME: &'static str = "upp_mats_on_hl.dat";
 pub const UPP_MAT_ON_2L_FILE_NAME: &'static str = "upp_mats_on_2l.dat";
@@ -340,39 +344,16 @@ align_prob_mat.dat\n
 This file contains posterior nucleotide matching probabilities.";
 pub const INSERT_2_MATCH_SCORE: FreeEnergy = MATCH_2_INSERT_SCORE;
 
-lazy_static! {
-  pub static ref RIBOSUM_BPA_SCORE_MAT: BpaScoreMat = {
-    [
-      ((AA, AA), -2.49), ((AA, AC), -7.04), ((AA, AG), -8.24), ((AA, AU), -4.32), ((AA, CA), -8.84), ((AA, CC), -14.37), ((AA, CG), -4.68), ((AA, CU), -12.64), ((AA, GA), -6.86), ((AA, GC), -5.03), ((AA, GG), -8.39), ((AA, GU), -5.84), ((AA, UA), -4.01), ((AA, UC), -11.32), ((AA, UG), -6.16), ((AA, UU), -9.05),
-      ((AC, AA), -7.04), ((AC, AC), -2.11), ((AC, AG), -8.89), ((AC, AU), -2.04), ((AC, CA), -9.37), ((AC, CC), -9.08), ((AC, CG), -5.86), ((AC, CU), -10.45), ((AC, GA), -9.73), ((AC, GC), -3.81), ((AC, GG), -11.05), ((AC, GU), -4.72), ((AC, UA), -5.33), ((AC, UC), -8.67), ((AC, UG), -6.93), ((AC, UU), -7.83),
-      ((AG, AA), -8.24), ((AG, AC), -8.89), ((AG, AG), -0.80), ((AG, AU), -5.13), ((AG, CA), -10.41), ((AG, CC), -14.53), ((AG, CG), -4.57), ((AG, CU), -10.14), ((AG, GA), -8.61), ((AG, GC), -5.77), ((AG, GG), -5.38), ((AG, GU), -6.60), ((AG, UA), -5.43), ((AG, UC), -8.87), ((AG, UG), -5.94), ((AG, UU), -11.07),
-      ((AU, AA), -4.32), ((AU, AC), -2.04), ((AU, AG), -5.13), ((AU, AU), 4.49), ((AU, CA), -5.56), ((AU, CC), -6.71), ((AU, CG), 1.67), ((AU, CU), -5.17), ((AU, GA), -5.33), ((AU, GC), 2.70), ((AU, GG), -5.61), ((AU, GU), 0.59), ((AU, UA), 1.61), ((AU, UC), -4.81), ((AU, UG), -0.51), ((AU, UU), -2.98),
-      ((CA, AA), -8.84), ((CA, AC), -9.37), ((CA, AG), -10.41), ((CA, AU), -5.56), ((CA, CA), -5.13), ((CA, CC), -10.45), ((CA, CG), -3.57), ((CA, CU), -8.49), ((CA, GA), -7.98), ((CA, GC), -5.95), ((CA, GG), -11.36), ((CA, GU), -7.93), ((CA, UA), -2.42), ((CA, UC), -7.08), ((CA, UG), -5.63), ((CA, UU), -8.39),
-      ((CC, AA), -14.37), ((CC, AC), -9.08), ((CC, AG), -14.53), ((CC, AU), -6.71), ((CC, CA), -10.45), ((CC, CC), -3.59), ((CC, CG), -5.71), ((CC, CU), -5.77), ((CC, GA), -12.43), ((CC, GC), -3.70), ((CC, GG), -12.58), ((CC, GU), -7.88), ((CC, UA), -6.88), ((CC, UC), -7.40), ((CC, UG), -8.41), ((CC, UU), -5.41),
-      ((CG, AA), -4.68), ((CG, AC), -5.86), ((CG, AG), -4.57), ((CG, AU), 1.67), ((CG, CA), -3.57), ((CG, CC), -5.71), ((CG, CG), 5.36), ((CG, CU), -4.96), ((CG, GA), -6.00), ((CG, GC), 2.11), ((CG, GG), -4.66), ((CG, GU), -0.27), ((CG, UA), 2.75), ((CG, UC), -4.91), ((CG, UG), 1.32), ((CG, UU), -3.67),
-      ((CU, AA), -12.64), ((CU, AC), -10.45), ((CU, AG), -10.14), ((CU, AU), -5.17), ((CU, CA), -8.49), ((CU, CC), -5.77), ((CU, CG), -4.96), ((CU, CU), -2.28), ((CU, GA), -7.71), ((CU, GC), -5.84), ((CU, GG), -13.69), ((CU, GU), -5.61), ((CU, UA), -4.72), ((CU, UC), -3.83), ((CU, UG), -7.36), ((CU, UU), -5.21),
-      ((GA, AA), -6.86), ((GA, AC), -9.73), ((GA, AG), -8.61), ((GA, AU), -5.33), ((GA, CA), -7.98), ((GA, CC), -12.43), ((GA, CG), -6.00), ((GA, CU), -7.71), ((GA, GA), -1.05), ((GA, GC), -4.88), ((GA, GG), -8.67), ((GA, GU), -6.10), ((GA, UA), -5.85), ((GA, UC), -6.63), ((GA, UG), -7.55), ((GA, UU), -11.54),
-      ((GC, AA), -5.03), ((GC, AC), -3.81), ((GC, AG), -5.77), ((GC, AU), 2.70), ((GC, CA), -5.95), ((GC, CC), -3.70), ((GC, CG), 2.11), ((GC, CU), -5.84), ((GC, GA), -4.88), ((GC, GC), 5.62), ((GC, GG), -4.13), ((GC, GU), 1.21), ((GC, UA), 1.60), ((GC, UC), -4.49), ((GC, UG), -0.08), ((GC, UU), -3.90),
-      ((GG, AA), -8.39), ((GG, AC), -11.05), ((GG, AG), -5.38), ((GG, AU), -5.61), ((GG, CA), -11.36), ((GG, CC), -12.58), ((GG, CG), -4.66), ((GG, CU), -13.69), ((GG, GA), -8.67), ((GG, GC), -4.13), ((GG, GG), -1.98), ((GG, GU), -5.77), ((GG, UA), -5.75), ((GG, UC), -12.01), ((GG, UG), -4.27), ((GG, UU), -10.79),
-      ((GU, AA), -5.84), ((GU, AC), -4.72), ((GU, AG), -6.60), ((GU, AU), 0.59), ((GU, CA), -7.93), ((GU, CC), -7.88), ((GU, CG), -0.27), ((GU, CU), -5.61), ((GU, GA), -6.10), ((GU, GC), 1.21), ((GU, GG), -5.77), ((GU, GU), 3.47), ((GU, UA), -0.57), ((GU, UC), -5.30), ((GU, UG), -2.09), ((GU, UU), -4.45),
-      ((UA, AA), -4.01), ((UA, AC), -5.33), ((UA, AG), -5.43), ((UA, AU), 1.61), ((UA, CA), -2.42), ((UA, CC), -6.88), ((UA, CG), 2.75), ((UA, CU), -4.72), ((UA, GA), -5.85), ((UA, GC), 1.60), ((UA, GG), -5.75), ((UA, GU), -0.57), ((UA, UA), 4.97), ((UA, UC), -2.98), ((UA, UG), 1.14), ((UA, UU), -3.39),
-      ((UC, AA), -11.32), ((UC, AC), -8.67), ((UC, AG), -8.87), ((UC, AU), -4.81), ((UC, CA), -7.08), ((UC, CC), -7.40), ((UC, CG), -4.91), ((UC, CU), -3.83), ((UC, GA), -6.63), ((UC, GC), -4.49), ((UC, GG), -12.01), ((UC, GU), -5.30), ((UC, UA), -2.98), ((UC, UC), -3.21), ((UC, UG), -4.76), ((UC, UU), -5.97),
-      ((UG, AA), -6.16), ((UG, AC), -6.93), ((UG, AG), -5.94), ((UG, AU), -0.51), ((UG, CA), -5.63), ((UG, CC), -8.41), ((UG, CG), 1.32), ((UG, CU), -7.36), ((UG, GA), -7.55), ((UG, GC), -0.08), ((UG, GG), -4.27), ((UG, GU), -2.09), ((UG, UA), 1.14), ((UG, UC), -4.76), ((UG, UG), 3.36), ((UG, UU), -4.28),
-      ((UU, AA), -9.05), ((UU, AC), -7.83), ((UU, AG), -11.07), ((UU, AU), -2.98), ((UU, CA), -8.39), ((UU, CC), -5.41), ((UU, CG), -3.67), ((UU, CU), -5.21), ((UU, GA), -11.54), ((UU, GC), -3.90), ((UU, GG), -10.79), ((UU, GU), -4.45), ((UU, UA), -3.39), ((UU, UC), -5.97), ((UU, UG), -4.28), ((UU, UU), -0.02),
-    ].iter().map(|(base_quadruple, bpa_score)| {(*base_quadruple, bpa_score / LOG2_E)}).collect()
-  };
-}
-
-pub fn io_algo_4_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_struct_profs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, uses_contra_model: bool, pos_quadruple_mat_with_len_pairs: &PosQuadrupleMatWithLenPairs<T>, produces_align_probs: bool, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>,) -> StaProbMats<T>
+pub fn io_algo_4_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_struct_profs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, uses_contra_model: bool, pos_quadruple_mat_with_len_pairs: &PosQuadrupleMatWithLenPairs<T>, produces_align_probs: bool, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>, align_feature_score_sets: &AlignFeatureCountSets,) -> StaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
   let (sta_part_func_mats, global_part_func) = 
-    get_sta_inside_part_func_mats::<T>(seq_len_pair, sta_fe_params, max_bp_span_pair, ss_free_energy_mat_set_pair, forward_pos_pair_mat_set, backward_pos_pair_mat_set, uses_contra_model, pos_quadruple_mat_with_len_pairs, matchable_pos_sets_1, matchable_pos_sets_2,);
-  get_sta_prob_mats::<T>(seq_len_pair, sta_fe_params, max_bp_span_pair, &sta_part_func_mats, ss_free_energy_mat_set_pair, produces_struct_profs, global_part_func, uses_contra_model, pos_quadruple_mat_with_len_pairs, produces_align_probs, forward_pos_pair_mat_set, backward_pos_pair_mat_set, matchable_pos_sets_1, matchable_pos_sets_2,)
+    get_sta_inside_part_func_mats::<T>(seq_len_pair, sta_fe_params, max_bp_span_pair, ss_free_energy_mat_set_pair, forward_pos_pair_mat_set, backward_pos_pair_mat_set, uses_contra_model, pos_quadruple_mat_with_len_pairs, matchable_pos_sets_1, matchable_pos_sets_2, align_feature_score_sets,);
+  get_sta_prob_mats::<T>(seq_len_pair, sta_fe_params, max_bp_span_pair, &sta_part_func_mats, ss_free_energy_mat_set_pair, produces_struct_profs, global_part_func, uses_contra_model, pos_quadruple_mat_with_len_pairs, produces_align_probs, forward_pos_pair_mat_set, backward_pos_pair_mat_set, matchable_pos_sets_1, matchable_pos_sets_2, align_feature_score_sets,)
 }
 
-pub fn get_sta_inside_part_func_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, uses_contra_model: bool, pos_quadruple_mat_with_len_pairs: &PosQuadrupleMatWithLenPairs<T>, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>) -> (StaPartFuncMats<T>, PartFunc)
+pub fn get_sta_inside_part_func_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, uses_contra_model: bool, pos_quadruple_mat_with_len_pairs: &PosQuadrupleMatWithLenPairs<T>, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>, align_feature_score_sets: &AlignFeatureCountSets,) -> (StaPartFuncMats<T>, PartFunc)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
@@ -392,8 +373,8 @@ where
             let (long_i, long_j, long_k, long_l) = (i.to_usize().unwrap(), j.to_usize().unwrap(), k.to_usize().unwrap(), l.to_usize().unwrap());
             let pos_quadruple = (i, j, k, l);
             let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple];
-            let (part_func_on_sa, part_func_4_ml) = get_tmp_part_func_set_mats::<T>(sta_fe_params, &pos_quadruple, &mut sta_part_func_mats, true, forward_pos_pair_mat_set, uses_contra_model, matchable_pos_sets_1, matchable_pos_sets_2);
-            let _ = get_tmp_part_func_set_mats::<T>(sta_fe_params, &pos_quadruple, &mut sta_part_func_mats, false, backward_pos_pair_mat_set, uses_contra_model, matchable_pos_sets_1, matchable_pos_sets_2);
+            let (part_func_on_sa, part_func_4_ml) = get_tmp_part_func_set_mats::<T>(sta_fe_params, &pos_quadruple, &mut sta_part_func_mats, true, forward_pos_pair_mat_set, uses_contra_model, matchable_pos_sets_1, matchable_pos_sets_2, align_feature_score_sets);
+            let _ = get_tmp_part_func_set_mats::<T>(sta_fe_params, &pos_quadruple, &mut sta_part_func_mats, false, backward_pos_pair_mat_set, uses_contra_model, matchable_pos_sets_1, matchable_pos_sets_2, align_feature_score_sets);
             let mut sum = NEG_INFINITY;
             if !uses_contra_model || (uses_contra_model && long_j - long_i - 1 <= CONTRA_MAX_LOOP_LEN && long_l - long_k - 1 <= CONTRA_MAX_LOOP_LEN) {
               let score = bpa_score + ss_free_energy_mat_set_pair.0.hl_fe_mat[&(i, j)] + ss_free_energy_mat_set_pair.1.hl_fe_mat[&(k, l)] + part_func_on_sa;
@@ -519,7 +500,7 @@ where
             let is_begin = pos_pair_2 == leftmost_pos_pair;
             match sta_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair_2) {
               Some(&part_func) => {
-                let score = part_func + if is_begin {INIT_MATCH_SCORE} else {MATCH_2_MATCH_SCORE};
+                let score = part_func + if is_begin {align_feature_score_sets.init_match_count} else {align_feature_score_sets.match_2_match_count};
                 logsumexp(&mut sum_2, score);
               }, None => {},
             }
@@ -532,8 +513,8 @@ where
                     Some(&part_func) => {
                       let long_x = x.to_usize().unwrap();
                       let is_begin = pos_pair_3 == leftmost_pos_pair;
-                      let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_x + 1][long_pos_pair_2.1] + if is_begin {INIT_INSERT_SCORE} else {MATCH_2_INSERT_SCORE};
-                      let score = part_func + insert_score_range + MATCH_2_INSERT_SCORE;
+                      let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_x + 1][long_pos_pair_2.1] + if is_begin {align_feature_score_sets.init_insert_count} else {align_feature_score_sets.match_2_insert_count};
+                      let score = part_func + insert_score_range + align_feature_score_sets.match_2_insert_count;
                       logsumexp(&mut sum_2, score);
                     }, None => {},
                   }
@@ -549,8 +530,8 @@ where
                     Some(&part_func) => {
                       let long_x = x.to_usize().unwrap();
                       let is_begin = pos_pair_3 == leftmost_pos_pair;
-                      let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_x + 1][long_pos_pair_2.0] + if is_begin {INIT_INSERT_SCORE} else {MATCH_2_INSERT_SCORE};
-                      let score = part_func + insert_score_range + MATCH_2_INSERT_SCORE;
+                      let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_x + 1][long_pos_pair_2.0] + if is_begin {align_feature_score_sets.init_insert_count} else {align_feature_score_sets.match_2_insert_count};
+                      let score = part_func + insert_score_range + align_feature_score_sets.match_2_insert_count;
                       logsumexp(&mut sum_2, score);
                     }, None => {},
                   }
@@ -585,7 +566,7 @@ where
         match sta_part_func_mats.forward_part_func_mat_4_external_loop.get(&(pos_pair_2.0, x)) {
           Some(&part_func) => {
             let long_x = x.to_usize().unwrap();
-            let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_x + 1][long_pos_pair_2.1] + MATCH_2_INSERT_SCORE;
+            let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_x + 1][long_pos_pair_2.1] + align_feature_score_sets.match_2_insert_count;
             let score = part_func + insert_score_range;
             logsumexp(&mut final_sum, score);
           }, None => {},
@@ -600,7 +581,7 @@ where
         match sta_part_func_mats.forward_part_func_mat_4_external_loop.get(&(x, pos_pair_2.1)) {
           Some(&part_func) => {
             let long_x = x.to_usize().unwrap();
-            let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_x + 1][long_pos_pair_2.0] + MATCH_2_INSERT_SCORE;
+            let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_x + 1][long_pos_pair_2.0] + align_feature_score_sets.match_2_insert_count;
             let score = part_func + insert_score_range;
             logsumexp(&mut final_sum, score);
           }, None => {},
@@ -641,7 +622,7 @@ where
             let is_end = pos_pair_2 == rightmost_pos_pair;
             match sta_part_func_mats.backward_part_func_mat_4_external_loop.get(&pos_pair_2) {
               Some(&part_func) => {
-                let score = part_func + if is_end {0.} else {MATCH_2_MATCH_SCORE};
+                let score = part_func + if is_end {0.} else {align_feature_score_sets.match_2_match_count};
                 logsumexp(&mut sum_2, score);
               }, None => {},
             }
@@ -654,8 +635,8 @@ where
                     Some(&part_func) => {
                       let long_x = x.to_usize().unwrap();
                       let is_end = pos_pair_3 == rightmost_pos_pair;
-                      let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_pos_pair_2.1][long_x - 1] + if is_end {0.} else {MATCH_2_INSERT_SCORE};
-                      let score = part_func + insert_score_range + MATCH_2_INSERT_SCORE;
+                      let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_pos_pair_2.1][long_x - 1] + if is_end {0.} else {align_feature_score_sets.match_2_insert_count};
+                      let score = part_func + insert_score_range + align_feature_score_sets.match_2_insert_count;
                       logsumexp(&mut sum_2, score);
                     }, None => {},
                   }
@@ -671,8 +652,8 @@ where
                     Some(&part_func) => {
                       let long_x = x.to_usize().unwrap();
                       let is_end = pos_pair_3 == rightmost_pos_pair;
-                      let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_pos_pair_2.0][long_x - 1] + if is_end {0.} else {MATCH_2_INSERT_SCORE};
-                      let score = part_func + insert_score_range + MATCH_2_INSERT_SCORE;
+                      let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_pos_pair_2.0][long_x - 1] + if is_end {0.} else {align_feature_score_sets.match_2_insert_count};
+                      let score = part_func + insert_score_range + align_feature_score_sets.match_2_insert_count;
                       logsumexp(&mut sum_2, score);
                     }, None => {},
                   }
@@ -695,7 +676,7 @@ where
   (sta_part_func_mats, final_sum)
 }
 
-pub fn get_tmp_part_func_set_mats<T>(sta_fe_params: &StaFeParams<T>, pos_quadruple: &PosQuadruple<T>, sta_part_func_mats: &mut StaPartFuncMats<T>, is_forward: bool, pos_pair_mat_set: &PosPairMatSet<T>, uses_contra_model: bool, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>) -> (PartFunc, PartFunc)
+pub fn get_tmp_part_func_set_mats<T>(sta_fe_params: &StaFeParams<T>, pos_quadruple: &PosQuadruple<T>, sta_part_func_mats: &mut StaPartFuncMats<T>, is_forward: bool, pos_pair_mat_set: &PosPairMatSet<T>, uses_contra_model: bool, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>, align_feature_score_sets: &AlignFeatureCountSets,) -> (PartFunc, PartFunc)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
@@ -799,17 +780,17 @@ where
           match tmp_part_func_set_mat.get(&pos_pair_2) {
             Some(part_funcs) => {
               let part_func = part_funcs.part_func_4_ml;
-              let score = part_func + MATCH_2_MATCH_SCORE;
+              let score = part_func + align_feature_score_sets.match_2_match_count;
               logsumexp(&mut sum_4_ml_decode, score);
               let part_func = part_funcs.part_func_4_first_bpas_on_mls;
-              let score = part_func + MATCH_2_MATCH_SCORE;
+              let score = part_func + align_feature_score_sets.match_2_match_count;
               logsumexp(&mut sum_4_first_bpas_on_mls_decode, score);
               let part_func = part_funcs.part_func_on_sa;
-              let score = part_func + MATCH_2_MATCH_SCORE;
+              let score = part_func + align_feature_score_sets.match_2_match_count;
               logsumexp(&mut sum_on_sa_decode, score);
               if uses_contra_model {
                 let part_func = part_funcs.part_func_on_sa_4_ml;
-                let score = part_func + MATCH_2_MATCH_SCORE;
+                let score = part_func + align_feature_score_sets.match_2_match_count;
                 logsumexp(&mut sum_on_sa_4_ml_decode, score);
               }
             }, None => {},
@@ -825,24 +806,24 @@ where
                       sta_fe_params.insert_scores_range_2[long_x + 1][long_pos_pair_2.1]
                     } else {
                       sta_fe_params.insert_scores_range_2[long_pos_pair_2.1][long_x - 1]
-                    } + MATCH_2_INSERT_SCORE;
+                    } + align_feature_score_sets.match_2_insert_count;
                     let insert_score_range_4_ml = if is_forward {
                       sta_fe_params.insert_scores_range_4_ml_2[long_x + 1][long_pos_pair_2.1]
                     } else {
                       sta_fe_params.insert_scores_range_4_ml_2[long_pos_pair_2.1][long_x - 1]
-                    } + MATCH_2_INSERT_SCORE;
+                    } + align_feature_score_sets.match_2_insert_count;
                     let part_func = part_funcs.part_func_4_ml;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
                     logsumexp(&mut sum_4_ml_decode, score);
                     let part_func = part_funcs.part_func_4_first_bpas_on_mls;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
                     logsumexp(&mut sum_4_first_bpas_on_mls_decode, score);
                     let part_func = part_funcs.part_func_on_sa;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range;
                     logsumexp(&mut sum_on_sa_decode, score);
                     if uses_contra_model {
                       let part_func = part_funcs.part_func_on_sa_4_ml;
-                      let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+                      let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
                       logsumexp(&mut sum_on_sa_4_ml_decode, score);
                     }
                   }, None => {},
@@ -861,24 +842,24 @@ where
                       sta_fe_params.insert_scores_range[long_x + 1][long_pos_pair_2.0]
                     } else {
                       sta_fe_params.insert_scores_range[long_pos_pair_2.0][long_x - 1]
-                    } + MATCH_2_INSERT_SCORE;
+                    } + align_feature_score_sets.match_2_insert_count;
                     let insert_score_range_4_ml = if is_forward {
                       sta_fe_params.insert_scores_range_4_ml[long_x + 1][long_pos_pair_2.0]
                     } else {
                       sta_fe_params.insert_scores_range_4_ml[long_pos_pair_2.0][long_x - 1]
-                    } + MATCH_2_INSERT_SCORE;
+                    } + align_feature_score_sets.match_2_insert_count;
                     let part_func = part_funcs.part_func_4_ml;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
                     logsumexp(&mut sum_4_ml_decode, score);
                     let part_func = part_funcs.part_func_4_first_bpas_on_mls;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
                     logsumexp(&mut sum_4_first_bpas_on_mls_decode, score);
                     let part_func = part_funcs.part_func_on_sa;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range;
                     logsumexp(&mut sum_on_sa_decode, score);
                     if uses_contra_model {
                       let part_func = part_funcs.part_func_on_sa_4_ml;
-                      let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+                      let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
                       logsumexp(&mut sum_on_sa_4_ml_decode, score);
                     }
                   }, None => {},
@@ -936,10 +917,10 @@ where
     match tmp_part_func_set_mat.get(&pos_pair_2) {
       Some(part_funcs) => {
         let part_func = part_funcs.part_func_4_ml;
-        let score = part_func + MATCH_2_MATCH_SCORE;
+        let score = part_func + align_feature_score_sets.match_2_match_count;
         logsumexp(&mut final_sum_4_ml, score);
         let part_func = part_funcs.part_func_on_sa;
-        let score = part_func + MATCH_2_MATCH_SCORE;
+        let score = part_func + align_feature_score_sets.match_2_match_count;
         logsumexp(&mut final_sum_on_sa, score);
       }, None => {},
     }
@@ -951,12 +932,12 @@ where
             Some(part_funcs) => {
               let part_func = part_funcs.part_func_4_ml;
               let long_x = x.to_usize().unwrap();
-              let insert_score_range = sta_fe_params.insert_scores_range_2[long_x + 1][long_pos_pair_2.1] + MATCH_2_INSERT_SCORE;
-              let insert_score_range_4_ml = sta_fe_params.insert_scores_range_4_ml_2[long_x + 1][long_pos_pair_2.1] + MATCH_2_INSERT_SCORE;
-              let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+              let insert_score_range = sta_fe_params.insert_scores_range_2[long_x + 1][long_pos_pair_2.1] + align_feature_score_sets.match_2_insert_count;
+              let insert_score_range_4_ml = sta_fe_params.insert_scores_range_4_ml_2[long_x + 1][long_pos_pair_2.1] + align_feature_score_sets.match_2_insert_count;
+              let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
               logsumexp(&mut final_sum_4_ml, score);
               let part_func = part_funcs.part_func_on_sa;
-              let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range;
+              let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range;
               logsumexp(&mut final_sum_on_sa, score);
             }, None => {},
           }
@@ -971,12 +952,12 @@ where
             Some(part_funcs) => {
               let part_func = part_funcs.part_func_4_ml;
               let long_x = x.to_usize().unwrap();
-              let insert_score_range = sta_fe_params.insert_scores_range[long_x + 1][long_pos_pair_2.0] + MATCH_2_INSERT_SCORE;
-              let insert_score_range_4_ml = sta_fe_params.insert_scores_range_4_ml[long_x + 1][long_pos_pair_2.0] + MATCH_2_INSERT_SCORE;
-              let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range_4_ml;
+              let insert_score_range = sta_fe_params.insert_scores_range[long_x + 1][long_pos_pair_2.0] + align_feature_score_sets.match_2_insert_count;
+              let insert_score_range_4_ml = sta_fe_params.insert_scores_range_4_ml[long_x + 1][long_pos_pair_2.0] + align_feature_score_sets.match_2_insert_count;
+              let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range_4_ml;
               logsumexp(&mut final_sum_4_ml, score);
               let part_func = part_funcs.part_func_on_sa;
-              let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range;
+              let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range;
               logsumexp(&mut final_sum_on_sa, score);
             }, None => {},
           }
@@ -996,6 +977,7 @@ pub fn get_part_func_mats_2loop<T>(
   sta_fe_params: &StaFeParams<T>,
   matchable_pos_sets_1: &SparsePosSets<T>,
   matchable_pos_sets_2: &SparsePosSets<T>,
+  align_feature_score_sets: &AlignFeatureCountSets,
 ) -> (SparsePartFuncMat<T>, SparsePartFuncMat<T>)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
@@ -1093,7 +1075,7 @@ where
           let mut sum_4_2loop_decode = NEG_INFINITY;
           match part_func_mat_4_2loop.get(&pos_pair_2) {
             Some(&part_func) => {
-              let score = part_func + MATCH_2_MATCH_SCORE;
+              let score = part_func + align_feature_score_sets.match_2_match_count;
               logsumexp(&mut sum_4_2loop_decode, score);
             }, None => {},
           }
@@ -1108,8 +1090,8 @@ where
                       sta_fe_params.insert_scores_range_2[long_x + 1][long_pos_pair_2.1]
                     } else {
                       sta_fe_params.insert_scores_range_2[long_pos_pair_2.1][long_x - 1]
-                    } + MATCH_2_INSERT_SCORE;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range;
+                    } + align_feature_score_sets.match_2_insert_count;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range;
                     logsumexp(&mut sum_4_2loop_decode, score);
                   }, None => {},
                 }
@@ -1127,8 +1109,8 @@ where
                       sta_fe_params.insert_scores_range[long_x + 1][long_pos_pair_2.0]
                     } else {
                       sta_fe_params.insert_scores_range[long_pos_pair_2.0][long_x - 1]
-                    } + MATCH_2_INSERT_SCORE;
-                    let score = part_func + MATCH_2_INSERT_SCORE + insert_score_range;
+                    } + align_feature_score_sets.match_2_insert_count;
+                    let score = part_func + align_feature_score_sets.match_2_insert_count + insert_score_range;
                     logsumexp(&mut sum_4_2loop_decode, score);
                   }, None => {},
                 }
@@ -1156,7 +1138,7 @@ pub fn is_empty(tmp_part_funcs: &TmpPartFuncs) -> bool {
   tmp_part_funcs.part_func_4_first_bpas_on_mls == NEG_INFINITY
 }
 
-pub fn get_sta_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, sta_part_func_mats: &StaPartFuncMats<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_struct_profs: bool, global_part_func: PartFunc, uses_contra_model: bool, pos_quadruple_mat_with_len_pairs: &PosQuadrupleMatWithLenPairs<T>, produces_align_probs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>,) -> StaProbMats<T>
+pub fn get_sta_prob_mats<T>(seq_len_pair: &PosPair<T>, sta_fe_params: &StaFeParams<T>, max_bp_span_pair: &PosPair<T>, sta_part_func_mats: &StaPartFuncMats<T>, ss_free_energy_mat_set_pair: &SsFreeEnergyMatSetPair<T>, produces_struct_profs: bool, global_part_func: PartFunc, uses_contra_model: bool, pos_quadruple_mat_with_len_pairs: &PosQuadrupleMatWithLenPairs<T>, produces_align_probs: bool, forward_pos_pair_mat_set: &PosPairMatSet<T>, backward_pos_pair_mat_set: &PosPairMatSet<T>, matchable_pos_sets_1: &SparsePosSets<T>, matchable_pos_sets_2: &SparsePosSets<T>, align_feature_score_sets: &AlignFeatureCountSets,) -> StaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
@@ -1440,7 +1422,7 @@ where
           match sta_part_func_mats.forward_part_func_mat_4_external_loop.get(&pos_pair) {
             Some(&part_func) => {
               let is_begin = pos_pair == leftmost_pos_pair;
-              let forward_term = part_func + if is_begin {INIT_INSERT_SCORE} else {MATCH_2_INSERT_SCORE};
+              let forward_term = part_func + if is_begin {align_feature_score_sets.init_insert_count} else {align_feature_score_sets.match_2_insert_count};
               match matchable_pos_sets_1.get(&pos_pair_2.0) {
                 Some(matchable_poss) => {
                   for &x in matchable_poss {
@@ -1450,7 +1432,7 @@ where
                       Some(&backward_term) => {
                         let long_x = x.to_usize().unwrap();
                         let is_end = pos_pair_3 == rightmost_pos_pair;
-                        let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_pos_pair_2.1][long_x - 1] + if is_end {0.} else {MATCH_2_INSERT_SCORE};
+                        let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_pos_pair_2.1][long_x - 1] + if is_end {0.} else {align_feature_score_sets.match_2_insert_count};
                         let upp_4_el = forward_term + insert_score_range + backward_term - global_part_func;
                         let pos_pair_4 = (pos_pair_2.1, x - T::one());
                         match upp_mat_pair_4_el_range.1.get_mut(&pos_pair_4) {
@@ -1474,7 +1456,7 @@ where
                       Some(&backward_term) => {
                         let long_x = x.to_usize().unwrap();
                         let is_end = pos_pair_3 == rightmost_pos_pair;
-                        let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_pos_pair_2.0][long_x - 1] + if is_end {0.} else {MATCH_2_INSERT_SCORE};
+                        let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_pos_pair_2.0][long_x - 1] + if is_end {0.} else {align_feature_score_sets.match_2_insert_count};
                         let upp_4_el = forward_term + insert_score_range + backward_term - global_part_func;
                         let pos_pair_4 = (pos_pair_2.0, x - T::one());
                         match upp_mat_pair_4_el_range.0.get_mut(&pos_pair_4) {
@@ -1524,13 +1506,13 @@ where
       let ref backward_tmp_part_func_set_mat_decode = sta_part_func_mats.backward_tmp_part_func_set_mats_with_pos_pairs_decode[&(j, l)];
       let (_, forward_part_func_mat_4_2loop_decode) =
         if produces_align_probs {
-          get_part_func_mats_2loop(&pos_quadruple, &sta_part_func_mats, true, forward_pos_pair_mat_set, ss_free_energy_mat_set_pair, sta_fe_params, matchable_pos_sets_1, matchable_pos_sets_2,)
+          get_part_func_mats_2loop(&pos_quadruple, &sta_part_func_mats, true, forward_pos_pair_mat_set, ss_free_energy_mat_set_pair, sta_fe_params, matchable_pos_sets_1, matchable_pos_sets_2, align_feature_score_sets)
         } else {
           (SparsePartFuncMat::<T>::default(), SparsePartFuncMat::<T>::default())
         };
       let (_, backward_part_func_mat_4_2loop_decode) =
         if produces_align_probs {
-          get_part_func_mats_2loop(&pos_quadruple, &sta_part_func_mats, false, backward_pos_pair_mat_set, ss_free_energy_mat_set_pair, sta_fe_params, matchable_pos_sets_1, matchable_pos_sets_2,)
+          get_part_func_mats_2loop(&pos_quadruple, &sta_part_func_mats, false, backward_pos_pair_mat_set, ss_free_energy_mat_set_pair, sta_fe_params, matchable_pos_sets_1, matchable_pos_sets_2, align_feature_score_sets)
         } else {
           (SparsePartFuncMat::<T>::default(), SparsePartFuncMat::<T>::default())
         };
@@ -1628,7 +1610,7 @@ where
             match forward_tmp_part_func_set_mat.get(&pos_pair) {
               Some(part_funcs) => {
                 let part_func = part_funcs.part_func_on_sa;
-                let forward_term = part_func + MATCH_2_INSERT_SCORE;
+                let forward_term = part_func + align_feature_score_sets.match_2_insert_count;
                 match matchable_pos_sets_1.get(&pos_pair_2.0) {
                   Some(matchable_poss) => {
                     for &x in matchable_poss {
@@ -1638,7 +1620,7 @@ where
                         Some(part_funcs) => {
                           let backward_term = part_funcs.part_func_on_sa;
                           let long_x = x.to_usize().unwrap();
-                          let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_pos_pair_2.1][long_x - 1] + MATCH_2_INSERT_SCORE;
+                          let insert_score_range = sta_fe_params.insert_scores_range_4_el_2[long_pos_pair_2.1][long_x - 1] + align_feature_score_sets.match_2_insert_count;
                           let upp_4_hl = prob_coeff_4_hl + forward_term + insert_score_range + backward_term;
                           let pos_pair_4 = (pos_pair_2.1, x - T::one());
                           match upp_mat_pair_4_hl_range.1.get_mut(&pos_pair_4) {
@@ -1662,7 +1644,7 @@ where
                         Some(part_funcs) => {
                           let backward_term = part_funcs.part_func_on_sa;
                           let long_x = x.to_usize().unwrap();
-                          let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_pos_pair_2.0][long_x - 1] + MATCH_2_INSERT_SCORE;
+                          let insert_score_range = sta_fe_params.insert_scores_range_4_el[long_pos_pair_2.0][long_x - 1] + align_feature_score_sets.match_2_insert_count;
                           let upp_4_hl = prob_coeff_4_hl + forward_term + insert_score_range + backward_term;
                           let pos_pair_4 = (pos_pair_2.0, x - T::one());
                           match upp_mat_pair_4_hl_range.0.get_mut(&pos_pair_4) {
@@ -1871,7 +1853,7 @@ where
   sparse_align_prob_mat
 }
 
-pub fn consprob<T>(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, min_align_prob: Prob, produces_struct_profs: bool, uses_contra_model: bool, produces_align_probs: bool,) -> (ProbMatSets<T>, AlignProbMatSetsWithRnaIdPairs<T>)
+pub fn consprob<T>(thread_pool: &mut Pool, fasta_records: &FastaRecords, min_bpp: Prob, min_align_prob: Prob, produces_struct_profs: bool, uses_contra_model: bool, produces_align_probs: bool, align_feature_score_sets: &AlignFeatureCountSets,) -> (ProbMatSets<T>, AlignProbMatSetsWithRnaIdPairs<T>)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send,
 {
@@ -1883,7 +1865,7 @@ where
     for (sparse_bpp_mat, max_bp_span, fasta_record, ss_free_energy_mats) in multizip((sparse_bpp_mats.iter_mut(), max_bp_spans.iter_mut(), fasta_records.iter(), ss_free_energy_mat_sets.iter_mut())) {
       let seq_len = fasta_record.seq.len();
       scope.execute(move || {
-        let (bpp_mat, obtained_ss_free_energy_mats) = mccaskill_algo(&fasta_record.seq[1 .. seq_len - 1], uses_contra_model, false);
+        let (bpp_mat, obtained_ss_free_energy_mats) = mccaskill_algo(&fasta_record.seq[1 .. seq_len - 1], false, false, &StructFeatureCountSets::new(0.));
         *ss_free_energy_mats = sparsify(&obtained_ss_free_energy_mats, &bpp_mat, min_bpp);
         *sparse_bpp_mat = sparsify_bpp_mat::<T>(&bpp_mat, min_bpp);
         *max_bp_span = get_max_bp_span::<T>(sparse_bpp_mat);
@@ -1903,7 +1885,7 @@ where
     for (rna_id_pair, align_prob_mat) in align_prob_mats_with_rna_id_pairs.iter_mut() {
       let seq_pair = (&fasta_records[rna_id_pair.0].seq[..], &fasta_records[rna_id_pair.1].seq[..]);
       scope.execute(move || {
-        *align_prob_mat = sparsify_align_prob_mat(&durbin_algo(&seq_pair), min_align_prob);
+        *align_prob_mat = sparsify_align_prob_mat(&durbin_algo(&seq_pair, align_feature_score_sets,), min_align_prob);
       });
     }
   });
@@ -1920,8 +1902,8 @@ where
       let ref align_prob_mat = align_prob_mats_with_rna_id_pairs[rna_id_pair];
       let (forward_pos_pair_mat_set, backward_pos_pair_mat_set, pos_quadruple_mat, pos_quadruple_mat_with_len_pairs, matchable_pos_sets_1, matchable_pos_sets_2) = get_sparse_pos_sets(&bpp_mat_pair, align_prob_mat, &seq_len_pair);
       scope.execute(move || {
-        let sta_fe_params = StaFeParams::<T>::new(&seq_pair, &seq_len_pair, &pos_quadruple_mat, align_prob_mat, uses_contra_model);
-        *prob_mats = io_algo_4_prob_mats::<T>(&seq_len_pair, &sta_fe_params, &max_bp_span_pair, &ss_free_energy_mat_set_pair, produces_struct_profs, &forward_pos_pair_mat_set, &backward_pos_pair_mat_set, uses_contra_model, &pos_quadruple_mat_with_len_pairs, produces_align_probs, &matchable_pos_sets_1, &matchable_pos_sets_2);
+        let sta_fe_params = StaFeParams::<T>::new(&seq_pair, &seq_len_pair, &pos_quadruple_mat, align_prob_mat, uses_contra_model, align_feature_score_sets);
+        *prob_mats = io_algo_4_prob_mats::<T>(&seq_len_pair, &sta_fe_params, &max_bp_span_pair, &ss_free_energy_mat_set_pair, produces_struct_profs, &forward_pos_pair_mat_set, &backward_pos_pair_mat_set, uses_contra_model, &pos_quadruple_mat_with_len_pairs, produces_align_probs, &matchable_pos_sets_1, &matchable_pos_sets_2, align_feature_score_sets,);
       });
     }
   });
