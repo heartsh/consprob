@@ -9,6 +9,7 @@ target
 !*.sth
 !*.png
 !Cargo.toml
+!rustfmt.toml
 !.gitignore
 !README.md
 !Dockerfile

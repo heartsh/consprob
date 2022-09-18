@@ -7,22 +7,61 @@ fn main() {
   let args = env::args().collect::<Args>();
   let program_name = args[0].clone();
   let mut opts = Options::new();
-  opts.reqopt("i", "input_file_path", "The path to an input FASTA file containing RNA sequences to predict probabilities", "STR");
-  opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
-  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
-  opts.optopt("", "min_align_prob", &format!("A minimum aligning probability (Uses {} by default)", DEFAULT_MIN_ALIGN_PROB), "FLOAT");
-  opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of the threads of this computer by default)", "UINT");
-  opts.optflag("s", "produces_struct_profs", &format!("Also compute RNA structural context profiles"));
-  opts.optflag("c", "uses_contra_model", &format!("Score each possible structural alignment with CONTRAfold model instead of Turner's model"));
+  opts.reqopt(
+    "i",
+    "input_file_path",
+    "An input FASTA file path containing RNA sequences to predict probabilities",
+    "STR",
+  );
+  opts.reqopt(
+    "o",
+    "output_dir_path",
+    "An output directory path",
+    "STR",
+  );
+  opts.optopt(
+    "",
+    "min_base_pair_prob",
+    &format!(
+      "A minimum base-pairing probability (Use {} by default)",
+      DEFAULT_MIN_BPP
+    ),
+    "FLOAT",
+  );
+  opts.optopt(
+    "",
+    "min_align_prob",
+    &format!(
+      "A minimum aligning probability (Use {} by default)",
+      DEFAULT_MIN_ALIGN_PROB
+    ),
+    "FLOAT",
+  );
+  opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Use all the threads of this computer by default)", "UINT");
+  opts.optflag(
+    "s",
+    "produce_struct_profs",
+    &format!("Also compute RNA structural context profiles"),
+  );
+  opts.optflag(
+    "c",
+    "use_contra_model",
+    &format!(
+      "Score each possible structural alignment with CONTRAfold model instead of Turner's model"
+    ),
+  );
   opts.optflag(
     "a",
-    "produces_align_probs",
+    "produce_align_probs",
     &format!("Also compute nucleotide alignment probabilities"),
   );
   opts.optflag("h", "help", "Print a help menu");
-  let matches = match opts.parse(&args[1 ..]) {
-    Ok(opt) => {opt}
-    Err(failure) => {print_program_usage(&program_name, &opts); panic!(failure.to_string())}
+  let matches = match opts.parse(&args[1..]) {
+    Ok(opt) => opt,
+    Err(failure) => {
+      print_program_usage(&program_name, &opts);
+      panic!(failure.to_string())
+    }
   };
   if matches.opt_present("h") {
     print_program_usage(&program_name, &opts);
@@ -30,9 +69,13 @@ fn main() {
   }
   let input_file_path = matches.opt_str("i").unwrap();
   let input_file_path = Path::new(&input_file_path);
-  let uses_contra_model = matches.opt_present("c");
+  let use_contra_model = matches.opt_present("c");
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
-    matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
+    matches
+      .opt_str("min_base_pair_prob")
+      .unwrap()
+      .parse()
+      .unwrap()
   } else {
     DEFAULT_MIN_BPP
   };
@@ -46,8 +89,8 @@ fn main() {
   } else {
     num_cpus::get() as NumOfThreads
   };
-  let produces_struct_profs = matches.opt_present("s");
-  let produces_align_probs = matches.opt_present("a");
+  let produce_struct_profs = matches.opt_present("s");
+  let produce_align_probs = matches.opt_present("a");
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
@@ -68,11 +111,41 @@ fn main() {
   align_feature_score_sets.transfer();
   let mut thread_pool = Pool::new(num_of_threads);
   if max_seq_len <= u8::MAX as usize {
-    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u8>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs, &align_feature_score_sets);
-    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs, &align_prob_mat_sets_with_rna_id_pairs, produces_align_probs);
+    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u8>(
+      &mut thread_pool,
+      &fasta_records,
+      min_bpp,
+      min_align_prob,
+      produce_struct_profs,
+      use_contra_model,
+      produce_align_probs,
+      &align_feature_score_sets,
+    );
+    write_prob_mat_sets(
+      &output_dir_path,
+      &prob_mat_sets,
+      produce_struct_profs,
+      &align_prob_mat_sets_with_rna_id_pairs,
+      produce_align_probs,
+    );
   } else {
-    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u16>(&mut thread_pool, &fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model, produces_align_probs, &align_feature_score_sets);
-    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_struct_profs, &align_prob_mat_sets_with_rna_id_pairs, produces_align_probs);
+    let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u16>(
+      &mut thread_pool,
+      &fasta_records,
+      min_bpp,
+      min_align_prob,
+      produce_struct_profs,
+      use_contra_model,
+      produce_align_probs,
+      &align_feature_score_sets,
+    );
+    write_prob_mat_sets(
+      &output_dir_path,
+      &prob_mat_sets,
+      produce_struct_profs,
+      &align_prob_mat_sets_with_rna_id_pairs,
+      produce_align_probs,
+    );
   }
   write_readme(output_dir_path, &String::from(README_CONTENTS));
 }
