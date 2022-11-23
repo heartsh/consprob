@@ -555,16 +555,12 @@ where
               sum += accessible_basepairing_fe + accessible_basepairing_fe_2;
               sta_part_func_mats
                 .part_func_4d_mat_4_bpas_accessible_on_els
-                .insert(
-                  pos_quadruple,
-                  sum
-                );
+                .insert(pos_quadruple, sum);
               sta_part_func_mats
                 .part_func_4d_mat_4_bpas_accessible_on_mls
                 .insert(
                   pos_quadruple,
-                  sum
-                    + 2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE
+                  sum + 2. * COEFFICIENT_4_TERM_OF_NUM_OF_BRANCHING_HELICES_ON_INIT_ML_DELTA_FE,
                 );
             }
           }
@@ -893,8 +889,8 @@ where
                     Some(&part_func) => {
                       let long_x = x.to_usize().unwrap();
                       let is_end = pos_pair_3 == rightmost_pos_pair;
-                      let insert_score_range = sta_fe_params.insert_scores_range
-                        [long_pos_pair_2.0][long_x - 1]
+                      let insert_score_range = sta_fe_params.insert_scores_range[long_pos_pair_2.0]
+                        [long_x - 1]
                         + if is_end {
                           0.
                         } else {
@@ -2071,22 +2067,15 @@ where
                   logsumexp(&mut bap_4_hl, term);
                   if produce_align_probs {
                     let part_func = part_funcs.part_func_on_sa;
-                    let term = prob_coeff_4_ml
-                      + ba_score
-                      + part_func
-                      + backward_term_4_align_4_ml;
+                    let term = prob_coeff_4_ml + ba_score + part_func + backward_term_4_align_4_ml;
                     logsumexp(&mut bap_4_ml, term);
                     let part_func = part_funcs.part_func_4_first_bpas_on_mls;
-                    let term = prob_coeff_4_ml
-                      + ba_score
-                      + part_func
-                      + backward_term_4_align_4_bpas_on_mls;
+                    let term =
+                      prob_coeff_4_ml + ba_score + part_func + backward_term_4_align_4_bpas_on_mls;
                     logsumexp(&mut bap_4_ml, term);
                     let part_func = part_funcs.part_func_4_ml;
-                    let term = prob_coeff_4_ml
-                      + ba_score
-                      + part_func
-                      + backward_term_4_align_on_mls;
+                    let term =
+                      prob_coeff_4_ml + ba_score + part_func + backward_term_4_align_on_mls;
                     logsumexp(&mut bap_4_ml, term);
                     let part_func = part_funcs.part_func_on_sa;
                     let term = prob_coeff + ba_score + part_func + backward_term_4_align_4_2loop;

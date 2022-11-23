@@ -13,12 +13,7 @@ fn main() {
     "An input FASTA file path containing RNA sequences to predict probabilities",
     "STR",
   );
-  opts.reqopt(
-    "o",
-    "output_dir_path",
-    "An output directory path",
-    "STR",
-  );
+  opts.reqopt("o", "output_dir_path", "An output directory path", "STR");
   opts.optopt(
     "",
     "min_base_pair_prob",
@@ -37,7 +32,12 @@ fn main() {
     ),
     "FLOAT",
   );
-  opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Use all the threads of this computer by default)", "UINT");
+  opts.optopt(
+    "t",
+    "num_of_threads",
+    "The number of threads in multithreading (Use all the threads of this computer by default)",
+    "UINT",
+  );
   opts.optflag(
     "s",
     "produce_struct_profs",
