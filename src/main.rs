@@ -44,13 +44,6 @@ fn main() {
     &format!("Also compute RNA structural context profiles"),
   );
   opts.optflag(
-    "c",
-    "use_contra_model",
-    &format!(
-      "Score each possible structural alignment with CONTRAfold model instead of Turner's model"
-    ),
-  );
-  opts.optflag(
     "a",
     "produce_align_probs",
     &format!("Also compute nucleotide alignment probabilities"),
@@ -69,7 +62,6 @@ fn main() {
   }
   let input_file_path = matches.opt_str("i").unwrap();
   let input_file_path = Path::new(&input_file_path);
-  let use_contra_model = matches.opt_present("c");
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches
       .opt_str("min_base_pair_prob")
@@ -117,7 +109,6 @@ fn main() {
       min_bpp,
       min_align_prob,
       produce_struct_profs,
-      use_contra_model,
       produce_align_probs,
       &align_feature_score_sets,
     );
@@ -135,7 +126,6 @@ fn main() {
       min_bpp,
       min_align_prob,
       produce_struct_profs,
-      use_contra_model,
       produce_align_probs,
       &align_feature_score_sets,
     );
