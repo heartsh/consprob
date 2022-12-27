@@ -17,6 +17,7 @@ bio = "0.20"
 num_cpus = "1.0"
 itertools = "0.10"
 hashbrown = "0.12"
+ndarray = "0.14"
 
 [lib]
 path = "src/lib.rs"
