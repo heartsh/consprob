@@ -40,7 +40,7 @@ The below is examples of ConsProb's average context profiles:
 |:-:|
 
 # Docker Playground <img src="./assets/images_fixed/docker_logo.png" width="40">
-I offer [my Docker-based playground for RNA software and its instruction](https://github.com/heartsh/rna-playground/README.md) to replay my computational experiments easily.
+I offer [my Docker-based playground for RNA software and its instruction](https://github.com/heartsh/rna-playground) to replay my computational experiments easily.
 
 # Method Digest
 [LocARNA-P](https://github.com/s-will/LocARNA) can compute posterior nucleotide pair-matching probabilities on RNA pairwise structural alignment.
