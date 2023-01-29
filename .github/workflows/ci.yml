@@ -10,10 +10,13 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/rna-playground@v2
+      - uses: actions/checkout@v3
       - name: Test
         run: |
-          docker-compose run others cargo test --release \
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          git clone https://github.com/heartsh/consprob \
+           && cd consprob
+          cargo test --release \
             | grep "FAILED" \
             | exit 1
             || exit 0
