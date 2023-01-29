@@ -25,6 +25,7 @@ You can run ConsProb with a prepared test set of sampled tRNAs:
 git clone https://github.com/heartsh/consprob \
   && cd consprob
 cargo test --release
+# The below command requires Gnuplot (http://www.gnuplot.info)
 # Benchmark results will be found at "./target/criterion/report/index.html"
 cargo bench
 ```
