@@ -41,12 +41,12 @@ fn main() {
   opts.optflag(
     "s",
     "produce_struct_profs",
-    &format!("Also compute RNA structural context profiles"),
+    "Also compute RNA structural context profiles",
   );
   opts.optflag(
     "a",
     "produce_align_probs",
-    &format!("Also compute nucleotide alignment probabilities"),
+    "Also compute nucleotide alignment probabilities",
   );
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1..]) {
@@ -114,7 +114,7 @@ fn main() {
       &align_feature_score_sets,
     );
     write_prob_mat_sets(
-      &output_dir_path,
+      output_dir_path,
       &prob_mat_sets,
       produce_struct_profs,
       &align_prob_mat_sets_with_rna_id_pairs,
@@ -131,7 +131,7 @@ fn main() {
       &align_feature_score_sets,
     );
     write_prob_mat_sets(
-      &output_dir_path,
+      output_dir_path,
       &prob_mat_sets,
       produce_struct_profs,
       &align_prob_mat_sets_with_rna_id_pairs,

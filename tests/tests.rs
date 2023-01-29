@@ -34,21 +34,21 @@ fn test_consprob() {
   );
   for prob_mats in &prob_mat_sets {
     for &bpp in prob_mats.bpp_mat.values() {
-      assert!(PROB_BOUND_LOWER <= bpp && bpp < PROB_BOUND_UPPER);
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&bpp));
     }
     for &prob in prob_mats.contexts.iter() {
-      assert!(PROB_BOUND_LOWER <= prob && prob < PROB_BOUND_UPPER);
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&prob));
     }
   }
   for align_prob_mats in align_prob_mat_sets_with_rna_id_pairs.values() {
     for &align_prob in align_prob_mats.loop_align_prob_mat.values() {
-      assert!(PROB_BOUND_LOWER <= align_prob && align_prob < PROB_BOUND_UPPER);
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&align_prob));
     }
     for &align_prob in align_prob_mats.basepair_align_prob_mat.values() {
-      assert!(PROB_BOUND_LOWER <= align_prob && align_prob < PROB_BOUND_UPPER);
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&align_prob));
     }
     for &align_prob in align_prob_mats.align_prob_mat.values() {
-      assert!(PROB_BOUND_LOWER <= align_prob && align_prob < PROB_BOUND_UPPER);
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&align_prob));
     }
   }
 }
