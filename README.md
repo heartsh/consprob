@@ -5,22 +5,28 @@ You need to install Rust components, i.e., rustc (the Rust compiler), cargo (the
 Visit [the Rust website](https://www.rust-lang.org) to see more about Rust.
 You can install Rust components with the following one line:
 ```bash
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 [Rustup](https://github.com/rust-lang-nursery/rustup.rs) arranges the above installation and enables to switch a compiler in use easily.
 You can install ConsProb:
 ```bash
-$ # AVX, SSE, and MMX enabled for rustc (another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma')
-$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+ssse3 -C target-feature=+mmx' cargo install consprob
+# AVX, SSE, and MMX enabled for rustc
+# Another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma'
+RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+ssse3 -C target-feature=+mmx' \
+  cargo install consprob
 ```
 Check if you have installed ConsProb properly:
 ```bash
-$ consprob # Its available command options will be displayed
+# Its available command options will be displayed
+consprob
 ```
 You can run ConsProb with a prepared test set of sampled tRNAs:
 ```bash
-$ git clone https://github.com/heartsh/consprob && cd consprob
-$ cargo test --release -- --nocapture
+git clone https://github.com/heartsh/consprob \
+  && cd consprob
+cargo test --release
+# Benchmark results will be found at "./target/criterion/report/index.html"
+cargo bench
 ```
 
 # Advanced Computation of RNA Structural Context Profiles
