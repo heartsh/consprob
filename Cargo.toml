@@ -19,6 +19,13 @@ itertools = "0.10"
 hashbrown = "0.12"
 ndarray = "0.14"
 
+[dev-dependencies]
+criterion = "0.3"
+
 [lib]
 path = "src/lib.rs"
 name = "consprob"
+
+[[bench]]
+name = "benches"
+harness = false

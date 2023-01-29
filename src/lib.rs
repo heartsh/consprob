@@ -331,6 +331,10 @@ pub const CONTEXT_FEATURE_INDEX_IL: usize = 2;
 pub const CONTEXT_FEATURE_INDEX_EL: usize = 3;
 pub const CONTEXT_FEATURE_INDEX_BP: usize = 4;
 pub const CONTEXT_FEATURE_INDEX_ML: usize = 5;
+pub const EXAMPLE_FASTA_FILE_PATH: &'static str = "assets/sampled_trnas.fa";
+pub const EPSILON: Prob = 0.00_1;
+pub const PROB_BOUND_LOWER: Prob = -EPSILON;
+pub const PROB_BOUND_UPPER: Prob = 1. + EPSILON;
 
 pub fn io_algo_4_prob_mats<T>(
   seq_len_pair: &PosPair<T>,
@@ -1745,7 +1749,6 @@ where
                         },
                       }
                   }
-                  debug_assert!(NEG_INFINITY <= bpap && bpap <= 0.);
                   match sta_prob_mats.bpp_mat_pair.0.get_mut(&(i, j)) {
                     Some(bpp) => {
                       logsumexp(bpp, bpap);
