@@ -332,7 +332,7 @@ pub const CONTEXT_FEATURE_INDEX_EL: usize = 3;
 pub const CONTEXT_FEATURE_INDEX_BP: usize = 4;
 pub const CONTEXT_FEATURE_INDEX_ML: usize = 5;
 pub const EXAMPLE_FASTA_FILE_PATH: &'static str = "assets/sampled_trnas.fa";
-pub const EPSILON: Prob = 0.00_1;
+pub const EPSILON: Prob = 0.00_000_1;
 pub const PROB_BOUND_LOWER: Prob = -EPSILON;
 pub const PROB_BOUND_UPPER: Prob = 1. + EPSILON;
 
