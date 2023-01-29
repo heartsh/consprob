@@ -1,17 +1,42 @@
-name: ci
+name: CI
 
 on:
   push:
     branches:
-      - "master"
+      - dev
 
 jobs:
-  test:
-    name: CI
+  preinstall:
+    name: Pre-install
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Pre-install
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    needs: preinstall
     steps:
       - uses: actions/checkout@v3
       - name: Test
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           cargo test --release
+      - name: Benchmark
+        run: |
+          cargo bench
+
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    needs: preinstall
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check format
+        run: |
+          cargo fmt --check
+      - name: Lint
+        run: |
+          cargo clippy
