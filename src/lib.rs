@@ -2,16 +2,17 @@ extern crate bio;
 extern crate getopts;
 extern crate hashbrown;
 extern crate itertools;
+extern crate ndarray;
 extern crate num_cpus;
 extern crate rna_algos;
 extern crate scoped_threadpool;
-extern crate ndarray;
 
 pub use self::scoped_threadpool::Pool;
 pub use bio::io::fasta::Reader;
 pub use getopts::Options;
 pub use hashbrown::HashSet;
 pub use itertools::multizip;
+pub use ndarray::prelude::*;
 pub use rna_algos::compiled_seq_align_params::*;
 pub use rna_algos::durbin_algo::*;
 pub use rna_algos::mccaskill_algo::*;
@@ -24,7 +25,6 @@ pub use std::io::BufWriter;
 pub use std::marker::{Send, Sync};
 pub use std::path::Path;
 pub use std::str::from_utf8_unchecked;
-pub use ndarray::prelude::*;
 
 pub type Contexts = Array2<Prob>;
 pub type Context = Array1<Prob>;
@@ -1496,7 +1496,10 @@ where
   T: HashIndex,
 {
   let mut sta_outside_part_func_4d_mat_4_bpas = PartFunc4dMat::<T>::default();
-  let mut sta_prob_mats = StaProbMats::<T>::new(&(seq_len_pair.0.to_usize().unwrap(), seq_len_pair.1.to_usize().unwrap()));
+  let mut sta_prob_mats = StaProbMats::<T>::new(&(
+    seq_len_pair.0.to_usize().unwrap(),
+    seq_len_pair.1.to_usize().unwrap(),
+  ));
   let mut prob_coeff_mat_4_ml = PartFunc4dMat::<T>::default();
   let mut prob_coeff_mat_4_ml_2 = prob_coeff_mat_4_ml.clone();
   let leftmost_pos_pair = (T::zero(), T::zero());
@@ -1628,40 +1631,70 @@ where
                                   let loop_len_pair = (long_i - long_m - 1, long_n - long_j - 1);
                                   let is_bulge_loop =
                                     (loop_len_pair.0 == 0) ^ (loop_len_pair.1 == 0);
-                                  let is_interior_loop =
-                                    loop_len_pair.0 > 0 && loop_len_pair.1 > 0;
+                                  let is_interior_loop = loop_len_pair.0 > 0 && loop_len_pair.1 > 0;
                                   let bpap_4_2l = prob_coeff + part_func_4_2l;
                                   for q in long_m + 1..long_i {
                                     if is_bulge_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.0[(q, CONTEXT_FEATURE_INDEX_BL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.0
+                                          [(q, CONTEXT_FEATURE_INDEX_BL)],
+                                        bpap_4_2l,
+                                      );
                                     } else if is_interior_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.0[(q, CONTEXT_FEATURE_INDEX_IL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.0
+                                          [(q, CONTEXT_FEATURE_INDEX_IL)],
+                                        bpap_4_2l,
+                                      );
                                     }
                                   }
                                   for q in long_j + 1..long_n {
                                     if is_bulge_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.0[(q, CONTEXT_FEATURE_INDEX_BL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.0
+                                          [(q, CONTEXT_FEATURE_INDEX_BL)],
+                                        bpap_4_2l,
+                                      );
                                     } else if is_interior_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.0[(q, CONTEXT_FEATURE_INDEX_IL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.0
+                                          [(q, CONTEXT_FEATURE_INDEX_IL)],
+                                        bpap_4_2l,
+                                      );
                                     }
                                   }
                                   let loop_len_pair = (long_k - long_o - 1, long_p - long_l - 1);
                                   let is_bulge_loop =
                                     (loop_len_pair.0 == 0) ^ (loop_len_pair.1 == 0);
-                                  let is_interior_loop =
-                                    loop_len_pair.0 > 0 && loop_len_pair.1 > 0;
+                                  let is_interior_loop = loop_len_pair.0 > 0 && loop_len_pair.1 > 0;
                                   for q in long_o + 1..long_k {
                                     if is_bulge_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.1[(q, CONTEXT_FEATURE_INDEX_BL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.1
+                                          [(q, CONTEXT_FEATURE_INDEX_BL)],
+                                        bpap_4_2l,
+                                      );
                                     } else if is_interior_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.1[(q, CONTEXT_FEATURE_INDEX_IL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.1
+                                          [(q, CONTEXT_FEATURE_INDEX_IL)],
+                                        bpap_4_2l,
+                                      );
                                     }
                                   }
                                   for q in long_l + 1..long_p {
                                     if is_bulge_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.1[(q, CONTEXT_FEATURE_INDEX_BL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.1
+                                          [(q, CONTEXT_FEATURE_INDEX_BL)],
+                                        bpap_4_2l,
+                                      );
                                     } else if is_interior_loop {
-                                      logsumexp(&mut sta_prob_mats.context_set_pair.1[(q, CONTEXT_FEATURE_INDEX_IL)], bpap_4_2l);
+                                      logsumexp(
+                                        &mut sta_prob_mats.context_set_pair.1
+                                          [(q, CONTEXT_FEATURE_INDEX_IL)],
+                                        bpap_4_2l,
+                                      );
                                     }
                                   }
                                 }
@@ -1726,28 +1759,22 @@ where
                     sta_prob_mats
                       .basepair_align_prob_mat
                       .insert(pos_quadruple, bpap);
-                    match sta_prob_mats
-                      .align_prob_mat
-                      .get_mut(&(i, k)) {
-                        Some(align_prob) => {
-                          logsumexp(align_prob, bpap);
-                        }, None => {
-                          sta_prob_mats
-                            .align_prob_mat
-                            .insert((i, k), bpap);
-                        },
+                    match sta_prob_mats.align_prob_mat.get_mut(&(i, k)) {
+                      Some(align_prob) => {
+                        logsumexp(align_prob, bpap);
                       }
-                    match sta_prob_mats
-                      .align_prob_mat
-                      .get_mut(&(j, l)) {
-                        Some(align_prob) => {
-                          logsumexp(align_prob, bpap);
-                        }, None => {
-                          sta_prob_mats
-                            .align_prob_mat
-                            .insert((j, l), bpap);
-                        },
+                      None => {
+                        sta_prob_mats.align_prob_mat.insert((i, k), bpap);
                       }
+                    }
+                    match sta_prob_mats.align_prob_mat.get_mut(&(j, l)) {
+                      Some(align_prob) => {
+                        logsumexp(align_prob, bpap);
+                      }
+                      None => {
+                        sta_prob_mats.align_prob_mat.insert((j, l), bpap);
+                      }
+                    }
                   }
                   match sta_prob_mats.bpp_mat_pair.0.get_mut(&(i, j)) {
                     Some(bpp) => {
@@ -1766,10 +1793,22 @@ where
                     }
                   }
                   if produce_struct_profs {
-                    logsumexp(&mut sta_prob_mats.context_set_pair.0[(long_i, CONTEXT_FEATURE_INDEX_BP)], bpap);
-                    logsumexp(&mut sta_prob_mats.context_set_pair.0[(long_j, CONTEXT_FEATURE_INDEX_BP)], bpap);
-                    logsumexp(&mut sta_prob_mats.context_set_pair.1[(long_k, CONTEXT_FEATURE_INDEX_BP)], bpap);
-                    logsumexp(&mut sta_prob_mats.context_set_pair.1[(long_l, CONTEXT_FEATURE_INDEX_BP)], bpap);
+                    logsumexp(
+                      &mut sta_prob_mats.context_set_pair.0[(long_i, CONTEXT_FEATURE_INDEX_BP)],
+                      bpap,
+                    );
+                    logsumexp(
+                      &mut sta_prob_mats.context_set_pair.0[(long_j, CONTEXT_FEATURE_INDEX_BP)],
+                      bpap,
+                    );
+                    logsumexp(
+                      &mut sta_prob_mats.context_set_pair.1[(long_k, CONTEXT_FEATURE_INDEX_BP)],
+                      bpap,
+                    );
+                    logsumexp(
+                      &mut sta_prob_mats.context_set_pair.1[(long_l, CONTEXT_FEATURE_INDEX_BP)],
+                      bpap,
+                    );
                   }
                   let bpa_score = sta_fe_params.bpa_score_mat[&pos_quadruple];
                   let multi_loop_closing_basepairing_fe =
@@ -1876,8 +1915,14 @@ where
               }
               let bap_4_el = ba_score + forward_term + backward_term - global_part_func;
               if produce_struct_profs {
-                logsumexp(&mut sta_prob_mats.context_set_pair.0[(long_u, CONTEXT_FEATURE_INDEX_EL)], bap_4_el);
-                logsumexp(&mut sta_prob_mats.context_set_pair.1[(long_v, CONTEXT_FEATURE_INDEX_EL)], bap_4_el);
+                logsumexp(
+                  &mut sta_prob_mats.context_set_pair.0[(long_u, CONTEXT_FEATURE_INDEX_EL)],
+                  bap_4_el,
+                );
+                logsumexp(
+                  &mut sta_prob_mats.context_set_pair.1[(long_v, CONTEXT_FEATURE_INDEX_EL)],
+                  bap_4_el,
+                );
               }
               if produce_align_probs {
                 match sta_prob_mats.loop_align_prob_mat.get_mut(&pos_pair) {
@@ -2122,8 +2167,14 @@ where
                 None => {}
               }
               if produce_struct_profs {
-                logsumexp(&mut sta_prob_mats.context_set_pair.0[(long_u, CONTEXT_FEATURE_INDEX_HL)], bap_4_hl);
-                logsumexp(&mut sta_prob_mats.context_set_pair.1[(long_v, CONTEXT_FEATURE_INDEX_HL)], bap_4_hl);
+                logsumexp(
+                  &mut sta_prob_mats.context_set_pair.0[(long_u, CONTEXT_FEATURE_INDEX_HL)],
+                  bap_4_hl,
+                );
+                logsumexp(
+                  &mut sta_prob_mats.context_set_pair.1[(long_v, CONTEXT_FEATURE_INDEX_HL)],
+                  bap_4_hl,
+                );
               }
               if produce_align_probs {
                 match forward_part_func_mat_4_2loop_decode.get(&pos_pair_4_ba) {
@@ -2230,33 +2281,71 @@ where
       for (pos_pair, &upp_4_el) in &upp_mat_pair_4_el_range.0 {
         for i in range_inclusive(pos_pair.0, pos_pair.1) {
           let long_i = i.to_usize().unwrap();
-          logsumexp(&mut sta_prob_mats.context_set_pair.0[(long_i, CONTEXT_FEATURE_INDEX_EL)], upp_4_el);
+          logsumexp(
+            &mut sta_prob_mats.context_set_pair.0[(long_i, CONTEXT_FEATURE_INDEX_EL)],
+            upp_4_el,
+          );
         }
       }
       for (pos_pair, &upp_4_el) in &upp_mat_pair_4_el_range.1 {
         for i in range_inclusive(pos_pair.0, pos_pair.1) {
           let long_i = i.to_usize().unwrap();
-          logsumexp(&mut sta_prob_mats.context_set_pair.1[(long_i, CONTEXT_FEATURE_INDEX_EL)], upp_4_el);
+          logsumexp(
+            &mut sta_prob_mats.context_set_pair.1[(long_i, CONTEXT_FEATURE_INDEX_EL)],
+            upp_4_el,
+          );
         }
       }
       for (pos_pair, &upp_4_hl) in &upp_mat_pair_4_hl_range.0 {
         for i in range_inclusive(pos_pair.0, pos_pair.1) {
           let long_i = i.to_usize().unwrap();
-          logsumexp(&mut sta_prob_mats.context_set_pair.0[(long_i, CONTEXT_FEATURE_INDEX_HL)], upp_4_hl);
+          logsumexp(
+            &mut sta_prob_mats.context_set_pair.0[(long_i, CONTEXT_FEATURE_INDEX_HL)],
+            upp_4_hl,
+          );
         }
       }
       for (pos_pair, &upp_4_hl) in &upp_mat_pair_4_hl_range.1 {
         for i in range_inclusive(pos_pair.0, pos_pair.1) {
           let long_i = i.to_usize().unwrap();
-          logsumexp(&mut sta_prob_mats.context_set_pair.1[(long_i, CONTEXT_FEATURE_INDEX_HL)], upp_4_hl);
+          logsumexp(
+            &mut sta_prob_mats.context_set_pair.1[(long_i, CONTEXT_FEATURE_INDEX_HL)],
+            upp_4_hl,
+          );
         }
       }
-      sta_prob_mats.context_set_pair.0.slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML]).mapv_inplace(expf);
-      let fold = 1. - sta_prob_mats.context_set_pair.0.slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML]).sum_axis(Axis(1));
-      sta_prob_mats.context_set_pair.0.slice_mut(s![.., CONTEXT_FEATURE_INDEX_ML]).assign(&fold);
-      sta_prob_mats.context_set_pair.1.slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML]).mapv_inplace(expf);
-      let fold = 1. - sta_prob_mats.context_set_pair.1.slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML]).sum_axis(Axis(1));
-      sta_prob_mats.context_set_pair.1.slice_mut(s![.., CONTEXT_FEATURE_INDEX_ML]).assign(&fold);
+      sta_prob_mats
+        .context_set_pair
+        .0
+        .slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML])
+        .mapv_inplace(expf);
+      let fold = 1.
+        - sta_prob_mats
+          .context_set_pair
+          .0
+          .slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML])
+          .sum_axis(Axis(1));
+      sta_prob_mats
+        .context_set_pair
+        .0
+        .slice_mut(s![.., CONTEXT_FEATURE_INDEX_ML])
+        .assign(&fold);
+      sta_prob_mats
+        .context_set_pair
+        .1
+        .slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML])
+        .mapv_inplace(expf);
+      let fold = 1.
+        - sta_prob_mats
+          .context_set_pair
+          .1
+          .slice_mut(s![.., ..CONTEXT_FEATURE_INDEX_ML])
+          .sum_axis(Axis(1));
+      sta_prob_mats
+        .context_set_pair
+        .1
+        .slice_mut(s![.., CONTEXT_FEATURE_INDEX_ML])
+        .assign(&fold);
     }
     if produce_align_probs {
       for (pos_pair, loop_align_prob) in sta_prob_mats.loop_align_prob_mat.iter_mut() {
@@ -2266,7 +2355,9 @@ where
             *align_prob = expf(*align_prob);
           }
           None => {
-            sta_prob_mats.align_prob_mat.insert(*pos_pair, expf(*loop_align_prob));
+            sta_prob_mats
+              .align_prob_mat
+              .insert(*pos_pair, expf(*loop_align_prob));
           }
         }
         *loop_align_prob = expf(*loop_align_prob);
@@ -2422,10 +2513,7 @@ where
   }
   thread_pool.scoped(|scope| {
     for (rna_id_pair, align_prob_mat) in align_prob_mats_with_rna_id_pairs.iter_mut() {
-      let seq_pair = (
-        seqs[rna_id_pair.0],
-        seqs[rna_id_pair.1],
-      );
+      let seq_pair = (seqs[rna_id_pair.0], seqs[rna_id_pair.1]);
       scope.execute(move || {
         *align_prob_mat = sparsify_align_prob_mat(
           &durbin_algo(&seq_pair, align_feature_score_sets),
@@ -2436,10 +2524,7 @@ where
   });
   thread_pool.scoped(|scope| {
     for (rna_id_pair, prob_mats) in prob_mats_with_rna_id_pairs.iter_mut() {
-      let seq_pair = (
-        seqs[rna_id_pair.0],
-        seqs[rna_id_pair.1],
-      );
+      let seq_pair = (seqs[rna_id_pair.0], seqs[rna_id_pair.1]);
       let max_bp_span_pair = (max_bp_spans[rna_id_pair.0], max_bp_spans[rna_id_pair.1]);
       let bpp_mat_pair = (
         &sparse_bpp_mats[rna_id_pair.0],
