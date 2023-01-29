@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  test:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/rna-playground@v2
+      - name: Test
+        run: |
+          docker-compose run others cargo test --release \
+            | grep "FAILED" \
+            | exit 1
+            || exit 0

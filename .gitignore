@@ -8,8 +8,8 @@ target
 !*.aln
 !*.sth
 !*.png
+!*.yml
 !Cargo.toml
 !rustfmt.toml
 !.gitignore
 !README.md
-!Dockerfile
