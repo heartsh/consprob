@@ -17,7 +17,7 @@ bio = "0.20"
 num_cpus = "1.0"
 itertools = "0.10"
 hashbrown = "0.13"
-ndarray = "0.14"
+ndarray = "0.15"
 
 [dev-dependencies]
 criterion = "0.3"
