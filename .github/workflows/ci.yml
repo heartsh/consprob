@@ -26,6 +26,7 @@ jobs:
       - name: Test
         run: |
           cargo test --release -q
+          cargo package -q
       - name: Benchmark
         run: |
           cargo bench -q
