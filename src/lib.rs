@@ -2346,8 +2346,8 @@ where
           false,
           &StructFeatureCountSets::new(0.),
         );
-        *ss_free_energy_mats = sparsify(&obtained_ss_free_energy_mats, &bpp_mat, min_bpp);
         *sparse_bpp_mat = sparsify_bpp_mat::<T>(&bpp_mat, min_bpp);
+        *ss_free_energy_mats = sparsify(&obtained_ss_free_energy_mats, sparse_bpp_mat);
         *max_bp_span = get_max_bp_span::<T>(sparse_bpp_mat);
       });
     }
@@ -2458,7 +2458,6 @@ where
 pub fn sparsify<T>(
   ss_free_energy_mats: &SsFreeEnergyMats<T>,
   bpp_mat: &SparseProbMat<T>,
-  min_bpp: Prob,
 ) -> SsFreeEnergyMats<T>
 where
   T: HashIndex,
@@ -2467,31 +2466,33 @@ where
   new_ss_free_energy_mats.hl_fe_mat = ss_free_energy_mats
     .hl_fe_mat
     .iter()
-    .filter(|(pos_pair, _)| bpp_mat[pos_pair] >= min_bpp)
     .map(|(&(i, j), &free_energy)| ((i + T::one(), j + T::one()), free_energy))
+    .filter(|(key, _)| bpp_mat.contains_key(key))
     .collect();
   new_ss_free_energy_mats.twoloop_fe_4d_mat = ss_free_energy_mats
     .twoloop_fe_4d_mat
     .iter()
-    .filter(|(&(i, j, k, l), _)| bpp_mat[&(i, j)] >= min_bpp && bpp_mat[&(k, l)] >= min_bpp)
     .map(|(&(i, j, k, l), &free_energy)| {
       (
         (i + T::one(), j + T::one(), k + T::one(), l + T::one()),
         free_energy,
       )
     })
+    .filter(|(key, _)| {
+      bpp_mat.contains_key(&(key.0, key.1)) && bpp_mat.contains_key(&(key.2, key.3))
+    })
     .collect();
   new_ss_free_energy_mats.ml_closing_bp_fe_mat = ss_free_energy_mats
     .ml_closing_bp_fe_mat
     .iter()
-    .filter(|(pos_pair, _)| bpp_mat[pos_pair] >= min_bpp)
     .map(|(&(i, j), &free_energy)| ((i + T::one(), j + T::one()), free_energy))
+    .filter(|(key, _)| bpp_mat.contains_key(key))
     .collect();
   new_ss_free_energy_mats.accessible_bp_fe_mat = ss_free_energy_mats
     .accessible_bp_fe_mat
     .iter()
-    .filter(|(pos_pair, _)| bpp_mat[pos_pair] >= min_bpp)
     .map(|(&(i, j), &free_energy)| ((i + T::one(), j + T::one()), free_energy))
+    .filter(|(key, _)| bpp_mat.contains_key(key))
     .collect();
   new_ss_free_energy_mats
 }
