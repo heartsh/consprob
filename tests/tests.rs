@@ -7,48 +7,50 @@ fn test_consprob() {
   let fasta_file_reader = Reader::from_file(Path::new(&EXAMPLE_FASTA_FILE_PATH)).unwrap();
   let mut fasta_records = FastaRecords::new();
   let mut max_seq_len = 0;
-  for fasta_record in fasta_file_reader.records() {
-    let fasta_record = fasta_record.unwrap();
-    let mut seq = convert(fasta_record.seq());
-    seq.insert(0, PSEUDO_BASE);
-    seq.push(PSEUDO_BASE);
-    let seq_len = seq.len();
-    if seq_len > max_seq_len {
-      max_seq_len = seq_len;
+  for x in fasta_file_reader.records() {
+    let x = x.unwrap();
+    let mut y = bytes2seq(x.seq());
+    y.insert(0, PSEUDO_BASE);
+    y.push(PSEUDO_BASE);
+    let z = y.len();
+    if z > max_seq_len {
+      max_seq_len = z;
     }
-    fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
+    fasta_records.push(FastaRecord::new(String::from(x.id()), y));
   }
-  let mut align_feature_score_sets = AlignFeatureCountSets::new(0.);
-  align_feature_score_sets.transfer();
+  let mut align_scores = AlignScores::new(0.);
+  align_scores.transfer();
   let seqs = fasta_records.iter().map(|x| &x.seq[..]).collect();
-  let num_of_threads = num_cpus::get() as NumOfThreads;
-  let mut thread_pool = Pool::new(num_of_threads);
-  let (prob_mat_sets, align_prob_mat_sets_with_rna_id_pairs) = consprob::<u8>(
+  let num_threads = num_cpus::get() as NumThreads;
+  let mut thread_pool = Pool::new(num_threads);
+  let produces_struct_profs = true;
+  let produces_match_probs = true;
+  let (alignfold_prob_mats_avg, match_probs_hashed_ids) = consprob::<u8>(
     &mut thread_pool,
     &seqs,
-    DEFAULT_MIN_BPP,
-    DEFAULT_MIN_ALIGN_PROB,
-    true,
-    true,
-    &align_feature_score_sets,
+    DEFAULT_MIN_BASEPAIR_PROB,
+    DEFAULT_MIN_MATCH_PROB,
+    produces_struct_profs,
+    produces_match_probs,
+    &align_scores,
   );
-  for prob_mats in &prob_mat_sets {
-    for &bpp in prob_mats.bpp_mat.values() {
-      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&bpp));
+  for alignfold_probs_avg in &alignfold_prob_mats_avg {
+    for x in alignfold_probs_avg.basepair_probs.values() {
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(x));
     }
-    for &prob in prob_mats.contexts.iter() {
-      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&prob));
+    for x in alignfold_probs_avg.context_profs.iter() {
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(x));
     }
   }
-  for align_prob_mats in align_prob_mat_sets_with_rna_id_pairs.values() {
-    for &align_prob in align_prob_mats.loop_align_prob_mat.values() {
-      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&align_prob));
+  for match_probs in match_probs_hashed_ids.values() {
+    for x in match_probs.loopmatch_probs.values() {
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(x));
     }
-    for &align_prob in align_prob_mats.basepair_align_prob_mat.values() {
-      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&align_prob));
+    for x in match_probs.pairmatch_probs.values() {
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(x));
     }
-    for &align_prob in align_prob_mats.align_prob_mat.values() {
-      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(&align_prob));
+    for x in match_probs.match_probs.values() {
+      assert!((PROB_BOUND_LOWER..PROB_BOUND_UPPER).contains(x));
     }
   }
 }
