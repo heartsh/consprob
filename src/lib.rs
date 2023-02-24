@@ -281,8 +281,7 @@ impl<T: HashIndex> AlignfoldScores<T> {
       for j in range(i + T::one(), seq_len_pair.1 - T::one()) {
         let long_j = j.to_usize().unwrap();
         let base = seq_pair.1[long_j];
-        let term = align_scores.insert_scores[base]
-          + align_scores.insert_extend_score;
+        let term = align_scores.insert_scores[base] + align_scores.insert_extend_score;
         sum += term;
         alignfold_scores.range_insert_scores2[long_i][long_j] = sum;
       }
@@ -296,8 +295,7 @@ impl<T: HashIndex> AlignfoldScores<T> {
       for j in range(i + T::one(), seq_len_pair.0 - T::one()) {
         let long_j = j.to_usize().unwrap();
         let base = seq_pair.0[long_j];
-        let term = align_scores.insert_scores[base]
-          + align_scores.insert_extend_score;
+        let term = align_scores.insert_scores[base] + align_scores.insert_extend_score;
         sum += term;
         alignfold_scores.range_insert_scores[long_i][long_j] = sum;
       }
@@ -479,9 +477,7 @@ where
   ))
 }
 
-pub fn get_alignfold_sums<T>(
-  inputs: InputsInsideSumsGetter<T>,
-) -> (AlignfoldSums<T>, Sum)
+pub fn get_alignfold_sums<T>(inputs: InputsInsideSumsGetter<T>) -> (AlignfoldSums<T>, Sum)
 where
   T: HashIndex,
 {
@@ -545,10 +541,8 @@ where
             + fold_scores_pair.1.hairpin_scores[&(k, l)]
             + sum_seqalign;
           logsumexp(&mut sum, score);
-          let forward_sums =
-            &alignfold_sums.forward_sums_hashed_poss2[&(i, k)];
-          let backward_sums =
-            &alignfold_sums.backward_sums_hashed_poss2[&(j, l)];
+          let forward_sums = &alignfold_sums.forward_sums_hashed_poss2[&(i, k)];
+          let backward_sums = &alignfold_sums.backward_sums_hashed_poss2[&(j, l)];
           let min = T::from_usize(MIN_SPAN_HAIRPIN_CLOSE).unwrap();
           let min_len_pair = (
             if substr_len <= min + T::from_usize(MAX_2LOOP_LEN + 2).unwrap() {
@@ -564,9 +558,7 @@ where
           );
           for substr_len3 in range(min_len_pair.0, substr_len - T::one()) {
             for substr_len4 in range(min_len_pair.1, substr_len2 - T::one()) {
-              if let Some(pos_pairs2) =
-                pos_quads_hashed_lens.get(&(substr_len3, substr_len4))
-              {
+              if let Some(pos_pairs2) = pos_quads_hashed_lens.get(&(substr_len3, substr_len4)) {
                 for &(m, o) in pos_pairs2 {
                   let (n, p) = (m + substr_len3 - T::one(), o + substr_len4 - T::one());
                   if !(i < m && n < j && k < o && p < l) {
@@ -585,10 +577,7 @@ where
                     continue;
                   }
                   let pos_quad2 = (m, n, o, p);
-                  if let Some(&x) = alignfold_sums
-                    .sums_close
-                    .get(&pos_quad2)
-                  {
+                  if let Some(&x) = alignfold_sums.sums_close.get(&pos_quad2) {
                     let mut forward_term = NEG_INFINITY;
                     let mut backward_term = forward_term;
                     let pos_pair2 = (m - T::one(), o - T::one());
@@ -601,8 +590,7 @@ where
                     }
                     let sum_2loop = forward_term + backward_term;
                     let twoloop_score = fold_scores_pair.0.twoloop_scores[&(i, j, m, n)];
-                    let twoloop_score2 =
-                      fold_scores_pair.1.twoloop_scores[&(k, l, o, p)];
+                    let twoloop_score2 = fold_scores_pair.1.twoloop_scores[&(k, l, o, p)];
                     let x = pairmatch_score + twoloop_score + twoloop_score2 + x;
                     logsumexp(&mut sum, x + sum_2loop);
                   }
@@ -610,33 +598,22 @@ where
               }
             }
           }
-          let multibranch_close_score =
-            fold_scores_pair.0.multibranch_close_scores[&(i, j)];
-          let multibranch_close_score2 =
-            fold_scores_pair.1.multibranch_close_scores[&(k, l)];
-          let score = pairmatch_score
-            + multibranch_close_score
-            + multibranch_close_score2
-            + sum_multibranch;
+          let multibranch_close_score = fold_scores_pair.0.multibranch_close_scores[&(i, j)];
+          let multibranch_close_score2 = fold_scores_pair.1.multibranch_close_scores[&(k, l)];
+          let score =
+            pairmatch_score + multibranch_close_score + multibranch_close_score2 + sum_multibranch;
           logsumexp(&mut sum, score);
           if sum > NEG_INFINITY {
-            alignfold_sums
-              .sums_close
-              .insert(pos_quad, sum);
-            let accessible_score =
-              fold_scores_pair.0.accessible_scores[&(i, j)];
-            let accessible_score2 =
-              fold_scores_pair.1.accessible_scores[&(k, l)];
+            alignfold_sums.sums_close.insert(pos_quad, sum);
+            let accessible_score = fold_scores_pair.0.accessible_scores[&(i, j)];
+            let accessible_score2 = fold_scores_pair.1.accessible_scores[&(k, l)];
             sum += accessible_score + accessible_score2;
             alignfold_sums
               .sums_accessible_external
               .insert(pos_quad, sum);
             alignfold_sums
               .sums_accessible_multibranch
-              .insert(
-                pos_quad,
-                sum + 2. * COEFF_NUM_BRANCHES,
-              );
+              .insert(pos_quad, sum + 2. * COEFF_NUM_BRANCHES);
           }
         }
       }
@@ -661,14 +638,8 @@ where
         for &(k, l) in x {
           let pos_pair2 = (k - T::one(), l - T::one());
           let pos_quad = (k, i, l, j);
-          if let Some(&x) = alignfold_sums
-            .sums_accessible_external
-            .get(&pos_quad)
-          {
-            if let Some(&y) = alignfold_sums
-              .forward_sums_external2
-              .get(&pos_pair2)
-            {
+          if let Some(&x) = alignfold_sums.sums_accessible_external.get(&pos_quad) {
+            if let Some(&y) = alignfold_sums.forward_sums_external2.get(&pos_pair2) {
               let y = x + y;
               logsumexp(&mut sum, y);
             }
@@ -684,10 +655,7 @@ where
             pos_pair2.1.to_usize().unwrap(),
           );
           let begins_sum = pos_pair2 == leftmost_pos_pair;
-          if let Some(&x) = alignfold_sums
-            .forward_sums_external
-            .get(&pos_pair2)
-          {
+          if let Some(&x) = alignfold_sums.forward_sums_external.get(&pos_pair2) {
             let x = x
               + if begins_sum {
                 align_scores.init_match_score
@@ -702,21 +670,16 @@ where
                 continue;
               }
               let pos_pair3 = (pos_pair2.0, x);
-              if let Some(&y) = alignfold_sums
-                .forward_sums_external
-                .get(&pos_pair3)
-              {
+              if let Some(&y) = alignfold_sums.forward_sums_external.get(&pos_pair3) {
                 let long_x = x.to_usize().unwrap();
                 let begins_sum = pos_pair3 == leftmost_pos_pair;
-                let z = alignfold_scores.range_insert_scores2[long_x + 1]
-                  [long_pos_pair2.1]
+                let z = alignfold_scores.range_insert_scores2[long_x + 1][long_pos_pair2.1]
                   + if begins_sum {
                     align_scores.init_insert_score
                   } else {
                     align_scores.match2insert_score
                   };
-                let z =
-                  y + z + align_scores.match2insert_score;
+                let z = y + z + align_scores.match2insert_score;
                 logsumexp(&mut sum2, z);
               }
             }
@@ -727,21 +690,16 @@ where
                 continue;
               }
               let pos_pair3 = (x, pos_pair2.1);
-              if let Some(&y) = alignfold_sums
-                .forward_sums_external
-                .get(&pos_pair3)
-              {
+              if let Some(&y) = alignfold_sums.forward_sums_external.get(&pos_pair3) {
                 let long_x = x.to_usize().unwrap();
                 let begins_sum = pos_pair3 == leftmost_pos_pair;
-                let z = alignfold_scores.range_insert_scores[long_x + 1]
-                  [long_pos_pair2.0]
+                let z = alignfold_scores.range_insert_scores[long_x + 1][long_pos_pair2.0]
                   + if begins_sum {
                     align_scores.init_insert_score
                   } else {
                     align_scores.match2insert_score
                   };
-                let z =
-                  y + z + align_scores.match2insert_score;
+                let z = y + z + align_scores.match2insert_score;
                 logsumexp(&mut sum2, z);
               }
             }
@@ -754,9 +712,7 @@ where
           let term = sum2 + loopmatch_score;
           logsumexp(&mut sum, term);
           if sum > NEG_INFINITY {
-            alignfold_sums
-              .forward_sums_external
-              .insert(pos_pair, sum);
+            alignfold_sums.forward_sums_external.insert(pos_pair, sum);
           }
         }
       }
@@ -771,10 +727,7 @@ where
     pos_pair2.0.to_usize().unwrap(),
     pos_pair2.1.to_usize().unwrap(),
   );
-  if let Some(&x) = alignfold_sums
-    .forward_sums_external
-    .get(&pos_pair2)
-  {
+  if let Some(&x) = alignfold_sums.forward_sums_external.get(&pos_pair2) {
     logsumexp(&mut final_sum, x);
   }
   if let Some(x) = matchable_poss.get(&pos_pair2.0) {
@@ -782,10 +735,7 @@ where
       if x >= pos_pair2.1 {
         continue;
       }
-      if let Some(&y) = alignfold_sums
-        .forward_sums_external
-        .get(&(pos_pair2.0, x))
-      {
+      if let Some(&y) = alignfold_sums.forward_sums_external.get(&(pos_pair2.0, x)) {
         let long_x = x.to_usize().unwrap();
         let z = alignfold_scores.range_insert_scores2[long_x + 1][long_pos_pair2.1]
           + align_scores.match2insert_score;
@@ -799,10 +749,7 @@ where
       if x >= pos_pair2.0 {
         continue;
       }
-      if let Some(&y) = alignfold_sums
-        .forward_sums_external
-        .get(&(x, pos_pair2.1))
-      {
+      if let Some(&y) = alignfold_sums.forward_sums_external.get(&(x, pos_pair2.1)) {
         let long_x = x.to_usize().unwrap();
         let z = alignfold_scores.range_insert_scores[long_x + 1][long_pos_pair2.0]
           + align_scores.match2insert_score;
@@ -822,14 +769,8 @@ where
         for &(k, l) in x {
           let pos_pair2 = (k + T::one(), l + T::one());
           let pos_quad = (i, k, j, l);
-          if let Some(&x) = alignfold_sums
-            .sums_accessible_external
-            .get(&pos_quad)
-          {
-            if let Some(&y) = alignfold_sums
-              .backward_sums_external2
-              .get(&pos_pair2)
-            {
+          if let Some(&x) = alignfold_sums.sums_accessible_external.get(&pos_quad) {
+            if let Some(&y) = alignfold_sums.backward_sums_external2.get(&pos_pair2) {
               let y = x + y;
               logsumexp(&mut sum, y);
             }
@@ -845,10 +786,7 @@ where
             pos_pair2.1.to_usize().unwrap(),
           );
           let ends_sum = pos_pair2 == rightmost_pos_pair;
-          if let Some(&x) = alignfold_sums
-            .backward_sums_external
-            .get(&pos_pair2)
-          {
+          if let Some(&x) = alignfold_sums.backward_sums_external.get(&pos_pair2) {
             let x = x
               + if ends_sum {
                 0.
@@ -863,21 +801,16 @@ where
                 continue;
               }
               let pos_pair3 = (pos_pair2.0, x);
-              if let Some(&y) = alignfold_sums
-                .backward_sums_external
-                .get(&pos_pair3)
-              {
+              if let Some(&y) = alignfold_sums.backward_sums_external.get(&pos_pair3) {
                 let long_x = x.to_usize().unwrap();
                 let ends_sum = pos_pair3 == rightmost_pos_pair;
-                let z = alignfold_scores.range_insert_scores2[long_pos_pair2.1]
-                  [long_x - 1]
+                let z = alignfold_scores.range_insert_scores2[long_pos_pair2.1][long_x - 1]
                   + if ends_sum {
                     0.
                   } else {
                     align_scores.match2insert_score
                   };
-                let z =
-                  y + z + align_scores.match2insert_score;
+                let z = y + z + align_scores.match2insert_score;
                 logsumexp(&mut sum2, z);
               }
             }
@@ -888,21 +821,16 @@ where
                 continue;
               }
               let pos_pair3 = (x, pos_pair2.1);
-              if let Some(&y) = alignfold_sums
-                .backward_sums_external
-                .get(&pos_pair3)
-              {
+              if let Some(&y) = alignfold_sums.backward_sums_external.get(&pos_pair3) {
                 let long_x = x.to_usize().unwrap();
                 let ends_sum = pos_pair3 == rightmost_pos_pair;
-                let z = alignfold_scores.range_insert_scores[long_pos_pair2.0]
-                  [long_x - 1]
+                let z = alignfold_scores.range_insert_scores[long_pos_pair2.0][long_x - 1]
                   + if ends_sum {
                     0.
                   } else {
                     align_scores.match2insert_score
                   };
-                let z =
-                  y + z + align_scores.match2insert_score;
+                let z = y + z + align_scores.match2insert_score;
                 logsumexp(&mut sum2, z);
               }
             }
@@ -915,9 +843,7 @@ where
           let term = sum2 + loopmatch_score;
           logsumexp(&mut sum, term);
           if sum > NEG_INFINITY {
-            alignfold_sums
-              .backward_sums_external
-              .insert(pos_pair, sum);
+            alignfold_sums.backward_sums_external.insert(pos_pair, sum);
           }
         }
       }
@@ -926,9 +852,7 @@ where
   (alignfold_sums, final_sum)
 }
 
-pub fn get_loop_sums<T>(
-  inputs: InputsLoopSumsGetter<T>,
-) -> (Sum, Sum)
+pub fn get_loop_sums<T>(inputs: InputsLoopSumsGetter<T>) -> (Sum, Sum)
 where
   T: HashIndex,
 {
@@ -1022,7 +946,8 @@ where
         continue;
       }
       let mut sums = LoopSums::new();
-      if (computes_forward_sums && u == i && v == k) || (!computes_forward_sums && u == j && v == l) {
+      if (computes_forward_sums && u == i && v == k) || (!computes_forward_sums && u == j && v == l)
+      {
         sums.sum_seqalign = 0.;
         sums.sum_0ormore_pairmatches = 0.;
         sums_mat.insert(pos_pair, sums);
@@ -1050,10 +975,7 @@ where
           } else {
             (u, m, v, n)
           };
-          if let Some(&x) = alignfold_sums
-            .sums_accessible_multibranch
-            .get(&pos_quad2)
-          {
+          if let Some(&x) = alignfold_sums.sums_accessible_multibranch.get(&pos_quad2) {
             if let Some(y) = sums_mat2.get(&pos_pair2) {
               let z = x + y.sum_1ormore_pairmatches;
               logsumexp(&mut sum_multibranch, z);
@@ -1088,7 +1010,9 @@ where
         }
         if let Some(x) = matchable_poss.get(&pos_pair2.0) {
           for &x in x {
-            if computes_forward_sums && x >= pos_pair2.1 || (!computes_forward_sums && x <= pos_pair2.1) {
+            if computes_forward_sums && x >= pos_pair2.1
+              || (!computes_forward_sums && x <= pos_pair2.1)
+            {
               continue;
             }
             if let Some(y) = sums_mat.get(&(pos_pair2.0, x)) {
@@ -1098,21 +1022,20 @@ where
               } else {
                 alignfold_scores.range_insert_scores2[long_pos_pair2.1][long_x - 1]
               } + align_scores.match2insert_score;
-              let x =
-                y.sum_multibranch + align_scores.match2insert_score + z;
+              let x = y.sum_multibranch + align_scores.match2insert_score + z;
               logsumexp(&mut sum_multibranch2, x);
-              let x =
-                y.sum_1st_pairmatches + align_scores.match2insert_score + z;
+              let x = y.sum_1st_pairmatches + align_scores.match2insert_score + z;
               logsumexp(&mut sum_1st_pairmatches2, x);
-              let x =
-                y.sum_seqalign + align_scores.match2insert_score + z;
+              let x = y.sum_seqalign + align_scores.match2insert_score + z;
               logsumexp(&mut sum_seqalign2, x);
             }
           }
         }
         if let Some(x) = matchable_poss2.get(&pos_pair2.1) {
           for &x in x {
-            if computes_forward_sums && x >= pos_pair2.0 || (!computes_forward_sums && x <= pos_pair2.0) {
+            if computes_forward_sums && x >= pos_pair2.0
+              || (!computes_forward_sums && x <= pos_pair2.0)
+            {
               continue;
             }
             if let Some(y) = sums_mat.get(&(x, pos_pair2.1)) {
@@ -1122,14 +1045,11 @@ where
               } else {
                 alignfold_scores.range_insert_scores[long_pos_pair2.0][long_x - 1]
               } + align_scores.match2insert_score;
-              let x =
-                y.sum_multibranch + align_scores.match2insert_score + z;
+              let x = y.sum_multibranch + align_scores.match2insert_score + z;
               logsumexp(&mut sum_multibranch2, x);
-              let x =
-                y.sum_1st_pairmatches + align_scores.match2insert_score + z;
+              let x = y.sum_1st_pairmatches + align_scores.match2insert_score + z;
               logsumexp(&mut sum_1st_pairmatches2, x);
-              let x =
-                y.sum_seqalign + align_scores.match2insert_score + z;
+              let x = y.sum_seqalign + align_scores.match2insert_score + z;
               logsumexp(&mut sum_seqalign2, x);
             }
           }
@@ -1185,14 +1105,11 @@ where
         }
         if let Some(y) = sums_mat.get(&(pos_pair2.0, x)) {
           let long_x = x.to_usize().unwrap();
-          let z = alignfold_scores.range_insert_scores2[long_x + 1]
-            [long_pos_pair2.1]
+          let z = alignfold_scores.range_insert_scores2[long_x + 1][long_pos_pair2.1]
             + align_scores.match2insert_score;
-          let x =
-            y.sum_multibranch + align_scores.match2insert_score + z;
+          let x = y.sum_multibranch + align_scores.match2insert_score + z;
           logsumexp(&mut final_sum_multibranch, x);
-          let x =
-            y.sum_seqalign + align_scores.match2insert_score + z;
+          let x = y.sum_seqalign + align_scores.match2insert_score + z;
           logsumexp(&mut final_sum_seqalign, x);
         }
       }
@@ -1206,11 +1123,9 @@ where
           let long_x = x.to_usize().unwrap();
           let z = alignfold_scores.range_insert_scores[long_x + 1][long_pos_pair2.0]
             + align_scores.match2insert_score;
-          let x =
-            y.sum_multibranch + align_scores.match2insert_score + z;
+          let x = y.sum_multibranch + align_scores.match2insert_score + z;
           logsumexp(&mut final_sum_multibranch, x);
-          let x =
-            y.sum_seqalign + align_scores.match2insert_score + z;
+          let x = y.sum_seqalign + align_scores.match2insert_score + z;
           logsumexp(&mut final_sum_seqalign, x);
         }
       }
@@ -1219,9 +1134,7 @@ where
   (final_sum_seqalign, final_sum_multibranch)
 }
 
-pub fn get_2loop_sums<T>(
-  inputs: Inputs2loopSumsGetter<T>,
-) -> (SparseSumMat<T>, SparseSumMat<T>)
+pub fn get_2loop_sums<T>(inputs: Inputs2loopSumsGetter<T>) -> (SparseSumMat<T>, SparseSumMat<T>)
 where
   T: HashIndex,
 {
@@ -1272,7 +1185,8 @@ where
   for &u in iter.iter() {
     for &v in iter2.iter() {
       let pos_pair = (u, v);
-      if (computes_forward_sums && u == i && v == k) || (!computes_forward_sums && u == j && v == l) {
+      if (computes_forward_sums && u == i && v == k) || (!computes_forward_sums && u == j && v == l)
+      {
         continue;
       }
       let mut sum = NEG_INFINITY;
@@ -1305,15 +1219,12 @@ where
           {
             continue;
           }
-          if let Some(&x) = alignfold_sums
-            .sums_close
-            .get(&pos_quad2)
-          {
+          if let Some(&x) = alignfold_sums.sums_close.get(&pos_quad2) {
             if let Some(y) = sums.get(&pos_pair2) {
-              let twoloop_score = fold_scores_pair.0.twoloop_scores
-                [&(i, j, pos_quad2.0, pos_quad2.1)];
-              let twoloop_score2 = fold_scores_pair.1.twoloop_scores
-                [&(k, l, pos_quad2.2, pos_quad2.3)];
+              let twoloop_score =
+                fold_scores_pair.0.twoloop_scores[&(i, j, pos_quad2.0, pos_quad2.1)];
+              let twoloop_score2 =
+                fold_scores_pair.1.twoloop_scores[&(k, l, pos_quad2.2, pos_quad2.3)];
               let y = x + y.sum_seqalign + twoloop_score + twoloop_score2;
               logsumexp(&mut sum, y);
             }
@@ -1337,7 +1248,9 @@ where
         }
         if let Some(x) = matchable_poss.get(&pos_pair2.0) {
           for &x in x {
-            if computes_forward_sums && x >= pos_pair2.1 || (!computes_forward_sums && x <= pos_pair2.1) {
+            if computes_forward_sums && x >= pos_pair2.1
+              || (!computes_forward_sums && x <= pos_pair2.1)
+            {
               continue;
             }
             if let Some(&y) = sum_mat.get(&(pos_pair2.0, x)) {
@@ -1347,15 +1260,16 @@ where
               } else {
                 alignfold_scores.range_insert_scores2[long_pos_pair2.1][long_x - 1]
               } + align_scores.match2insert_score;
-              let z =
-                y + align_scores.match2insert_score + z;
+              let z = y + align_scores.match2insert_score + z;
               logsumexp(&mut sum2, z);
             }
           }
         }
         if let Some(x) = matchable_poss2.get(&pos_pair2.1) {
           for &x in x {
-            if computes_forward_sums && x >= pos_pair2.0 || (!computes_forward_sums && x <= pos_pair2.0) {
+            if computes_forward_sums && x >= pos_pair2.0
+              || (!computes_forward_sums && x <= pos_pair2.0)
+            {
               continue;
             }
             if let Some(&y) = sum_mat.get(&(x, pos_pair2.1)) {
@@ -1365,8 +1279,7 @@ where
               } else {
                 alignfold_scores.range_insert_scores[long_pos_pair2.0][long_x - 1]
               } + align_scores.match2insert_score;
-              let z =
-                y + align_scores.match2insert_score + z;
+              let z = y + align_scores.match2insert_score + z;
               logsumexp(&mut sum2, z);
             }
           }
@@ -1436,10 +1349,7 @@ where
         for &(i, k) in pos_pairs {
           let (j, l) = (i + substr_len - T::one(), k + substr_len2 - T::one());
           let pos_quad = (i, j, k, l);
-          if let Some(&sum_close) = alignfold_sums
-            .sums_close
-            .get(&pos_quad)
-          {
+          if let Some(&sum_close) = alignfold_sums.sums_close.get(&pos_quad) {
             let (long_i, long_j, long_k, long_l) = (
               i.to_usize().unwrap(),
               j.to_usize().unwrap(),
@@ -1451,37 +1361,29 @@ where
             let mut forward_term = sum;
             let mut backward_term = sum;
             let pos_pair2 = (i - T::one(), k - T::one());
-            if let Some(&x) = alignfold_sums
-              .forward_sums_external2
-              .get(&pos_pair2)
-            {
+            if let Some(&x) = alignfold_sums.forward_sums_external2.get(&pos_pair2) {
               logsumexp(&mut forward_term, x);
             }
             let pos_pair2 = (j + T::one(), l + T::one());
-            if let Some(&x) = alignfold_sums
-              .backward_sums_external2
-              .get(&pos_pair2)
-            {
+            if let Some(&x) = alignfold_sums.backward_sums_external2.get(&pos_pair2) {
               logsumexp(&mut backward_term, x);
             }
             let sum_external = forward_term + backward_term;
             if sum_external > NEG_INFINITY {
-              let coeff = alignfold_sums.sums_accessible_external
-                [&pos_quad]
-                - sum_close;
+              let coeff = alignfold_sums.sums_accessible_external[&pos_quad] - sum_close;
               sum = coeff + sum_external;
             }
             for substr_len3 in range_inclusive(
               substr_len + T::from_usize(2).unwrap(),
-              (substr_len + T::from_usize(MAX_2LOOP_LEN + 2).unwrap()).min(max_basepair_span_pair.0),
+              (substr_len + T::from_usize(MAX_2LOOP_LEN + 2).unwrap())
+                .min(max_basepair_span_pair.0),
             ) {
               for substr_len4 in range_inclusive(
                 substr_len2 + T::from_usize(2).unwrap(),
-                (substr_len2 + T::from_usize(MAX_2LOOP_LEN + 2).unwrap()).min(max_basepair_span_pair.1),
+                (substr_len2 + T::from_usize(MAX_2LOOP_LEN + 2).unwrap())
+                  .min(max_basepair_span_pair.1),
               ) {
-                if let Some(pos_pairs2) =
-                  pos_quads_hashed_lens.get(&(substr_len3, substr_len4))
-                {
+                if let Some(pos_pairs2) = pos_quads_hashed_lens.get(&(substr_len3, substr_len4)) {
                   for &(m, o) in pos_pairs2 {
                     let (n, p) = (m + substr_len3 - T::one(), o + substr_len4 - T::one());
                     if !(m < i && j < n && o < k && l < p) {
@@ -1500,13 +1402,9 @@ where
                       continue;
                     }
                     let pos_quad2 = (m, n, o, p);
-                    if let Some(&outside_sum) =
-                      alignfold_outside_sums.get(&pos_quad2)
-                    {
-                      let forward_sums = &alignfold_sums
-                        .forward_sums_hashed_poss2[&(m, o)];
-                      let backward_sums = &alignfold_sums
-                        .backward_sums_hashed_poss2[&(n, p)];
+                    if let Some(&outside_sum) = alignfold_outside_sums.get(&pos_quad2) {
+                      let forward_sums = &alignfold_sums.forward_sums_hashed_poss2[&(m, o)];
+                      let backward_sums = &alignfold_sums.backward_sums_hashed_poss2[&(n, p)];
                       let mut forward_term = NEG_INFINITY;
                       let mut backward_term = forward_term;
                       let pos_pair2 = (i - T::one(), k - T::one());
@@ -1520,10 +1418,8 @@ where
                       let sum_2loop = forward_term + backward_term;
                       if sum_2loop > NEG_INFINITY {
                         let pairmatch_score = alignfold_scores.pairmatch_scores[&pos_quad2];
-                        let twoloop_score =
-                          fold_scores_pair.0.twoloop_scores[&(m, n, i, j)];
-                        let twoloop_score2 =
-                          fold_scores_pair.1.twoloop_scores[&(o, p, k, l)];
+                        let twoloop_score = fold_scores_pair.0.twoloop_scores[&(m, n, i, j)];
+                        let twoloop_score2 = fold_scores_pair.1.twoloop_scores[&(o, p, k, l)];
                         let coeff = pairmatch_score + twoloop_score + twoloop_score2 + outside_sum;
                         let sum_2loop = coeff + sum_2loop;
                         logsumexp(&mut sum, sum_2loop);
@@ -1535,8 +1431,7 @@ where
                           for q in long_m + 1..long_i {
                             if found_bulge_loop {
                               logsumexp(
-                                &mut alignfold_probs.context_profs_pair.0
-                                  [(q, CONTEXT_INDEX_BULGE)],
+                                &mut alignfold_probs.context_profs_pair.0[(q, CONTEXT_INDEX_BULGE)],
                                 pairmatch_prob_2loop,
                               );
                             } else if found_interior_loop {
@@ -1550,8 +1445,7 @@ where
                           for q in long_j + 1..long_n {
                             if found_bulge_loop {
                               logsumexp(
-                                &mut alignfold_probs.context_profs_pair.0
-                                  [(q, CONTEXT_INDEX_BULGE)],
+                                &mut alignfold_probs.context_profs_pair.0[(q, CONTEXT_INDEX_BULGE)],
                                 pairmatch_prob_2loop,
                               );
                             } else if found_interior_loop {
@@ -1568,8 +1462,7 @@ where
                           for q in long_o + 1..long_k {
                             if found_bulge_loop {
                               logsumexp(
-                                &mut alignfold_probs.context_profs_pair.1
-                                  [(q, CONTEXT_INDEX_BULGE)],
+                                &mut alignfold_probs.context_profs_pair.1[(q, CONTEXT_INDEX_BULGE)],
                                 pairmatch_prob_2loop,
                               );
                             } else if found_interior_loop {
@@ -1583,8 +1476,7 @@ where
                           for q in long_l + 1..long_p {
                             if found_bulge_loop {
                               logsumexp(
-                                &mut alignfold_probs.context_profs_pair.1
-                                  [(q, CONTEXT_INDEX_BULGE)],
+                                &mut alignfold_probs.context_profs_pair.1[(q, CONTEXT_INDEX_BULGE)],
                                 pairmatch_prob_2loop,
                               );
                             } else if found_interior_loop {
@@ -1602,12 +1494,8 @@ where
                 }
               }
             }
-            let sum_ratio = alignfold_sums.sums_accessible_multibranch
-              [&pos_quad]
-              - sum_close;
-            for (&(u, v), x) in
-              &alignfold_sums.forward_sums_hashed_poss2
-            {
+            let sum_ratio = alignfold_sums.sums_accessible_multibranch[&pos_quad] - sum_close;
+            for (&(u, v), x) in &alignfold_sums.forward_sums_hashed_poss2 {
               if !(u < i && v < k) {
                 continue;
               }
@@ -1661,7 +1549,10 @@ where
                   logsumexp(x, pairmatch_prob);
                 }
                 None => {
-                  alignfold_probs.basepair_probs_pair.0.insert((i, j), pairmatch_prob);
+                  alignfold_probs
+                    .basepair_probs_pair
+                    .0
+                    .insert((i, j), pairmatch_prob);
                 }
               }
               match alignfold_probs.basepair_probs_pair.1.get_mut(&(k, l)) {
@@ -1669,7 +1560,10 @@ where
                   logsumexp(x, pairmatch_prob);
                 }
                 None => {
-                  alignfold_probs.basepair_probs_pair.1.insert((k, l), pairmatch_prob);
+                  alignfold_probs
+                    .basepair_probs_pair
+                    .1
+                    .insert((k, l), pairmatch_prob);
                 }
               }
               if produces_context_profs {
@@ -1691,16 +1585,11 @@ where
                 );
               }
               let pairmatch_score = alignfold_scores.pairmatch_scores[&pos_quad];
-              let multibranch_close_score =
-                fold_scores_pair.0.multibranch_close_scores[&(i, j)];
-              let multibranch_close_score2 =
-                fold_scores_pair.1.multibranch_close_scores[&(k, l)];
-              let coeff = sum
-                + pairmatch_score
-                + multibranch_close_score
-                + multibranch_close_score2;
-              let backward_sums =
-                &alignfold_sums.backward_sums_hashed_poss2[&(j, l)];
+              let multibranch_close_score = fold_scores_pair.0.multibranch_close_scores[&(i, j)];
+              let multibranch_close_score2 = fold_scores_pair.1.multibranch_close_scores[&(k, l)];
+              let coeff =
+                sum + pairmatch_score + multibranch_close_score + multibranch_close_score2;
+              let backward_sums = &alignfold_sums.backward_sums_hashed_poss2[&(j, l)];
               for pos_pair in alignfold_scores.loopmatch_scores.keys() {
                 let &(u, v) = pos_pair;
                 if !(i < u && u < j && k < v && v < l) {
@@ -1771,13 +1660,11 @@ where
               logsumexp(&mut forward_term, x);
             }
             let mut backward_term = NEG_INFINITY;
-            if let Some(&x) = alignfold_sums
-              .backward_sums_external2
-              .get(&pos_pair2)
-            {
+            if let Some(&x) = alignfold_sums.backward_sums_external2.get(&pos_pair2) {
               logsumexp(&mut backward_term, x);
             }
-            let loopmatch_prob_external = loopmatch_score + forward_term + backward_term - global_sum;
+            let loopmatch_prob_external =
+              loopmatch_score + forward_term + backward_term - global_sum;
             if produces_context_profs {
               logsumexp(
                 &mut alignfold_probs.context_profs_pair.0[(long_u, CONTEXT_INDEX_EXTERNAL)],
@@ -1794,17 +1681,16 @@ where
                   logsumexp(x, loopmatch_prob_external);
                 }
                 None => {
-                  alignfold_probs.loopmatch_probs.insert(pos_pair, loopmatch_prob_external);
+                  alignfold_probs
+                    .loopmatch_probs
+                    .insert(pos_pair, loopmatch_prob_external);
                 }
               }
             }
           }
         }
         if produces_context_profs {
-          if let Some(&sum) = alignfold_sums
-            .forward_sums_external
-            .get(&pos_pair)
-          {
+          if let Some(&sum) = alignfold_sums.forward_sums_external.get(&pos_pair) {
             let begins_sum = pos_pair == leftmost_pos_pair;
             let forward_term = sum
               + if begins_sum {
@@ -1818,21 +1704,16 @@ where
                   continue;
                 }
                 let pos_pair3 = (pos_pair2.0, x);
-                if let Some(&y) = alignfold_sums
-                  .backward_sums_external
-                  .get(&pos_pair3)
-                {
+                if let Some(&y) = alignfold_sums.backward_sums_external.get(&pos_pair3) {
                   let long_x = x.to_usize().unwrap();
                   let ends_sum = pos_pair3 == rightmost_pos_pair;
-                  let z = alignfold_scores.range_insert_scores2[long_pos_pair2.1]
-                    [long_x - 1]
+                  let z = alignfold_scores.range_insert_scores2[long_pos_pair2.1][long_x - 1]
                     + if ends_sum {
                       0.
                     } else {
                       align_scores.match2insert_score
                     };
-                  let z =
-                    forward_term + y + z - global_sum;
+                  let z = forward_term + y + z - global_sum;
                   let pos_pair4 = (pos_pair2.1, x - T::one());
                   match unpair_probs_range_external.1.get_mut(&pos_pair4) {
                     Some(x) => {
@@ -1851,21 +1732,16 @@ where
                   continue;
                 }
                 let pos_pair3 = (x, pos_pair2.1);
-                if let Some(&y) = alignfold_sums
-                  .backward_sums_external
-                  .get(&pos_pair3)
-                {
+                if let Some(&y) = alignfold_sums.backward_sums_external.get(&pos_pair3) {
                   let long_x = x.to_usize().unwrap();
                   let ends_sum = pos_pair3 == rightmost_pos_pair;
-                  let z = alignfold_scores.range_insert_scores[long_pos_pair2.0]
-                    [long_x - 1]
+                  let z = alignfold_scores.range_insert_scores[long_pos_pair2.0][long_x - 1]
                     + if ends_sum {
                       0.
                     } else {
                       align_scores.match2insert_score
                     };
-                  let z =
-                    forward_term + y + z - global_sum;
+                  let z = forward_term + y + z - global_sum;
                   let pos_pair4 = (pos_pair2.0, x - T::one());
                   match unpair_probs_range_external.0.get_mut(&pos_pair4) {
                     Some(x) => {
@@ -1895,20 +1771,13 @@ where
         None => NEG_INFINITY,
       };
       let prob_coeff_hairpin = prob_coeff + hairpin_score + hairpin_score2;
-      let multibranch_close_score =
-        fold_scores_pair.0.multibranch_close_scores[&(i, j)];
-      let multibranch_close_score2 =
-        fold_scores_pair.1.multibranch_close_scores[&(k, l)];
-      let prob_coeff_multibranch =
-        prob_coeff + multibranch_close_score + multibranch_close_score2;
-      let forward_sums =
-        &alignfold_sums.forward_sums_hashed_poss[&(i, k)];
-      let backward_sums =
-        &alignfold_sums.backward_sums_hashed_poss[&(j, l)];
-      let forward_sums2 =
-        &alignfold_sums.forward_sums_hashed_poss2[&(i, k)];
-      let backward_sums2 =
-        &alignfold_sums.backward_sums_hashed_poss2[&(j, l)];
+      let multibranch_close_score = fold_scores_pair.0.multibranch_close_scores[&(i, j)];
+      let multibranch_close_score2 = fold_scores_pair.1.multibranch_close_scores[&(k, l)];
+      let prob_coeff_multibranch = prob_coeff + multibranch_close_score + multibranch_close_score2;
+      let forward_sums = &alignfold_sums.forward_sums_hashed_poss[&(i, k)];
+      let backward_sums = &alignfold_sums.backward_sums_hashed_poss[&(j, l)];
+      let forward_sums2 = &alignfold_sums.forward_sums_hashed_poss2[&(i, k)];
+      let backward_sums2 = &alignfold_sums.backward_sums_hashed_poss2[&(j, l)];
       let (_, forward_sums_2loop2) = if produces_match_probs {
         let computes_forward_sums = true;
         get_2loop_sums((
@@ -1923,10 +1792,7 @@ where
           align_scores,
         ))
       } else {
-        (
-          SparseSumMat::<T>::default(),
-          SparseSumMat::<T>::default(),
-        )
+        (SparseSumMat::<T>::default(), SparseSumMat::<T>::default())
       };
       let (_, backward_sums_2loop2) = if produces_match_probs {
         let computes_forward_sums = false;
@@ -1942,10 +1808,7 @@ where
           align_scores,
         ))
       } else {
-        (
-          SparseSumMat::<T>::default(),
-          SparseSumMat::<T>::default(),
-        )
+        (SparseSumMat::<T>::default(), SparseSumMat::<T>::default())
       };
       for u in range(i, j) {
         let long_u = u.to_usize().unwrap();
@@ -1972,9 +1835,7 @@ where
               }
             }
             if produces_match_probs {
-              if let Some(&x) =
-                backward_sums_2loop2.get(&pos_pair2)
-              {
+              if let Some(&x) = backward_sums_2loop2.get(&pos_pair2) {
                 logsumexp(&mut backward_term_match_2loop, x);
               }
             }
@@ -1983,15 +1844,26 @@ where
             let mut loopmatch_prob_multibranch = loopmatch_prob_hairpin;
             let mut loopmatch_prob_2loop = loopmatch_prob_hairpin;
             if let Some(x) = forward_sums2.get(&pos_pair_loopmatch) {
-              let y = prob_coeff_hairpin + loopmatch_score + x.sum_seqalign + backward_term_match_seqalign;
+              let y = prob_coeff_hairpin
+                + loopmatch_score
+                + x.sum_seqalign
+                + backward_term_match_seqalign;
               logsumexp(&mut loopmatch_prob_hairpin, y);
               if produces_match_probs {
-                let y = prob_coeff_multibranch + loopmatch_score + x.sum_seqalign + backward_term_match_multibranch;
+                let y = prob_coeff_multibranch
+                  + loopmatch_score
+                  + x.sum_seqalign
+                  + backward_term_match_multibranch;
                 logsumexp(&mut loopmatch_prob_multibranch, y);
-                let y =
-                  prob_coeff_multibranch + loopmatch_score + x.sum_1st_pairmatches + backward_term_match_1ormore;
+                let y = prob_coeff_multibranch
+                  + loopmatch_score
+                  + x.sum_1st_pairmatches
+                  + backward_term_match_1ormore;
                 logsumexp(&mut loopmatch_prob_multibranch, y);
-                let y = prob_coeff_multibranch + loopmatch_score + x.sum_multibranch + backward_term_match_0ormore;
+                let y = prob_coeff_multibranch
+                  + loopmatch_score
+                  + x.sum_multibranch
+                  + backward_term_match_0ormore;
                 logsumexp(&mut loopmatch_prob_multibranch, y);
                 let y = prob_coeff + loopmatch_score + x.sum_seqalign + backward_term_match_2loop;
                 logsumexp(&mut loopmatch_prob_2loop, y);
@@ -2008,9 +1880,7 @@ where
               );
             }
             if produces_match_probs {
-              if let Some(&x) =
-                forward_sums_2loop2.get(&pos_pair_loopmatch)
-              {
+              if let Some(&x) = forward_sums_2loop2.get(&pos_pair_loopmatch) {
                 let x = prob_coeff + loopmatch_score + x + backward_term_match_seqalign;
                 logsumexp(&mut loopmatch_prob_2loop, x);
               }
@@ -2039,11 +1909,9 @@ where
                   let pos_pair3 = (pos_pair2.0, x);
                   if let Some(y) = backward_sums.get(&pos_pair3) {
                     let long_x = x.to_usize().unwrap();
-                    let z = alignfold_scores.range_insert_scores2[long_pos_pair2.1]
-                      [long_x - 1]
+                    let z = alignfold_scores.range_insert_scores2[long_pos_pair2.1][long_x - 1]
                       + align_scores.match2insert_score;
-                    let z =
-                      prob_coeff_hairpin + forward_term + y.sum_seqalign + z;
+                    let z = prob_coeff_hairpin + forward_term + y.sum_seqalign + z;
                     let pos_pair4 = (pos_pair2.1, x - T::one());
                     match unpair_probs_range_hairpin.1.get_mut(&pos_pair4) {
                       Some(x) => {
@@ -2064,11 +1932,9 @@ where
                   let pos_pair3 = (x, pos_pair2.1);
                   if let Some(y) = backward_sums.get(&pos_pair3) {
                     let long_x = x.to_usize().unwrap();
-                    let z = alignfold_scores.range_insert_scores[long_pos_pair2.0]
-                      [long_x - 1]
+                    let z = alignfold_scores.range_insert_scores[long_pos_pair2.0][long_x - 1]
                       + align_scores.match2insert_score;
-                    let z =
-                      prob_coeff_hairpin + forward_term + z + y.sum_seqalign;
+                    let z = prob_coeff_hairpin + forward_term + z + y.sum_seqalign;
                     let pos_pair4 = (pos_pair2.0, x - T::one());
                     match unpair_probs_range_hairpin.0.get_mut(&pos_pair4) {
                       Some(x) => {
@@ -2164,9 +2030,7 @@ where
             *y = expf(*y);
           }
           None => {
-            alignfold_probs
-              .match_probs
-              .insert(*pos_pair, expf(*x));
+            alignfold_probs.match_probs.insert(*pos_pair, expf(*x));
           }
         }
         *x = expf(*x);
@@ -2223,7 +2087,8 @@ where
       } else {
         &alignfold_probs.context_profs_pair.1
       };
-      alignfold_probs_avg.context_profs = alignfold_probs_avg.context_profs + weight * context_profs;
+      alignfold_probs_avg.context_profs =
+        alignfold_probs_avg.context_profs + weight * context_profs;
     }
   }
   alignfold_probs_avg
@@ -2233,17 +2098,17 @@ pub fn get_max_basepair_span<T>(basepair_probs: &SparseProbMat<T>) -> T
 where
   T: HashIndex,
 {
-  let max_basepair_span = basepair_probs
-    .keys()
-    .map(|x| x.1 - x.0 + T::one())
-    .max();
+  let max_basepair_span = basepair_probs.keys().map(|x| x.1 - x.0 + T::one()).max();
   match max_basepair_span {
     Some(x) => x,
     None => T::zero(),
   }
 }
 
-pub fn filter_basepair_probs<T>(basepair_probs: &SparseProbMat<T>, min_basepair_prob: Prob) -> SparseProbMat<T>
+pub fn filter_basepair_probs<T>(
+  basepair_probs: &SparseProbMat<T>,
+  min_basepair_prob: Prob,
+) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
@@ -2254,10 +2119,7 @@ where
     .collect()
 }
 
-pub fn filter_match_probs<T>(
-  match_probs: &ProbMat,
-  min_match_prob: Prob,
-) -> SparseProbMat<T>
+pub fn filter_match_probs<T>(match_probs: &ProbMat, min_match_prob: Prob) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
@@ -2326,10 +2188,7 @@ where
     for (y, z) in match_probs_hashed_ids.iter_mut() {
       let y = (seqs[y.0], seqs[y.1]);
       x.execute(move || {
-        *z = filter_match_probs(
-          &durbin_algo(&y, align_scores),
-          min_match_prob,
-        );
+        *z = filter_match_probs(&durbin_algo(&y, align_scores), min_match_prob);
       });
     }
   });
@@ -2337,14 +2196,8 @@ where
     for (y, z) in alignfold_probs_hashed_ids.iter_mut() {
       let seq_pair = (seqs[y.0], seqs[y.1]);
       let max_basepair_span_pair = (max_basepair_spans[y.0], max_basepair_spans[y.1]);
-      let basepair_probs_pair = (
-        &basepair_prob_mats[y.0],
-        &basepair_prob_mats[y.1],
-      );
-      let fold_scores_pair = (
-        &fold_score_sets[y.0],
-        &fold_score_sets[y.1],
-      );
+      let basepair_probs_pair = (&basepair_prob_mats[y.0], &basepair_prob_mats[y.1]);
+      let fold_scores_pair = (&fold_score_sets[y.0], &fold_score_sets[y.1]);
       let seq_len_pair = (
         T::from_usize(seq_pair.0.len()).unwrap(),
         T::from_usize(seq_pair.1.len()).unwrap(),
@@ -2359,12 +2212,8 @@ where
         matchable_poss2,
       ) = get_sparse_poss(&basepair_probs_pair, match_probs, &seq_len_pair);
       x.execute(move || {
-        let alignfold_scores = AlignfoldScores::<T>::new(
-          &seq_pair,
-          &pos_quad_mat,
-          match_probs,
-          align_scores,
-        );
+        let alignfold_scores =
+          AlignfoldScores::<T>::new(&seq_pair, &pos_quad_mat, match_probs, align_scores);
         *z = consprob_core::<T>((
           &seq_len_pair,
           &alignfold_scores,
@@ -2388,13 +2237,7 @@ where
     for (z, a) in alignfold_prob_mats_avg.iter_mut().enumerate() {
       let b = seqs[z].len();
       x.execute(move || {
-        *a = pair_probs2avg_probs::<T>(
-          y,
-          z,
-          num_seqs,
-          b,
-          produces_context_profs,
-        );
+        *a = pair_probs2avg_probs::<T>(y, z, num_seqs, b, produces_context_profs);
       });
     }
   });
@@ -2434,7 +2277,12 @@ where
     .iter()
     .map(|(x, &y)| {
       (
-        (x.0 + T::one(), x.1 + T::one(), x.2 + T::one(), x.3 + T::one()),
+        (
+          x.0 + T::one(),
+          x.1 + T::one(),
+          x.2 + T::one(),
+          x.3 + T::one(),
+        ),
         y,
       )
     })
@@ -2484,15 +2332,19 @@ pub fn write_alignfold_prob_mats<T>(
     let basepair_prob_file_path2 = output_dir_path.join(BASEPAIR_PROBS_FILE2);
     let mut writer_basepair_prob2 = BufWriter::new(File::create(basepair_prob_file_path2).unwrap());
     let unpair_prob_file_path = output_dir_path.join(UNPAIR_PROBS_FILE_HAIRPIN);
-    let mut writer_unpair_prob_hairpin = BufWriter::new(File::create(unpair_prob_file_path).unwrap());
+    let mut writer_unpair_prob_hairpin =
+      BufWriter::new(File::create(unpair_prob_file_path).unwrap());
     let unpair_prob_file_path = output_dir_path.join(UNPAIR_PROBS_FILE_BULGE);
     let mut writer_unpair_prob_bulge = BufWriter::new(File::create(unpair_prob_file_path).unwrap());
     let unpair_prob_file_path = output_dir_path.join(UNPAIR_PROBS_FILE_INTERIOR);
-    let mut writer_unpair_prob_interior = BufWriter::new(File::create(unpair_prob_file_path).unwrap());
+    let mut writer_unpair_prob_interior =
+      BufWriter::new(File::create(unpair_prob_file_path).unwrap());
     let unpair_prob_file_path = output_dir_path.join(UNPAIR_PROBS_FILE_MULTIBRANCH);
-    let mut writer_unpair_prob_multibranch = BufWriter::new(File::create(unpair_prob_file_path).unwrap());
+    let mut writer_unpair_prob_multibranch =
+      BufWriter::new(File::create(unpair_prob_file_path).unwrap());
     let unpair_prob_file_path = output_dir_path.join(UNPAIR_PROBS_FILE_EXTERNAL);
-    let mut writer_unpair_prob_external = BufWriter::new(File::create(unpair_prob_file_path).unwrap());
+    let mut writer_unpair_prob_external =
+      BufWriter::new(File::create(unpair_prob_file_path).unwrap());
     let mut buf_basepair_prob2 = String::new();
     let mut buf_unpair_prob_hairpin = String::new();
     let mut buf_unpair_prob_bulge = buf_unpair_prob_hairpin.clone();
@@ -2501,7 +2353,9 @@ pub fn write_alignfold_prob_mats<T>(
     let mut buf_unpair_prob_multibranch = buf_unpair_prob_hairpin.clone();
     for (rna_id, alignfold_probs_avg) in alignfold_prob_mats_avg.iter().enumerate() {
       let mut buf_rna_id = format!("\n\n>{}\n", rna_id);
-      let slice = alignfold_probs_avg.context_profs.slice(s![.., CONTEXT_INDEX_BASEPAIR]);
+      let slice = alignfold_probs_avg
+        .context_profs
+        .slice(s![.., CONTEXT_INDEX_BASEPAIR]);
       let slice_len = slice.len();
       for (i, &x) in slice.iter().enumerate() {
         if i == 0 || i == slice_len - 1 {
@@ -2511,7 +2365,9 @@ pub fn write_alignfold_prob_mats<T>(
       }
       buf_basepair_prob2.push_str(&buf_rna_id);
       let mut buf_rna_id = format!("\n\n>{}\n", rna_id);
-      let slice = alignfold_probs_avg.context_profs.slice(s![.., CONTEXT_INDEX_HAIRPIN]);
+      let slice = alignfold_probs_avg
+        .context_profs
+        .slice(s![.., CONTEXT_INDEX_HAIRPIN]);
       let slice_len = slice.len();
       for (i, &x) in slice.iter().enumerate() {
         if i == 0 || i == slice_len - 1 {
@@ -2521,7 +2377,9 @@ pub fn write_alignfold_prob_mats<T>(
       }
       buf_unpair_prob_hairpin.push_str(&buf_rna_id);
       let mut buf_rna_id = format!("\n\n>{}\n", rna_id);
-      let slice = alignfold_probs_avg.context_profs.slice(s![.., CONTEXT_INDEX_BULGE]);
+      let slice = alignfold_probs_avg
+        .context_profs
+        .slice(s![.., CONTEXT_INDEX_BULGE]);
       let slice_len = slice.len();
       for (i, &x) in slice.iter().enumerate() {
         if i == 0 || i == slice_len - 1 {
@@ -2531,7 +2389,9 @@ pub fn write_alignfold_prob_mats<T>(
       }
       buf_unpair_prob_bulge.push_str(&buf_rna_id);
       let mut buf_rna_id = format!("\n\n>{}\n", rna_id);
-      let slice = alignfold_probs_avg.context_profs.slice(s![.., CONTEXT_INDEX_INTERIOR]);
+      let slice = alignfold_probs_avg
+        .context_profs
+        .slice(s![.., CONTEXT_INDEX_INTERIOR]);
       let slice_len = slice.len();
       for (i, &x) in slice.iter().enumerate() {
         if i == 0 || i == slice_len - 1 {
@@ -2541,7 +2401,9 @@ pub fn write_alignfold_prob_mats<T>(
       }
       buf_unpair_prob_interior.push_str(&buf_rna_id);
       let mut buf_rna_id = format!("\n\n>{}\n", rna_id);
-      let slice = alignfold_probs_avg.context_profs.slice(s![.., CONTEXT_INDEX_MULTIBRANCH]);
+      let slice = alignfold_probs_avg
+        .context_profs
+        .slice(s![.., CONTEXT_INDEX_MULTIBRANCH]);
       let slice_len = slice.len();
       for (i, &x) in slice.iter().enumerate() {
         if i == 0 || i == slice_len - 1 {
@@ -2551,7 +2413,9 @@ pub fn write_alignfold_prob_mats<T>(
       }
       buf_unpair_prob_multibranch.push_str(&buf_rna_id);
       let mut buf_rna_id = format!("\n\n>{}\n", rna_id);
-      let slice = alignfold_probs_avg.context_profs.slice(s![.., CONTEXT_INDEX_EXTERNAL]);
+      let slice = alignfold_probs_avg
+        .context_profs
+        .slice(s![.., CONTEXT_INDEX_EXTERNAL]);
       let slice_len = slice.len();
       for (i, &x) in slice.iter().enumerate() {
         if i == 0 || i == slice_len - 1 {
@@ -2572,24 +2436,16 @@ pub fn write_alignfold_prob_mats<T>(
     let loopmatch_probs_file = output_dir_path.join(LOOPMATCH_PROBS_FILE);
     let pairmatch_probs_file = output_dir_path.join(PAIRMATCH_PROBS_FILE);
     let match_probs_file = output_dir_path.join(MATCH_PROBS_FILE);
-    let mut writer_loopmatch_prob =
-      BufWriter::new(File::create(loopmatch_probs_file).unwrap());
-    let mut writer_pairmatch_prob =
-      BufWriter::new(File::create(pairmatch_probs_file).unwrap());
-    let mut writer_match_prob =
-      BufWriter::new(File::create(match_probs_file).unwrap());
+    let mut writer_loopmatch_prob = BufWriter::new(File::create(loopmatch_probs_file).unwrap());
+    let mut writer_pairmatch_prob = BufWriter::new(File::create(pairmatch_probs_file).unwrap());
+    let mut writer_match_prob = BufWriter::new(File::create(match_probs_file).unwrap());
     let mut buf_loopmatch_prob = String::new();
     let mut buf_pairmatch_prob = String::new();
     let mut buf_match_prob = String::new();
     for (rna_id_pair, match_probs) in match_probs_hashed_ids.iter() {
       let mut buf_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
       for (x, &y) in match_probs.loopmatch_probs.iter() {
-        buf_rna_id_pair.push_str(&format!(
-          "{},{},{} ",
-          x.0 - T::one(),
-          x.1 - T::one(),
-          y
-        ));
+        buf_rna_id_pair.push_str(&format!("{},{},{} ", x.0 - T::one(), x.1 - T::one(), y));
       }
       buf_loopmatch_prob.push_str(&buf_rna_id_pair);
       let mut buf_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
@@ -2606,19 +2462,12 @@ pub fn write_alignfold_prob_mats<T>(
       buf_pairmatch_prob.push_str(&buf_rna_id_pair);
       let mut buf_rna_id_pair = format!("\n\n>{},{}\n", rna_id_pair.0, rna_id_pair.1);
       for (x, &y) in match_probs.match_probs.iter() {
-        buf_rna_id_pair.push_str(&format!(
-          "{},{},{} ",
-          x.0 - T::one(),
-          x.1 - T::one(),
-          y
-        ));
+        buf_rna_id_pair.push_str(&format!("{},{},{} ", x.0 - T::one(), x.1 - T::one(), y));
       }
       buf_match_prob.push_str(&buf_rna_id_pair);
     }
-    let _ = writer_loopmatch_prob
-      .write_all(buf_loopmatch_prob.as_bytes());
-    let _ = writer_pairmatch_prob
-      .write_all(buf_pairmatch_prob.as_bytes());
+    let _ = writer_loopmatch_prob.write_all(buf_loopmatch_prob.as_bytes());
+    let _ = writer_pairmatch_prob.write_all(buf_pairmatch_prob.as_bytes());
     let _ = writer_match_prob.write_all(buf_match_prob.as_bytes());
   }
 }
